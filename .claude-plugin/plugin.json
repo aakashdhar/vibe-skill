@@ -5,5 +5,9 @@
   "author": {
     "name": "Aakash Dhar",
     "email": "aakashdhar92@gmail.com"
-  }
+  },
+  "homepage": "https://github.com/aakashdhar/vibe-skill",
+  "repository": "https://github.com/aakashdhar/vibe-skill",
+  "license": "MIT",
+  "keywords": ["claude-code","vibe-coding","agent-skills","ai-skills","development-workflow"]
 }
