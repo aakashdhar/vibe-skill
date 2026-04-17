@@ -22,14 +22,14 @@ Every skill follows the same principles:
 ## Installation
 
 ```bash
-git clone https://github.com/aakashdhar/vibe-skill.git ~/.claude/skills/vibe-skill
+git clone https://github.com/aakashdhar/vibe-skill.git /tmp/vibe-skill && mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ && rm -rf /tmp/vibe-skill
 ```
 
-That's it. Restart Claude Code and all 26 skills are active immediately.
+Restart Claude Code. All 26 skills are active immediately.
 
 **Update skills anytime:**
 ```bash
-cd ~/.claude/skills/vibe-skill && git pull
+cd /tmp && git clone https://github.com/aakashdhar/vibe-skill.git && mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ && rm -rf /tmp/vibe-skill
 ```
 
 ## Usage
@@ -38,68 +38,45 @@ Skills trigger automatically from natural language. No slash commands needed.
 
 ---
 
-## The 27 skills
+### Skills included (26)
 
-### Planning
+**Plan**
+- `vibe-brainstorm` — turn ideas into a buildable brief
+- `vibe-architect` — plan code structure before writing
+- `vibe-agent` — design multi-agent AI systems
+- `vibe-spec-review` — audit specs before coding
 
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-brainstorm | `brainstorm:` | Turns a rough idea into a validated BRIEF.md through guided questions. Two paths: personal project (8 steps) and client/business project (13 steps). |
-| vibe-spec-review | *(auto-triggered)* | Audits BRIEF.md and SPEC.md quality before any code is written. Catches vague requirements, missing acceptance criteria, and scope gaps. |
-| vibe-architect | `architect:` | Plans code structure, patterns, and principles before writing code. Produces ARCHITECTURE.md which every subsequent session reads. |
-| vibe-agent | `agent:` | Designs multi-agent systems — orchestrators, subagents, tool graphs, human-in-the-loop points. Produces AGENT_ARCH.md. |
-| vibe-new-app | `new:` | Full greenfield project setup. Generates CLAUDE.md and the complete vibe/ folder from your BRIEF.md. |
-| vibe-init | `vibe-init` | Onboards an existing codebase. Reads actual source files, infers architecture, generates the vibe/ folder so all other skills work immediately. |
+**Build**
+- `vibe-new-app` — build a new app from scratch
+- `vibe-add-feature` — add a feature to existing codebase
+- `vibe-change-spec` — modify requirements mid-build
+- `vibe-fix-bug` — diagnose and fix bugs
+- `vibe-review` — evidence-based code review
+- `vibe-test` — generate tests
 
-### Build loop
+**Design**
+- `vibe-design` — editorial-quality frontend UI
+- `vibe-design-md` — capture design system from any URL
 
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-add-feature | `feature:` | Full spec-driven feature workflow. Creates FEATURE_SPEC.md, FEATURE_PLAN.md, FEATURE_TASKS.md, then builds. |
-| vibe-fix-bug | `bug:` | Severity-triaged bug workflow. Trivial bugs get 3 steps. Significant bugs get full diagnosis, BUG_SPEC.md, regression test before fix. |
-| vibe-change-spec | `change:` | Modifies, adds, or removes requirements mid-build. Cascades changes through all affected docs in the correct order. |
-| vibe-review | `review:` | Evidence-based code review. Mandatory phase gate — Phase N cannot proceed to N+1 until review passes with zero P0 issues. |
-| vibe-test | `test:` | Blast-radius-aware test generation. Traces every file a change touches, maps the full dependency graph, writes coverage across the entire impact zone. |
+**Ship**
+- `vibe-e2e` — Playwright end-to-end tests
+- `vibe-deploy` — deploy to 7 platforms
+- `vibe-perf` — performance audit
+- `vibe-parallel` — parallel task execution via subagents
 
-### Visibility
+**Visibility**
+- `vibe-progress` — ASCII progress dashboard
+- `vibe-cost` — token and cost tracking
+- `vibe-ledger` — visual cost report
+- `vibe-graph` — dependency graph
+- `vibe-doctor` — environment health check
+- `vibe-mode` — set manual/autonomous execution mode
 
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-progress | `progress:` | Live ASCII dashboard of project state from TASKS.md and git log. Read-only, no files modified. |
-| vibe-cost | `cost:` | Tracks token usage and dollar cost per task, session, feature, and phase. Detects 8 waste patterns. Writes summary.json for vibe-ledger. |
-| vibe-ledger | `ledger:` | Generates a self-contained HTML cost report from history.json + summary.json. 8-bit terminal aesthetic. Opens automatically in browser. |
-| vibe-graph | `graph:` | Builds a dependency and concept graph of the codebase. Detects clusters, circular dependencies, and orphaned files. Incremental updates via git diff. |
-
-### Design
-
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-design-md | `design-md:` | Generates DESIGN_SYSTEM.md — 55+ pattern catalogue. Can fetch from a URL or from the awesome-design-md collection. |
-| vibe-design | `design:` | Frontend design workflow for styling components and pages. Reads DESIGN_SYSTEM.md and produces non-generic, editorial-quality UI. |
-
-### Advanced
-
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-parallel | `parallel:` | Wave-based parallel subagent execution. Builds dependency waves, detects file conflicts, coordinates multiple agents. |
-| vibe-mode | `mode:` | Switches between Autonomous (runs until done) and Supervised (waits for "next" between tasks) execution modes. |
-| vibe-perf | `perf:` | Full-stack performance audit — frontend, backend, agentic pipelines, infrastructure. Risk-ranked fix plan with before/after benchmarks. |
-| vibe-doctor | `doctor:` | 10-point environment health check. Finds broken configs, wrong versions, missing setup. Auto-remediates safe fixes. |
-
-### Ship
-
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-deploy | `deploy: [platform]` | Prepares the project for deployment to 7 platforms. Patches source files, generates platform config, inlines env vars per service, generates step-by-step DEPLOY.md. |
-| vibe-e2e | `e2e: [url]` | Generates and runs Playwright E2E tests from SPEC.md against a live URL. Auto-installs Playwright. Video on failure. Cleanup script removes test data after every run. |
-
-### Close
-
-| Skill | Trigger | What it does |
-|---|---|---|
-| vibe-document | `document:` | Generates all documentation in one session — inline code docs, README.md, CHANGELOG.md, API reference, component library docs. |
-| vibe-changelog | `changelog:` | Generates two changelogs from git tags — CHANGELOG.md (developer-facing, Keep a Changelog format) and CHANGELOG_CLIENT.md (plain English, product update style). |
-| vibe-handoff | `handoff: [mode]` | Generates a complete handoff package for 5 scenarios. Produces both MD files and a single self-contained index.html portal for client sharing. |
+**Close**
+- `vibe-document` — generate docs
+- `vibe-changelog` — maintain changelogs
+- `vibe-handoff` — client handoff packages
+- `vibe-init` — onboard existing codebase into vibe-*
 
 ---
 
