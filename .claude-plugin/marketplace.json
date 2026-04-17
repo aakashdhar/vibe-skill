@@ -9,7 +9,11 @@
     {
       "name": "vibe-skill",
       "description": "26 Claude Code skills covering the complete software development lifecycle — brainstorm, architect, build, review, test, deploy, and hand off. Built by Aakash Dhar at BetaCraft.",
-      "source": "./plugins/vibe-skill",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/aakashdhar/vibe-skill.git",
+        "path": "plugins/vibe-skill"
+      },
       "homepage": "https://github.com/aakashdhar/vibe-skill"
     }
   ]
