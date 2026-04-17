@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "vibe-skill",
   "owner": {
     "name": "Aakash Dhar",
@@ -7,17 +8,13 @@
   "plugins": [
     {
       "name": "vibe-skill",
-      "source": "./plugins/vibe-skill",
       "description": "26 Claude Code skills covering the complete software development lifecycle — brainstorm, architect, build, review, test, deploy, and hand off. Built by Aakash Dhar at BetaCraft.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Aakash Dhar",
-        "email": "aakashdhar92@gmail.com"
+      "source": {
+        "source": "url",
+        "url": "https://github.com/aakashdhar/vibe-skill.git",
+        "path": "plugins/vibe-skill"
       },
-      "homepage": "https://github.com/aakashdhar/vibe-skill",
-      "license": "MIT",
-      "keywords": ["claude-code","vibe-coding","agent-skills","ai-skills"],
-      "strict": false
+      "homepage": "https://github.com/aakashdhar/vibe-skill"
     }
   ]
 }
