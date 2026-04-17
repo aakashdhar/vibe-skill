@@ -22,15 +22,19 @@ Every skill follows the same principles:
 ## Installation
 
 ```bash
-# Clone into your Claude skills folder
-git clone https://github.com/aakashdhar/vibe-skill ~/.claude/skills/vibe-skills
-
-# Or copy individual skills you need
-cp -r vibe-skills/vibe-deploy ~/.claude/skills/
-cp -r vibe-skills/vibe-handoff ~/.claude/skills/
+git clone https://github.com/aakashdhar/vibe-skill.git ~/.claude/skills/vibe-skill
 ```
 
-Skills live in `~/.claude/skills/`. Claude Code reads them automatically on every session.
+That's it. Restart Claude Code and all 26 skills are active immediately.
+
+**Update skills anytime:**
+```bash
+cd ~/.claude/skills/vibe-skill && git pull
+```
+
+## Usage
+
+Skills trigger automatically from natural language. No slash commands needed.
 
 ---
 
