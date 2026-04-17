@@ -1,0 +1,11 @@
+{
+  "name": "vibe-architect",
+  "description": "Architecture planning workflow for establishing code structure, patterns, and principles before any code is written. Runs after brainstorm: and before new: on every project. Triggers on \"architect:\" prefix, \"plan the architecture\", \"architect this\", \"how should we structure this\", \"what patterns should we use\". Always runs on every project — no exceptions, no shortcuts. Reads BRIEF.md stack decisions and confirms them explicitly before asking any questions — prevents scaffolding with wrong framework (e.g. Next.js when React+Vite is specified). Produces ARCHITECTURE.md from canonical template — structurally consistent so review:, fix-bug:, and add-feature: can parse it reliably every session. review: uses ARCHITECTURE.md as its primary reference for drift detection. Handles gracefully if BRIEF.md is missing. Detects existing ARCHITECTURE.md before overwriting.",
+  "version": "1.0.0",
+  "author": { "name": "Aakash Dhar", "email": "aakash@sorigin.com" },
+  "homepage": "https://github.com/aakashdhar/vibe-skills",
+  "repository": "https://github.com/aakashdhar/vibe-skills",
+  "license": "MIT",
+  "keywords": [],
+  "strict": false
+}

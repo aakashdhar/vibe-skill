@@ -1,0 +1,140 @@
+{
+  "name": "vibe-skills",
+  "owner": { "name": "Aakash Dhar", "email": "aakash@sorigin.com" },
+  "metadata": {
+    "description": "26 Claude Code skills covering the complete software development lifecycle",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "source": "./vibe-add-feature",
+      "description": "Full spec-driven workflow for adding a feature to an existing codebase with an AI coding agent. Triggers on \"feature:\" prefix, \"I want to add a feature\", \"add X to my project\", \"new feature\", \"build a feature for\". Always use when adding functionality to an existing project — even without the exact prefix. Reads PLAN.md feature map before drafting — checks build order, dependencies, shared data. Stops and surfaces clearly if dependencies are not yet met. Marks unplanned features explicitly. Updates PLAN.md feature map after planning so it stays the live source of truth. Creates vibe/features/[date-slug]/ with FEATURE_SPEC.md, FEATURE_PLAN.md, FEATURE_TASKS.md. Checks for existing incomplete feature with same name before creating a duplicate. Reads SPEC.md before drafting to align with existing acceptance criteria. Updates TASKS.md (human progress view) and agent files.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-agent",
+      "description": "Standalone agentic architecture skill. Designs complete multi-agent AI systems from scratch — no other vibe-* skills required. Deep knowledge of LangGraph, LangChain, CrewAI, AutoGen, Vercel AI SDK, and custom implementations. Produces AGENT_ARCH.md covering pattern selection, agent roles, tool mapping, state design, HITL checkpoints, VerifierAgent rubrics, implementation order, stack recommendations, and boilerplate folder structure. Generates both an interactive inline topology diagram and an exportable static SVG. Triggers on \"agent:\" prefix, \"design an agent system\", \"I want to build an agent\", \"multi-agent pipeline\", \"orchestrator and sub-agents\", \"agentic workflow\", \"which agent framework should I use\", \"how do I structure my agents\", \"build a workflow with AI agents\", \"human in the loop\", \"LangGraph architecture\". Always use when designing any system involving AI agents — standalone, no dependencies.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-architect",
+      "description": "Architecture planning workflow for establishing code structure, patterns, and principles before any code is written. Runs after brainstorm: and before new: on every project. Triggers on \"architect:\" prefix, \"plan the architecture\", \"architect this\", \"how should we structure this\", \"what patterns should we use\". Always runs on every project — no exceptions, no shortcuts. Reads BRIEF.md stack decisions and confirms them explicitly before asking any questions — prevents scaffolding with wrong framework (e.g. Next.js when React+Vite is specified). Produces ARCHITECTURE.md from canonical template — structurally consistent so review:, fix-bug:, and add-feature: can parse it reliably every session. review: uses ARCHITECTURE.md as its primary reference for drift detection. Handles gracefully if BRIEF.md is missing. Detects existing ARCHITECTURE.md before overwriting.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-brainstorm",
+      "description": "Comprehensive brainstorming workflow for turning any app idea into a clear, validated, buildable brief. Two paths: personal project (8 steps) and client/business project (13 steps). Fast path for fully-formed ideas. Detects agentic/AI projects and routes to agent: before architect:. Pre-write quality check ensures BRIEF.md has specific users, measurable success criteria, explicit non-goals, and a clear v1 boundary before writing. Complexity sizing (S/M/L/XL) signals build effort to downstream skills. BRIEF.md is structurally consistent — architect:, new-app:, change-spec:, and review: all read known field names. Does not create code or project structure — thinking and brief only. Triggers on \"brainstorm:\" prefix, \"I have an idea\", \"I want to build\", \"help me think through\", \"I have a client project\", \"thinking about building\", \"I want to validate this idea\", \"let's plan a project\".",
+      "strict": false
+    },
+    {
+      "source": "./vibe-change-spec",
+      "description": "Scope change workflow for modifying, adding, or removing requirements at any point during a build. Triggers on \"change:\" prefix, \"I forgot to add\", \"actually I also want\", \"can we add\", \"remove X from scope\", \"I changed my mind about\", \"before we continue add\", \"one more thing\", \"I want to change the spec\", \"revert the X change\". Handles new additions, removals, renames, backlog operations, and reverting previous changes. Assesses impact before touching any file. Updates all affected docs in the correct order. If BRIEF.md doesn't exist, updates SPEC.md and DECISIONS.md only.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-changelog",
+      "description": "Generates and maintains two changelog files from git tags, TASKS.md, DECISIONS.md, and feature folders. CHANGELOG.md at repo root is developer-facing in Keep a Changelog format with task IDs and decisions. CHANGELOG_CLIENT.md is plain English, grouped by \"what you can now do\", written like a product update — no task IDs or framework names. Version detection reads git tags first, then package.json or pyproject.toml. Appending uses git log [last-tag]..HEAD — never date-based. Groups completed tasks into higher-level entries rather than one line per task. If no git tags exist, generates as [Unreleased] and prompts to tag. Triggers: \"changelog:\" to generate or update both files, \"changelog: since v1.0\" to generate entries since a specific tag.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-cost",
+      "description": "Tracks and reports token usage and dollar cost across every level of a vibe-* project — per task, per session, per feature, per phase, and total project spend. Auto-runs at the end of every session with estimates. When invoked manually with \"cost:\" accepts pasted Claude Code /cost output for precise numbers. Detects eight waste patterns: CP-01 context overhead, CP-02 repeated reads, CP-03 unstructured output, CP-04 parallel multiplication, CP-05 low cache hit rate, CP-06 oversized planning, CP-07 environment debugging waste (env issues rediscovered each session), CP-08 over-investigation (files read before intent confirmed). Max 4 recommendations per session. Triggers on \"cost:\", \"how much has this cost\", \"show cost report\", \"token usage\", \"what's the spend so far\", \"is this getting expensive\". Also auto-invoked at end of vibe-add-feature, vibe-fix-bug, vibe-new-app, vibe-review.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-deploy",
+      "description": "Prepares a vibe-* project for deployment to 7 platforms: Railway, Render, Fly.io, Heroku, Vercel, Netlify, GitHub Pages. Detects stack automatically (FastAPI, Express, Next.js, Django, React, Vue, static). Patches source files (port binding to $PORT, adds /health endpoint, production CORS). Generates platform config files scoped per service — backend, web, worker. Inlines non-secret env vars directly in config files per service. Links database connections using platform-native syntax. Generates ENV_SETUP.md with per-service CLI commands for secrets only. Handles background workers and cron services if the project requires them. Optionally generates GitHub Actions CI/CD workflow. Produces DEPLOY.md step-by-step checklist. Triggers: deploy: railway, deploy: render, deploy: fly, deploy: heroku, deploy: vercel, deploy: netlify, deploy: github-pages.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-design-md",
+      "description": "Generates a DESIGN.md file for any website URL or fetches a pre-built one from the awesome-design-md collection (55+ sites). DESIGN.md captures the complete design system of a real product — exact hex/oklch values, font families, spacing scales, shadow formulas, component states, do's and don'ts — in a format vibe-design reads to produce pixel-accurate matching UI. Two modes: fetch a pre-built DESIGN.md from the catalog by site name (instant, exact tokens), or generate one from any URL by reading the site's CSS and visual language (works on any site, ~2 min). Output always saved to project root as DESIGN.md. Triggers on \"design-md:\", \"generate a design system for\", \"extract design tokens from\", \"make it look like [brand]\", \"get the design system for\", \"fetch DESIGN.md for\", \"create DESIGN.md from\". After output: vibe-design reads DESIGN.md automatically in Step 2.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-design",
+      "description": "Frontend design workflow that produces non-generic, editorial-quality UI. Immediately invokes the frontend-design skill for aesthetic direction before any code is written. Enforces a written design contract that is re-read before every single component — not once and forgotten. Creates separate files per page and component, never monolithic output. Reads DESIGN.md if present for exact brand tokens. Reads ANTI_GENERIC.md to kill SaaS dashboard defaults. Reads SITE_TYPE_PLAYBOOK.md for site-type-specific vocabulary. Triggers on \"design:\" prefix, \"style this\", \"make this look better\", \"redesign this page\", \"the UI needs work\", \"can you polish\", \"do a design pass\", \"it looks too plain\", \"it looks generic\", \"it looks like a saas dashboard\", \"make separate pages\". Always use when the goal is visual — aesthetics, layout, feel, interactions. Never use for logic, data, tests, or spec changes.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-doctor",
+      "description": "Environment health check and auto-remediation for vibe-* projects. Checks node_modules vs package.json drift, nested .git directories, Tailwind and shadcn version mismatches, dotenv load order, Vite HMR WebSocket config, husky hook permissions, ESLint config validity, TypeScript path resolution, and missing dependencies in generated code. Auto-remediates where safe. Flags where human action is needed. Outputs a health report and writes vibe/.doctor-last-run for vibe-progress. Triggers on \"doctor:\", \"check environment\", \"fix my environment\", \"env check\", \"why won't my app start\", \"something is broken at startup\", \"app won't start\". Also invoked by vibe-fix-bug when an environment bug is detected in triage. Run manually or via PreToolUse hook.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-document",
+      "description": "Generates complete documentation for vibe-* projects — inline code docs, README.md, CHANGELOG.md, API reference, and component library docs. Scans all source files and documents everything in one session. Triggers on \"document:\" prefix, \"write docs for\", \"generate documentation\", \"add JSDoc\", \"add docstrings\", \"document this feature\", \"we need a README\", \"generate a changelog\", \"document the API\", \"document the components\", \"missing docs\", \"no documentation\". Runs automatically after vibe-init on undocumented legacy projects, after vibe-add-feature to document what was built, and when vibe-review flags missing documentation as P1 or P2. Always use when documentation is absent, incomplete, or out of date. Shows full doc plan first — writes everything on explicit approval.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-e2e",
+      "description": "Generates and runs full end-to-end UI tests using Playwright against a live URL. Auto-installs Playwright and Chromium if not present — isolated in e2e/ folder, never pollutes app dependencies. Reads SPEC.md and FEATURES.md to automatically generate test flows covering every critical user journey. Runs tests with video recording on failure and HTML report. Two-device flows (poster + joiner, sender + receiver) use parallel browser contexts. OAuth flows are skipped with clear warnings. Generates a cleanup script that deletes all test data after the suite runs. e2e: regenerate rewrites all tests from current SPEC.md. Triggers: \"e2e: https://url\" to run against a live URL, \"e2e: regenerate\" to rewrite tests from spec.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-fix-bug",
+      "description": "Full spec-driven workflow for diagnosing and fixing a bug with an AI coding agent. Triggers on \"bug:\" prefix, \"I have a bug\", \"something is broken\", \"this is not working\", \"fix this issue\", \"there is a bug in\", \"debug this\", \"broken\", \"issue\". Always use when the user reports unexpected behaviour — even without the exact prefix. Three-way severity triage: trivial bugs (3 tasks, no folder), environment bugs (runs vibe-doctor first, no BUG_SPEC), significant bugs (full workflow). Environment bugs — HMR loops, missing deps, config mismatches, build tool failures — are detected at triage and routed to vibe-doctor rather than full bug workflow. Diagnosis always before the fix. Regression test always before fix code. BUG_SPEC.md, BUG_PLAN.md, BUG_TASKS.md created for significant bugs only.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-graph",
+      "description": "Dual-layer dependency graph for vibe-* projects. No external packages. DEPENDENCY_GRAPH.json maps file-level relationships with confidence tagging: EXTRACTED (verified from source, confidence 1.0), INFERRED (derived from specs/patterns, 0.6–0.95), AMBIGUOUS (flagged for review). Rationale nodes capture WHY, HACK, DECISION comments from source files — surfaced during bug diagnosis and review to prevent intent drift. God nodes identify highest-coupling files — read first in review, flagged in bug diagnosis, blocked from simultaneous parallel writes. CONCEPT_GRAPH.json maps semantic relationships (features, agents, models, components). graph.html is an interactive visual. Auto-updated via git diff. Queried by vibe-fix-bug, vibe-test, vibe-review, vibe-parallel. Saves 65-70% context tokens. Triggers on \"vibe-graph: build\", \"vibe-graph: update\", \"vibe-graph: init\", \"vibe-graph: rebuild\", \"vibe-graph: query\", \"vibe-graph: status\".",
+      "strict": false
+    },
+    {
+      "source": "./vibe-handoff",
+      "description": "Generates complete handoff packages for every transition scenario in a vibe-* project. Five modes: client (project completion), milestone (phase sign-off), dev (new developer onboarding), internal (team handoff between BetaCraft developers), maintenance (handing to client's own dev team). Each mode produces markdown documents plus a single self-contained index.html portal — clean, light-mode, client-readable, combining all docs into one navigable file. Includes delivery doc, feature walkthrough, credentials placeholder, known issues, support guide, sign-off checklist, and roadmap. Reads BRIEF.md, SPEC.md, DECISIONS.md, TASKS.md, ARCHITECTURE.md, CODEBASE.md. Triggers on handoff: client, handoff: milestone, handoff: dev, handoff: internal, handoff: maintenance, prepare handoff, client delivery, project sign-off, onboard new developer, prepare for maintenance, ready to hand over.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-init",
+      "description": "Onboards an existing or legacy codebase into the vibe-* skills framework. Reads actual source files, infers architecture and patterns, generates the full vibe/ folder so vibe-add-feature, vibe-fix-bug, vibe-review, and all vibe-* skills work immediately. Triggers on \"vibe-init\", \"onboard this project\", \"init the vibe folder\", \"set up vibe for this project\", \"this is a legacy project\", \"retrofit this codebase\", \"I want to use vibe skills on an existing project\", \"add vibe to this repo\", \"the vibe folder doesn't exist\", \"can we use vibe skills here\". Always use when the user has an existing codebase with no vibe/ folder and wants to use any vibe-* skill — even without the exact trigger phrases. Single agent session — reads everything, generates everything, no staged checkpoints. Produces CLAUDE.md and full vibe/ folder grounded in actual code. SPEC.md marked PROVISIONAL — verify before first vibe-review run. DECISIONS.md starts from today — all prior decisions untracked by design.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-ledger",
+      "description": "Generates a full project cost report as a self-contained HTML file from vibe/cost/history.json. Opens automatically in the browser. Tracks spend per session, per task, per phase, and per day. Shows task size breakdown (S/M/L avg costs), session burn with dot indicators, token composition, efficiency metrics, waste pattern advice, and project cost forecast. All plain English — readable by non-technical stakeholders. Triggered automatically at the end of every cost: session. Also triggers on \"ledger:\", \"generate ledger\", \"show cost report\", \"open ledger\", \"cost report\", \"how much have I spent\", \"show me the report\". Requires vibe/cost/history.json to exist — run cost: first if it doesn't. Zero dependencies — uses Python stdlib only, works on any machine.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-mode",
+      "description": "Sets the execution mode for the vibe-* framework — manual or autonomous. In manual mode: waits for \"next\" between tasks, waits for \"review:\" after phases. In autonomous mode: executes all tasks automatically, uses subagents for independent tasks in parallel, auto-runs review after each phase, only stops on P0 findings or deploy gates. Triggers on \"vibe-mode: autonomous\", \"vibe-mode: manual\", \"vibe-mode: status\", \"set autonomous mode\", \"set manual mode\", \"switch to autonomous\", \"turn on autonomous\", \"turn off autonomous\", \"what mode am I in\". Always use when the user wants to control how much the framework runs automatically vs waits for human input. Writes VIBE_MODE to CLAUDE.md. All vibe-* skills read this on startup.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-new-app",
+      "description": "Full spec-driven setup workflow for building a brand new app from scratch with an AI coding agent. Triggers on \"new:\" prefix, \"I want to build a new app\", \"starting a new project\", \"help me spec out a new app\", \"new project\". Always use when the user is starting a greenfield project — even without the exact prefix. Generates CLAUDE.md at project root and the complete vibe/ folder. Reads BRIEF.md and ARCHITECTURE.md if they exist — skips questions already answered. Step 5 generates a complete multi-phase feature map in PLAN.md — every feature sequenced, dependencies explicit, parallel opportunities identified, future phases sketched. TASKS.md Phase 2+ shows ordered features with dependencies visible — not slugs. Generates a minimal ARCHITECTURE.md from PLAN.md if architect: was skipped. TASKS.md is the single human-facing file. TODO.md does not exist. Requires: frontend-design skill for Step 3 wireframe generation.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-parallel",
+      "description": "Parallel task execution using Claude Code subagents. Reads task files, builds dependency waves, detects file conflicts AND read-write conflicts, and spawns tasks as parallel subagents. Size-aware wave splitting unlocks downstream tasks early when large tasks are in the same wave as small ones. If vibe-graph is installed, each subagent gets a targeted context slice instead of full CODEBASE.md — 60-70% cheaper per subagent on large projects. Structured subagent reporting with [x]/[~]/[!] states. Diagnostic retry on failure. Live wave progress log at vibe/parallel/. Post-wave graph update. Wave cost annotation for vibe-cost. Triggers on \"parallel:\" prefix, \"run tasks in parallel\", \"spawn subagents\", \"parallelise the build\", \"which tasks can run in parallel\", \"run independent tasks simultaneously\". Called automatically by vibe-add-feature, vibe-fix-bug, vibe-new-app when VIBE_MODE=autonomous or parallel tasks exist and user approves.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-perf",
+      "description": "Full-stack performance audit for vibe-* projects — frontend, backend, agentic pipelines, and infrastructure. Measures, scores, compares against previous runs, and writes approved fixes automatically. Triggers on \"perf:\" prefix, \"performance audit\", \"this is slow\", \"optimize performance\", \"Lighthouse score\", \"bundle size\", \"slow queries\", \"LLM latency\", \"token usage\", \"memory leak\", \"CPU usage\", \"cold start\", \"perf regression\". Runs automatically after vibe-review flags performance as P1/P2, and as a mandatory gate before vibe-deploy. Always use when performance is in question — even without the exact prefix. Shows fix plan by category, waits for human approval, then writes all fixes. Tracks scores over time and compares against previous perf: runs.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-progress",
+      "description": "Displays a live ASCII progress dashboard for the current vibe project. Triggers on \"/vibe-progress\", \"progress:\", \"show progress\", \"how far along are we\". Reads vibe/TASKS.md and git log to render a clean dashboard. Shows overall progress, phase gate status, active work, completed features, active bugs, backlog items, scope decisions, and last git activity. No files are modified. Read-only. Always runs in Plan Mode.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-review",
+      "description": "Evidence-based code review skill — mandatory gate after every phase completes. Triggers on \"review:\" prefix, \"review the code\", \"code review\", \"audit the codebase\", \"check code quality\", \"review phase N\", \"is the code ready\", \"quality check\". Mandatory gate: Phase N cannot proceed to Phase N+1 without review passing with no P0 issues. Final phase review blocks deploy until all P0 and P1 issues are resolved. Acts as Senior Engineer, Architect, and Code Quality Auditor. Gracefully handles missing ARCHITECTURE.md — reviews against PLAN.md patterns instead. Automated checks adapt to project stack (not npm-only). Every finding backed by file path and line number. No vague feedback.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-spec-review",
+      "description": "Spec quality gate — audits planning documents before any code is written. Automatically triggered by vibe-brainstorm (after BRIEF.md), vibe-agent (after AGENT_ARCH.md), vibe-new-app and vibe-init (after vibe/ folder), and vibe-add-feature (after FEATURE_SPEC.md). Audits all documents that exist: BRIEF.md, AGENT_ARCH.md, SPEC.md, ARCHITECTURE.md, FEATURE_SPEC.md. P0 findings are critical gaps that will cause build failures if not fixed. P1/P2 findings are warnings — user decides whether to fix or continue. Shows findings clearly, waits for user decision, never blocks silently. Triggers on \"spec-review:\" prefix, \"review the spec\", \"check the brief\", \"audit the spec\", \"is the spec ready\", \"review before we build\". Always use when planning documents exist and build is about to begin.",
+      "strict": false
+    },
+    {
+      "source": "./vibe-test",
+      "description": "Blast-radius-aware test generation for vibe-* projects. Traces every file a change touches, maps the full dependency graph, and writes complete test coverage across the entire blast radius — component tests, integration tests, and E2E tests. Extends existing tests in-place. Writes from scratch where none exist. Triggers on \"test:\" prefix, \"write tests for\", \"test this feature\", \"add test coverage\", \"what needs testing\", \"test the blast radius\", \"coverage is missing\", \"write regression tests\". Runs automatically at the end of vibe-add-feature and vibe-fix-bug sessions. Always use when any code has changed and test coverage must be verified or created. Never skips files. Never assumes untouched means unaffected.",
+      "strict": false
+    }
+  ]
+}

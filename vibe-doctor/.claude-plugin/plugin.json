@@ -1,0 +1,11 @@
+{
+  "name": "vibe-doctor",
+  "description": "Environment health check and auto-remediation for vibe-* projects. Checks node_modules vs package.json drift, nested .git directories, Tailwind and shadcn version mismatches, dotenv load order, Vite HMR WebSocket config, husky hook permissions, ESLint config validity, TypeScript path resolution, and missing dependencies in generated code. Auto-remediates where safe. Flags where human action is needed. Outputs a health report and writes vibe/.doctor-last-run for vibe-progress. Triggers on \"doctor:\", \"check environment\", \"fix my environment\", \"env check\", \"why won't my app start\", \"something is broken at startup\", \"app won't start\". Also invoked by vibe-fix-bug when an environment bug is detected in triage. Run manually or via PreToolUse hook.",
+  "version": "1.0.0",
+  "author": { "name": "Aakash Dhar", "email": "aakash@sorigin.com" },
+  "homepage": "https://github.com/aakashdhar/vibe-skills",
+  "repository": "https://github.com/aakashdhar/vibe-skills",
+  "license": "MIT",
+  "keywords": [],
+  "strict": false
+}

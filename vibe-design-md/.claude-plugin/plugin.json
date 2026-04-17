@@ -1,0 +1,11 @@
+{
+  "name": "vibe-design-md",
+  "description": "Generates a DESIGN.md file for any website URL or fetches a pre-built one from the awesome-design-md collection (55+ sites). DESIGN.md captures the complete design system of a real product — exact hex/oklch values, font families, spacing scales, shadow formulas, component states, do's and don'ts — in a format vibe-design reads to produce pixel-accurate matching UI. Two modes: fetch a pre-built DESIGN.md from the catalog by site name (instant, exact tokens), or generate one from any URL by reading the site's CSS and visual language (works on any site, ~2 min). Output always saved to project root as DESIGN.md. Triggers on \"design-md:\", \"generate a design system for\", \"extract design tokens from\", \"make it look like [brand]\", \"get the design system for\", \"fetch DESIGN.md for\", \"create DESIGN.md from\". After output: vibe-design reads DESIGN.md automatically in Step 2.",
+  "version": "1.0.0",
+  "author": { "name": "Aakash Dhar", "email": "aakash@sorigin.com" },
+  "homepage": "https://github.com/aakashdhar/vibe-skills",
+  "repository": "https://github.com/aakashdhar/vibe-skills",
+  "license": "MIT",
+  "keywords": [],
+  "strict": false
+}

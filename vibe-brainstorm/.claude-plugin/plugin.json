@@ -1,0 +1,11 @@
+{
+  "name": "vibe-brainstorm",
+  "description": "Comprehensive brainstorming workflow for turning any app idea into a clear, validated, buildable brief. Two paths: personal project (8 steps) and client/business project (13 steps). Fast path for fully-formed ideas. Detects agentic/AI projects and routes to agent: before architect:. Pre-write quality check ensures BRIEF.md has specific users, measurable success criteria, explicit non-goals, and a clear v1 boundary before writing. Complexity sizing (S/M/L/XL) signals build effort to downstream skills. BRIEF.md is structurally consistent — architect:, new-app:, change-spec:, and review: all read known field names. Does not create code or project structure — thinking and brief only. Triggers on \"brainstorm:\" prefix, \"I have an idea\", \"I want to build\", \"help me think through\", \"I have a client project\", \"thinking about building\", \"I want to validate this idea\", \"let's plan a project\".",
+  "version": "1.0.0",
+  "author": { "name": "Aakash Dhar", "email": "aakash@sorigin.com" },
+  "homepage": "https://github.com/aakashdhar/vibe-skills",
+  "repository": "https://github.com/aakashdhar/vibe-skills",
+  "license": "MIT",
+  "keywords": [],
+  "strict": false
+}
