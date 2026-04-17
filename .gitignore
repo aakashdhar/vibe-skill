@@ -2,4 +2,4 @@
 __pycache__/
 *.pyc
 node_modules/
-*.zip
+*.zip.DS_Store

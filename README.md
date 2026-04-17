@@ -23,7 +23,7 @@ Every skill follows the same principles:
 
 ```bash
 # Clone into your Claude skills folder
-git clone https://github.com/betacraft/vibe-skills ~/.claude/skills/vibe-skills
+git clone https://github.com/aakashdhar/vibe-skill ~/.claude/skills/vibe-skills
 
 # Or copy individual skills you need
 cp -r vibe-skills/vibe-deploy ~/.claude/skills/
