@@ -64,8 +64,11 @@ List names if ≤3 items; show count only if >3.
 ```bash
 node -e "
 const h = require('./vibe/cost/history.json');
-const total = h.sessions ? h.sessions.reduce((s,x) => s + (x.cost_usd||0), 0) : 0;
-const sessions = h.sessions ? h.sessions.length : 0;
+// history.json is a flat array of session objects (as written by vibe-cost
+// and read by vibe-ledger). Tolerate a legacy {sessions:[...]} shape too.
+const arr = Array.isArray(h) ? h : (Array.isArray(h.sessions) ? h.sessions : []);
+const total = arr.reduce((s,x) => s + (x.cost_usd||0), 0);
+const sessions = arr.length;
 console.log('COST:$' + total.toFixed(2) + ':' + sessions + ' sessions');
 " 2>/dev/null || echo "COST:none"
 ```

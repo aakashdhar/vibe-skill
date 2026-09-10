@@ -51,7 +51,13 @@ Two tasks write the same file → they cannot run in the same wave.
 The second task (alphabetically later ID) moves to the next wave.
 
 ```python
-APPEND_ONLY_FILES = {
+# Main-session-owned files. Subagents NEVER write these directly — they report
+# their deltas (FILES_MODIFIED / FILES_CREATED / decisions) in their completion
+# report, and the main session applies the batched update once after the wave
+# (see SKILL.md "Update CODEBASE.md (batched — main session only)"). They are
+# therefore skipped in write-conflict detection: not because concurrent writes
+# are safe, but because no subagent write ever lands on them.
+MAIN_SESSION_OWNED_FILES = {
     "vibe/CODEBASE.md",
     "vibe/DECISIONS.md",
     "vibe/TASKS.md",
@@ -72,8 +78,8 @@ def resolve_write_conflicts(waves, tasks_by_id):
             task = tasks_by_id[tid]
             conflict = False
             for f in task.get("touches", []):
-                if f in APPEND_ONLY_FILES:
-                    continue   # safe to write concurrently
+                if f in MAIN_SESSION_OWNED_FILES:
+                    continue   # never written by a subagent — main session batches it
                 if f in file_to_writer:
                     # Conflict — this task loses, moves to next wave
                     deferred.append(tid)
@@ -81,7 +87,7 @@ def resolve_write_conflicts(waves, tasks_by_id):
                     break
             if not conflict:
                 for f in task.get("touches", []):
-                    if f not in APPEND_ONLY_FILES:
+                    if f not in MAIN_SESSION_OWNED_FILES:
                         file_to_writer[f] = tid
 
         clean_wave = [tid for tid in wave_sorted if tid not in deferred]

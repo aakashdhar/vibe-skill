@@ -491,6 +491,14 @@ Collect all `FILES_MODIFIED` and `FILES_CREATED` from completion reports.
 The main session updates `vibe/CODEBASE.md` once — not during parallel execution.
 Each subagent reports what it changed; the main session writes the update.
 
+> Subagents must **never** write the main-session-owned files directly —
+> `vibe/CODEBASE.md`, `vibe/DECISIONS.md`, `vibe/TASKS.md`, `CLAUDE.md`. They
+> report deltas in their completion report and the main session applies them
+> after the wave. This is why those files are skipped in write-conflict
+> detection (see `references/WAVE_BUILDER.md` → `MAIN_SESSION_OWNED_FILES`):
+> no concurrent subagent write ever lands on them, so there is nothing to
+> corrupt. Two subagents both "touching" CODEBASE.md is not a conflict.
+
 **Update wave progress log:**
 ```markdown
 # Wave [N] — complete

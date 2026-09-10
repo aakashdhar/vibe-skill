@@ -611,13 +611,28 @@ def main():
         print(f"ERROR: No .md files found in {folder}")
         sys.exit(1)
 
-    # Project name from parent directory or DELIVERY.md first line
-    project_name = folder.parent.parent.parent.name
+    # Project name: walk up to the project root (the dir containing vibe/,
+    # .git, or CLAUDE.md) rather than assuming a fixed folder depth — the
+    # handoff folder may be relocated or symlinked. Fall back to the folder's
+    # grandparent, then the folder itself.
+    def find_project_root(start):
+        for parent in [start, *start.parents]:
+            if (parent / "vibe").is_dir() or (parent / ".git").exists() or (parent / "CLAUDE.md").exists():
+                return parent
+        return None
+    root = find_project_root(folder)
+    if root is None:
+        root = folder.parents[1] if len(folder.parents) > 1 else folder
+    project_name = root.name
+
+    # A DELIVERY.md heading is the most reliable source. Split the title from a
+    # trailing subtitle ONLY on an em/en-dash (— –), never a plain hyphen — so
+    # hyphenated names like "Ride-Tribe" survive intact.
     delivery = folder / "DELIVERY.md"
     if delivery.exists():
         first_line = delivery.read_text(encoding="utf-8").split("\n")[0]
-        m = re.match(r'^#\s+(.+?)\s*[—–-]', first_line)
-        if m:
+        m = re.match(r'^#\s+(.+?)(?:\s+[—–]\s+.*)?$', first_line)
+        if m and m.group(1).strip():
             project_name = m.group(1).strip()
 
     generated_at = datetime.now().strftime("%b %d, %Y")

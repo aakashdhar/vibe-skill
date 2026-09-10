@@ -235,7 +235,7 @@ If SPEC.md contains `⚠️ PROVISIONAL` (set by vibe-init):
 
 **Skip if neither exists.**
 
-Read the full ARCHITECTURE.md. Check against `references/ARCHITECTURE_RUBRIC.md`.
+Read the full ARCHITECTURE.md. Check against the `# ARCHITECTURE_RUBRIC.md` section inside `references/SPEC_RUBRIC.md`.
 
 ### 4A — Pattern documentation
 - [ ] Is the primary architectural pattern stated? (missing = P1)
@@ -274,7 +274,7 @@ Read the full ARCHITECTURE.md. Check against `references/ARCHITECTURE_RUBRIC.md`
 **Skip if no FEATURE_SPEC.md exists.**
 
 Read the FEATURE_SPEC.md for the current feature.
-Check against `references/FEATURE_SPEC_RUBRIC.md`.
+Check against the `# FEATURE_SPEC_RUBRIC.md` section inside `references/SPEC_RUBRIC.md`.
 
 ### 5A — Acceptance criteria
 - [ ] Every task has acceptance criteria (missing = P0)

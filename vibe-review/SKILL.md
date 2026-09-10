@@ -430,68 +430,57 @@ has a PostToolUse lint hook. If not — offer to add it:
 > will catch TypeScript errors and ESLint violations as soon as they're
 > introduced rather than at the next phase gate. Want me to add it? (y/n)"
 
-If yes — create or update `.claude/settings.json`:
+If yes — **merge** the hook into `.claude/settings.json` (never overwrite it).
+`.claude/settings.json` may already hold `permissions`, `env`, or other hooks
+(e.g. a `PreToolUse` hook written by `vibe-doctor`). A `cat > … <<EOF` overwrite
+would wipe all of that. Read-merge-write instead, and no-op if an equivalent
+lint hook is already present:
 
 ```bash
-# Create .claude directory if needed
+# Pick the lint command for the stack (see per-stack variants below):
+LINT_CMD='npm run lint --silent 2>&1 | tail -10 || true'
+
 mkdir -p .claude
-
-# Write settings.json with PostToolUse hook
-cat > .claude/settings.json << 'EOF'
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npm run lint --silent 2>&1 | tail -10 || true"
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
+python3 - "$LINT_CMD" << 'PY'
+import json, sys, pathlib
+lint_cmd = sys.argv[1]
+p = pathlib.Path(".claude/settings.json")
+cfg = {}
+if p.exists() and p.read_text().strip():
+    try:
+        cfg = json.loads(p.read_text())          # preserve existing config
+    except json.JSONDecodeError:
+        print("settings.json is not valid JSON — leaving it untouched"); sys.exit(0)
+hooks = cfg.setdefault("hooks", {})
+post = hooks.setdefault("PostToolUse", [])
+# Skip if any PostToolUse hook already runs a lint/typecheck command.
+already = any(
+    "lint" in h.get("command", "") or "tsc" in h.get("command", "") or "ruff" in h.get("command", "")
+    for entry in post for h in entry.get("hooks", [])
+)
+if not already:
+    post.append({"matcher": "Edit|Write",
+                 "hooks": [{"type": "command", "command": lint_cmd}]})
+    p.write_text(json.dumps(cfg, indent=2) + "\n")
+    print("Lint hook merged into .claude/settings.json")
+else:
+    print("A lint/typecheck PostToolUse hook already exists — no change")
+PY
 ```
 
-For Python projects:
-```json
-{
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{
-        "type": "command",
-        "command": "ruff check . 2>&1 | tail -10 || true"
-      }]
-    }]
-  }
-}
-```
+Set `LINT_CMD` per stack — Python: `ruff check . 2>&1 | tail -10 || true`;
+TypeScript with typecheck: `npm run lint --silent 2>&1 | tail -5; npx tsc --noEmit 2>&1 | tail -5 || true`.
 
-For TypeScript projects with typecheck:
-```json
-{
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{
-        "type": "command",
-        "command": "npm run lint --silent 2>&1 | tail -5; npx tsc --noEmit 2>&1 | tail -5 || true"
-      }]
-    }]
-  }
-}
-```
+> Prefer the `update-config` skill if it is available in the session — it owns
+> `settings.json` edits and merges hooks safely. Use the inline merge above only
+> as a fallback.
 
 Tell the user:
 > "Hook added to .claude/settings.json. From now on, lint runs automatically
 > after every file edit. ESLint errors surface immediately — no more discovering
 > them at phase gate review."
 
-If `.claude/settings.json` already has hooks — skip this step silently.
+If the merge reported that a lint/typecheck hook already exists — skip silently.
 If the user says no — skip and note they can add it manually later.
 
 ---
