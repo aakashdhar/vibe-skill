@@ -193,9 +193,14 @@ Ask:
 
 ## Step 5 — UI Design (only for significant UI work)
 
-**Requires: frontend-design skill.** Reference existing design system from:
-- CODEBASE.md sections 2 and 6 (stack, patterns)
-- vibe/DESIGN_SYSTEM.md if it exists (existing tokens — must be consistent with these)
+**Requires: frontend-design skill.** Reference existing design system from
+(in precedence order — `DESIGN.md` wins where they conflict):
+- `DESIGN.md` (project root) if it exists — the brand token contract from
+  `design-md:`. **Authoritative** for colours/type/spacing.
+- `vibe/design/CONTRACT.md` if it exists — the per-project design contract from
+  `design:`. New UI must obey it.
+- `vibe/DESIGN_SYSTEM.md` if it exists (existing tokens — must be consistent).
+- CODEBASE.md sections 2 and 6 (stack, patterns).
 
 Ask all at once:
 1. New screens or views being added? Existing screens being modified?
@@ -487,3 +492,20 @@ this feature transition to `built`. Concept completion percentage updates.
 This step runs automatically — no user input needed.
 Takes 1-2 minutes on a typical feature. Updates DEPENDENCY_GRAPH.json,
 CONCEPT_GRAPH.json, and graph.html for the affected subgraph only.
+
+---
+
+## Step 13 — Blast-radius test coverage
+
+Invoke `vibe-test` (the `test:` skill) on the files this feature touched. The
+inline `npm test` in Step 7 only *runs* the existing suite — this step
+*generates or extends* coverage across the feature's blast radius (the changed
+files plus their dependents / contract consumers), which is what vibe-test
+advertises as its auto-handoff from vibe-add-feature.
+
+- In `VIBE_MODE=autonomous`: run it automatically after the graph update.
+- In `VIBE_MODE=manual`: offer it —
+  > "Feature built. Generate blast-radius tests for the [N] files it touched? (y/n)"
+
+vibe-test reads the `Touches` sections of this feature's `FEATURE_TASKS.md`
+(and the graph, if present) to scope coverage. Skip only if the user declines.

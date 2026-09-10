@@ -82,6 +82,38 @@ ls .github/workflows/ 2>/dev/null
 
 ---
 
+## Step 0.5 — Verify the review/perf gate (blocking)
+
+`vibe-review` (final phase) and `vibe-perf` both declare themselves a **mandatory
+gate before deploy**. Enforce it here — deploy is the one place it actually
+matters. Check for unresolved blockers before generating any deploy config:
+
+```bash
+# Open P0/P1 review findings
+cat vibe/reviews/backlog.md 2>/dev/null
+ls vibe/reviews/phase-*-review.md 2>/dev/null
+# Final-gate status (if the project uses phase gates)
+grep -i "final gate\|review: final" vibe/TASKS.md 2>/dev/null
+```
+
+Decision:
+- **Open P0 findings, or the final review has not passed** → **STOP**. Do not
+  generate deploy configs. Tell the user which P0s are open (with the
+  `phase-N-review.md` reference) and that `review: final` must pass first.
+- **Open P1 findings** → **warn and require explicit confirmation**:
+  > "Deploy gate: [N] P1 issues are still open in vibe/reviews/backlog.md.
+  > vibe-review marks P1 as must-fix-before-deploy. Deploy anyway? (y/n)"
+  Proceed only on an explicit yes; log the override in the Step 7 summary.
+- **A P1 the user previously accepted as 'won't fix (accepted risk)'** does not
+  block — it's already recorded.
+- **No `vibe/reviews/` at all** (deploying a non-vibe project) → note that no
+  review gate was found and continue.
+
+This is the receiving half of the gate the quality layer advertises — without it
+the "mandatory gate" is unenforced.
+
+---
+
 ## Step 1 — Ask one question
 
 Ask the user once before proceeding:

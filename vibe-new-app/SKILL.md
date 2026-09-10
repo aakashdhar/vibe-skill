@@ -126,6 +126,11 @@ Wait for approval. Save as `vibe/SPEC.md`.
 
 **Requires: frontend-design skill.** If not installed, proceed with prose wireframe description.
 
+**If `DESIGN.md` (project root) or `vibe/design/CONTRACT.md` already exists**
+(the user ran `design-md:` / `design:` first), read it and treat its tokens as
+authoritative — the wireframe must use those colours/type/spacing rather than
+inventing a new aesthetic. `DESIGN.md` wins where it and `DESIGN_SYSTEM.md` conflict.
+
 Tell the user: "Before planning the build phases, let's lock the UI."
 
 Ask all at once:

@@ -448,3 +448,21 @@ any import changes made during the fix.
 
 This step runs automatically — no user input needed.
 Keeps blast radius data accurate for the next bug that touches these files.
+
+---
+
+## Step 11 — Blast-radius test coverage
+
+A regression test for the specific bug was written before the fix (diagnosis
+discipline). This step invokes `vibe-test` (the `test:` skill) to extend
+coverage across the fix's **blast radius** — the changed files plus their
+dependents — catching regressions the single reproduction test wouldn't. This is
+the auto-handoff vibe-test advertises from vibe-fix-bug.
+
+- Trivial-bug path (no BUG folder): skip — the inline regression test is enough.
+- Significant bugs, `VIBE_MODE=autonomous`: run automatically after the graph update.
+- Significant bugs, `VIBE_MODE=manual`: offer it —
+  > "Fix verified. Extend blast-radius tests for the [N] files it touched? (y/n)"
+
+vibe-test scopes coverage from the `Touches` sections of `BUG_TASKS.md` (and the
+graph, if present).

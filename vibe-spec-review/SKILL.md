@@ -3,8 +3,8 @@ name: vibe-spec-review
 description: >
   Spec quality gate — audits planning documents before any code is written.
   Automatically triggered by vibe-brainstorm (after BRIEF.md), vibe-agent
-  (after AGENT_ARCH.md), vibe-new-app and vibe-init (after vibe/ folder),
-  and vibe-add-feature (after FEATURE_SPEC.md).
+  (after AGENT_ARCH.md), vibe-architect (after ARCHITECTURE.md), vibe-new-app
+  and vibe-init (after vibe/ folder), and vibe-add-feature (after FEATURE_SPEC.md).
   Audits all documents that exist: BRIEF.md, AGENT_ARCH.md, SPEC.md,
   ARCHITECTURE.md, FEATURE_SPEC.md.
   P0 findings are critical gaps that will cause build failures if not fixed.
@@ -58,6 +58,15 @@ Announcement: *"AGENT_ARCH.md written. Running spec-review to validate agent des
 Scope: AGENT_ARCH.md + BRIEF.md if exists.
 Purpose: catch missing VerifierAgents, undefined HITL gates, hallucinated tools,
 agents with multiple responsibilities, and state ownership conflicts.
+
+### Trigger 2.5 — After `vibe-architect`
+Invoked by: the final step of `vibe-architect` after ARCHITECTURE.md is written
+(before the user runs `new:`).
+Announcement: *"Architecture drafted. Running spec-review before you scaffold..."*
+Scope: ARCHITECTURE.md + BRIEF.md if exists.
+Purpose: catch missing patterns/conventions, empty boundary (Always/Ask/Never)
+sections, a missing "never commit secrets" rule, and stack drift from BRIEF.md —
+so drift is caught at authoring time, not indirectly when `new:` runs.
 
 ### Trigger 3 — After `vibe-new-app` or `vibe-init`
 Invoked by: the final step of `vibe-new-app` / `vibe-init` after vibe/ folder is created.

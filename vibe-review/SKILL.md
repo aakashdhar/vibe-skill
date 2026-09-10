@@ -279,6 +279,16 @@ Platforms covered: React Web · React Native · Node/Express · Supabase · Secu
 
 ---
 
+**Performance-tagged findings (handoff to vibe-perf):** when a finding is a
+performance concern (N+1 queries, unbounded lists, missing memoisation, oversized
+bundles, sequential calls that could parallelise), tag it `category: performance`
+in the report's structured findings and note it. This is what `vibe-perf` Entry B
+triggers on — after review, if any `performance` P1/P2 findings exist, suggest
+running `perf:` to audit and fix them properly. Do not attempt deep perf fixes
+inside review.
+
+---
+
 ## Step 7 — Security review
 
 **Universal — all projects, all phases:**

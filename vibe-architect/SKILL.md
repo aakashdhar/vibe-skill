@@ -256,6 +256,24 @@ Append to BRIEF.md:
 
 ---
 
+## Step 7.5 — Spec review gate
+
+ARCHITECTURE.md is a load-bearing document — `review:` audits every phase against
+it. Audit it now, the same way `brainstorm:` audits BRIEF.md and `vibe-agent`
+audits AGENT_ARCH.md, rather than leaving it to be checked indirectly later when
+`new:` runs.
+
+> "Architecture drafted. Running spec-review before you scaffold..."
+
+Invoke `vibe-spec-review` with:
+- Trigger source: `architect`
+- Scope: ARCHITECTURE.md + BRIEF.md (all that exist)
+
+Present findings. If P0s are raised, offer to fix them before moving on. Then
+continue to Step 8.
+
+---
+
 ## Step 8 — Tell the user
 
 ---

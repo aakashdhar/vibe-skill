@@ -275,6 +275,47 @@ Wave 2 — unlocks when Wave 1 + fast lane both complete:
 
 ---
 
+## Pass 2.5 — God-node safety (only when vibe-graph is present)
+
+Two tasks that don't share a file can still both be highly coupled to the same
+**god node** (a highest-degree file). Writing either side of it simultaneously
+risks incoherent changes. When `vibe/graph/DEPENDENCY_GRAPH.json` exists, run the
+graph's `check_parallel_safety()` (defined in
+`vibe-graph/references/GRAPH_QUERY_PATTERNS.md`) per wave and defer the
+alphabetically-later task of each `GOD_NODE` conflict to the next wave — the same
+resolution used for write-write conflicts. If no graph exists, skip this pass.
+
+```python
+def resolve_god_node_conflicts(waves, tasks_by_id,
+                               graph_path="vibe/graph/DEPENDENCY_GRAPH.json",
+                               meta_path="vibe/graph/.graph-meta.json"):
+    from pathlib import Path
+    if not Path(graph_path).exists():
+        return waves   # graph optional — no god-node data, nothing to check
+
+    resolved = []
+    for wave_idx, wave in enumerate(waves):
+        wave_tasks = [tasks_by_id[tid] for tid in wave]
+        conflicts = check_parallel_safety(wave_tasks, graph_path, meta_path)
+        deferred = set()
+        for c in conflicts:
+            if c["type"] == "GOD_NODE":
+                loser = sorted(c["tasks"])[-1]          # later ID moves on
+                deferred.add(loser)
+                print(f"God-node conflict: {c['tasks']} both couple to "
+                      f"{c['god_node']} — deferring {loser} to next wave (WARN)")
+        clean = [tid for tid in wave if tid not in deferred]
+        resolved.append(clean)
+        if deferred:
+            if wave_idx + 1 < len(waves):
+                waves[wave_idx + 1] = list(deferred) + waves[wave_idx + 1]
+            else:
+                waves.append(list(deferred))
+    return resolved
+```
+
+---
+
 ## Complete wave building pipeline
 
 ```python
@@ -286,6 +327,9 @@ def build_all_waves(tasks):
 
     # Pass 2: write-write conflicts
     waves = resolve_write_conflicts(waves, tasks_by_id)
+
+    # Pass 2.5: god-node safety (skipped automatically if no vibe-graph)
+    waves = resolve_god_node_conflicts(waves, tasks_by_id)
 
     # Pass 3: read-write conflicts
     waves = resolve_read_write_conflicts(waves, tasks_by_id)

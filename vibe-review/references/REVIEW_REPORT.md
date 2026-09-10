@@ -47,7 +47,7 @@ Files reviewed: [count] · Phase [N] changes since [previous gate/sha].
   "score": [X.X],
   "counts": { "P0": 0, "P1": 0, "P2": 0, "P3": 0 },
   "findings": [
-    { "id": "P0-1", "severity": "P0", "category": "security|solid|quality|testing|drift|platform",
+    { "id": "P0-1", "severity": "P0", "category": "security|solid|quality|testing|drift|platform|performance",
       "file": "path/to/file.ts", "line": 0, "issue": "…", "fix": "…" }
   ]
 }
