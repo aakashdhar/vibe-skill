@@ -147,8 +147,8 @@ Read `vibe/handoff/[date]/ACTIVE_CONTEXT.md` for where things stand right now.
 
 | Role | Name | Contact | For |
 |------|------|---------|-----|
-| [PM] | [Mayuresh] | [contact] | Project questions, scope |
-| [Tech lead] | [Aakash] | [contact] | Architecture decisions |
+| [PM] | [PM name] | [contact] | Project questions, scope |
+| [Tech lead] | [Tech lead name] | [contact] | Architecture decisions |
 | [Client] | [name] | [contact] | Business context |
 
 ---

@@ -382,9 +382,11 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         sync: false   # set in dashboard — Railway web URL not known at config time
-      - key: GEMINI_API_KEY
+      # External API keys the project actually uses — detect from .env.example
+      # or ask; a Claude-powered app typically needs ANTHROPIC_API_KEY.
+      - key: ANTHROPIC_API_KEY
         sync: false   # set in dashboard
-      - key: OPENWEATHER_API_KEY
+      - key: [OTHER_API_KEY]
         sync: false   # set in dashboard
 
   - type: web
@@ -422,7 +424,7 @@ Fly deploys one app per toml. Generate one per service directory.
 **`backend/fly.toml`:**
 ```toml
 app = "[project]-backend"
-primary_region = "bom"  # Mumbai — closest to India
+primary_region = "[region]"  # pick the region closest to your users — `fly platform regions`
 
 [build]
 
@@ -456,7 +458,7 @@ primary_region = "bom"  # Mumbai — closest to India
 **`web/fly.toml`:**
 ```toml
 app = "[project]-web"
-primary_region = "bom"
+primary_region = "[region]"  # match the backend's region
 
 [build]
 
@@ -529,8 +531,8 @@ worker: celery -A app.celery worker --loglevel=info
       "description": "URL of the frontend web app",
       "required": true
     },
-    "GEMINI_API_KEY": {
-      "description": "Google Gemini API key — get from aistudio.google.com",
+    "ANTHROPIC_API_KEY": {
+      "description": "Anthropic API key — get from console.anthropic.com (example; use whatever external keys the project actually needs)",
       "required": false
     }
   },
@@ -793,8 +795,8 @@ Non-secret env vars are already set in railway.json.
 ## Backend service secrets
 
 railway variables set JWT_SECRET="$(openssl rand -hex 32)" --service backend
-railway variables set GEMINI_API_KEY="get from aistudio.google.com/app/apikey" --service backend
-railway variables set OPENWEATHER_API_KEY="get from openweathermap.org/api_keys" --service backend
+# External API keys the project uses (example — set the ones from its .env.example):
+railway variables set ANTHROPIC_API_KEY="get from console.anthropic.com" --service backend
 railway variables set CRON_SECRET="$(openssl rand -hex 32)" --service backend
 
 ## Web service secrets
@@ -814,7 +816,7 @@ railway variables set NEXT_PUBLIC_WS_URL="wss://[your-backend-url].up.railway.ap
 ```bash
 # Backend secrets
 fly secrets set JWT_SECRET="$(openssl rand -hex 32)" --app [project]-backend
-fly secrets set GEMINI_API_KEY="your-key" --app [project]-backend
+fly secrets set ANTHROPIC_API_KEY="your-key" --app [project]-backend   # example external key
 fly secrets set DATABASE_URL="your-fly-postgres-url" --app [project]-backend
 
 # Web secrets

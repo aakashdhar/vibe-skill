@@ -1,7 +1,7 @@
 # SIGN_OFF_CHECKLIST_TEMPLATE.md
 
 Used by vibe-handoff Step 3 to generate SIGN_OFF_CHECKLIST.md.
-This is the document Mayuresh (or the PM) uses in the sign-off call
+This is the document the PM uses in the sign-off call
 with the client. Fill every section from project data.
 
 ---

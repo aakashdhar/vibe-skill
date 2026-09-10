@@ -51,7 +51,10 @@ Stop here if missing.
 ## Step 2 — Run the generator
 
 ```bash
-python3 ~/.claude/skills/vibe-ledger/scripts/generate.py
+# Resolve the generator across install layouts (flat install or plugin marketplace)
+GEN=$(ls ~/.claude/skills/vibe-ledger/scripts/generate.py \
+         ~/.claude/plugins/marketplaces/*/skills/vibe-ledger/scripts/generate.py 2>/dev/null | head -1)
+python3 "$GEN"
 ```
 
 The script:

@@ -39,7 +39,7 @@ Each package produces:
 | `handoff: client` | Project completion | Client stakeholder (non-technical) |
 | `handoff: milestone` | Phase sign-off | Client stakeholder + PM |
 | `handoff: dev` | New developer joining | Developer taking over |
-| `handoff: internal` | Dhiraj → Deepak (or similar) | BetaCraft developer |
+| `handoff: internal` | one developer → another | internal developer |
 | `handoff: maintenance` | Handing to client's dev team | Client's technical team |
 
 ---
@@ -206,7 +206,7 @@ Not defensive. Not hedging. Not apologetic about scope decisions.
 
 ### Document: SIGN_OFF_CHECKLIST.md (client and milestone modes)
 
-This is the document Mayuresh uses in the sign-off call with the client.
+This is the document the PM uses in the sign-off call with the client.
 Every item is specific, binary (done/not done), and tied to something
 the client can verify themselves.
 
@@ -400,7 +400,7 @@ This is a self-contained web page combining all documents — clean, light-mode,
 elegantly designed, optimised for reading and sharing with clients.
 
 ```bash
-python3 ~/.claude/skills/vibe-handoff/scripts/generate_portal.py vibe/handoff/[mode]-[date]/
+python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/
 ```
 
 The script:
@@ -424,7 +424,7 @@ After the script runs, tell the user:
 > It is fully self-contained — no internet required to read it after the fonts load once.
 >
 > ⚠️ Before sharing: fill in CREDENTIALS.md values, then regenerate:
-> `python3 ~/.claude/skills/vibe-handoff/scripts/generate_portal.py vibe/handoff/[mode]-[date]/`"
+> `python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/`"
 
 ---
 
@@ -438,7 +438,7 @@ Generate sharing instructions appropriate to the mode:
 Sharing instructions:
 1. Fill CREDENTIALS.md — all values before sharing
 2. Regenerate portal after filling credentials:
-   python3 ~/.claude/skills/vibe-handoff/scripts/generate_portal.py vibe/handoff/[mode]-[date]/
+   python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/
 3. Share index.html directly — single file, fully self-contained
    (Or share the full handoff folder via Google Drive / Notion for the MD files too)
 4. Schedule 30-min call to walk through the Sign-Off Checklist section
@@ -451,7 +451,7 @@ Sharing instructions:
 Sharing instructions:
 1. Share repository access first — they need the code to follow along
 2. Fill CREDENTIALS.md values and share via secure channel (1Password / Bitwarden)
-3. Regenerate portal: python3 ~/.claude/skills/vibe-handoff/scripts/generate_portal.py vibe/handoff/[mode]-[date]/
+3. Regenerate portal: python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/
 4. Share index.html — they can follow the Onboarding section independently
 5. Schedule 1h pairing session to walk through the Architecture Guide section
 ```
@@ -464,7 +464,7 @@ User says: "show me DELIVERY.md" or "review SIGN_OFF_CHECKLIST.md"
 ### Regenerate portal after edits
 If any MD file is edited after initial generation:
 ```bash
-python3 ~/.claude/skills/vibe-handoff/scripts/generate_portal.py vibe/handoff/[mode]-[date]/
+python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/
 ```
 The portal always reflects the current state of the MD files.
 

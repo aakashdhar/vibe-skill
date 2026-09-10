@@ -570,7 +570,9 @@ After graph init completes:
 > grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
 > ```
 >
-> If `autonomous` → read `~/.claude/skills/vibe-mode/references/AUTONOMOUS_EXECUTION_BLOCK.md`
+> If `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
+> (resolve the vibe-mode install dir — commonly `~/.claude/skills/vibe-mode/`, or
+> `~/.claude/plugins/marketplaces/*/skills/vibe-mode/` under a plugin install)
 > and follow the autonomous execution protocol for Phase 1 tasks. Begin immediately.
 >
 > If `manual` or not set → tell the user:
