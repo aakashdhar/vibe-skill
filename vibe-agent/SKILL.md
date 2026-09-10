@@ -140,12 +140,17 @@ Present as:
 > **Runner-up: [Framework]** — would work, but loses because [specific reason for this system]
 
 **Framework selection rules:**
+- Anthropic-only, want model-native control (thinking/effort/caching/subagents):
+  coding/filesystem agent → **Claude Agent SDK**; loop over your own tools →
+  **Tool Runner**; hosted/scheduled/stateful with no loop code → **Managed Agents**
 - Cyclic workflows, complex state, self-correction loops → **LangGraph**
 - Linear chains, simple tool use, fast to prototype → **LangChain**
 - Role-based teams, natural language task delegation → **CrewAI**
 - Conversational back-and-forth between agents → **AutoGen**
 - TypeScript stack, Next.js, Vercel deployment → **Vercel AI SDK**
 - Maximum control, no framework overhead, custom needs → **Custom implementation**
+- Need provider portability (Claude + others) → LangGraph / Custom, not the
+  Anthropic-native options
 
 Wait for confirmation before proceeding.
 

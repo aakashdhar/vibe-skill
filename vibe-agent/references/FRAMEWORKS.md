@@ -407,10 +407,56 @@ async def run_pipeline(url: str) -> PipelineState:
 
 ---
 
+## Framework 7 — Anthropic-native (Agent SDK · Tool Runner · Managed Agents)
+
+**What it is:** First-party ways to build Claude agents without a third-party
+orchestration layer. Three distinct options (they differ by *who supplies the
+harness* and *who supplies the deployment*):
+
+- **Tool Runner** — `client.beta.messages.tool_runner` in the Anthropic SDK.
+  Supplies the request→execute→loop cycle for *tools you define* (harness only;
+  you host). Per-turn hooks give approval gates, error interception, retries.
+  Best when you just want the agentic loop over your own tools without
+  hand-writing it.
+- **Claude Agent SDK** (`claude-agent-sdk` / `@anthropic-ai/claude-agent-sdk`) —
+  Claude Code packaged as a library: built-in file/bash/search tools, context
+  management, subagents, permissions, sessions (harness only; you host). Best for
+  a batteries-included coding/filesystem agent on your own infra.
+- **Managed Agents** (beta REST) — Anthropic runs the loop *and* hosts a
+  per-session sandbox (harness **and** deployment): persisted/versioned agent
+  configs, long-running sessions, Skills + MCP, scheduled deployments. Best when
+  you want no loop code and no infra to run.
+
+**Killer feature:** model-native. No framework abstraction between you and the
+API; adaptive thinking, effort, prompt caching, structured outputs, and
+server-side tools are all first-class. Native subagents mean fan-out/delegation
+without reimplementing wave orchestration.
+
+**Best for:**
+- Teams already in the Claude ecosystem who want maximum control with minimal
+  third-party surface
+- Coding/filesystem agents (Agent SDK)
+- Hosted, scheduled, or memory-backed agents with no loop code (Managed Agents)
+
+**Weaknesses:**
+- Anthropic-only (not a multi-provider abstraction)
+- Managed Agents is beta; Agent SDK is a separate library with its own docs
+  (`code.claude.com/docs/en/agent-sdk`)
+
+**When NOT to use:** you need provider portability, or a graph/among-roles model
+another framework expresses more naturally.
+
+---
+
 ## Quick selection guide
 
 ```
-Is this TypeScript / Next.js / Vercel?
+Anthropic-only, and want model-native control (thinking/effort/caching/subagents)?
+  ├─ Coding/filesystem agent on your own infra → Claude Agent SDK
+  ├─ Just an agentic loop over your own tools   → Tool Runner (SDK beta)
+  └─ Hosted/scheduled/stateful, no loop code    → Managed Agents (beta)
+
+Is this TypeScript / Next.js / Vercel (and you want a JS-ecosystem SDK)?
   └─ Yes → Vercel AI SDK
 
 Is this a conversational system or code gen?
@@ -426,7 +472,9 @@ Is it a simple linear chain (A → B → C)?
   └─ Yes → LangChain (or Custom if very simple)
 
 Do you want maximum control and minimal dependencies?
-  └─ Yes → Custom implementation
+  └─ Yes → Custom implementation, or Tool Runner if you're Anthropic-only
 
-Default for production Python multi-agent systems → LangGraph
+Need provider portability across Claude + others? → LangGraph / Custom
+Default, Anthropic-only production → Claude Agent SDK or Managed Agents
+Default, provider-portable Python multi-agent → LangGraph
 ```
