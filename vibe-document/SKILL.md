@@ -58,7 +58,11 @@ Go to **Step 0** → skip the scan in Step 1, read directly from CODEBASE.md.
 Triggered automatically at the end of a `feature:` session.
 
 Scope: files listed in `FEATURE_TASKS.md` under **Touches** + any new files created.
-README.md and CHANGELOG.md are always updated regardless of scope.
+README.md is always updated regardless of scope.
+**CHANGELOG.md: defer to `vibe-changelog` if it is available** (it owns changelog
+generation — git-tag-scoped, dev + client versions). Only generate a CHANGELOG.md
+here as a fallback when vibe-changelog isn't installed. This avoids two skills
+writing conflicting CHANGELOG.md files.
 Go to **Step 0**.
 
 ### Entry point D — After vibe-review flags docs

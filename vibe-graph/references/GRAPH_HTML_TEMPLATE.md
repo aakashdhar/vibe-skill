@@ -1,8 +1,14 @@
 # GRAPH_HTML_TEMPLATE.md
 
-Read during vibe-graph: init, build, and update when generating graph.html.
-The interactive visual for developers. No external libraries.
-Pure HTML + CSS + vanilla JavaScript. Self-contained single file.
+> **What actually ships vs. this template:** `scripts/graph.py html` renders a
+> **baseline** self-contained force-directed view (nodes sized by degree; edges
+> coloured by confidence). This template documents the *fuller* interactive target
+> (sidebar, search, type/concept/state filters, click-to-inspect blast radius) — it
+> is the roadmap for enriching `cmd_html` in graph.py, not a description of the
+> current output. Build toward it; don't assume the shipped graph.html has these yet.
+
+Read when enriching graph.html. The interactive visual for developers. No external
+libraries. Pure HTML + CSS + vanilla JavaScript. Self-contained single file.
 
 ---
 

@@ -89,17 +89,28 @@ gate before deploy**. Enforce it here — deploy is the one place it actually
 matters. Check for unresolved blockers before generating any deploy config:
 
 ```bash
-# Open P0/P1 review findings
+# Primary source of truth: the machine-checkable gate state written by vibe-review
+# (see vibe-review/references/GATES.md). Read final.review, not prose.
+python3 - << 'PY'
+import json, pathlib, sys
+p = pathlib.Path("vibe/.gates.json")
+if not p.exists():
+    print("GATE: no vibe/.gates.json — non-vibe project or no review run yet"); sys.exit(0)
+g = json.loads(p.read_text() or "{}")
+final = (g.get("final") or {})
+phases = g.get("phases") or {}
+open_phases = [n for n, e in phases.items() if (e or {}).get("review") != "passed"]
+print(f"GATE final.review = {final.get('review','not_run')} (P0={final.get('p0','?')}, P1={final.get('p1','?')})")
+if open_phases: print(f"GATE phases not passed: {', '.join(sorted(open_phases))}")
+PY
+# Fallback if .gates.json is absent (older project): scan the backlog directly.
 cat vibe/reviews/backlog.md 2>/dev/null
-ls vibe/reviews/phase-*-review.md 2>/dev/null
-# Final-gate status (if the project uses phase gates)
-grep -i "final gate\|review: final" vibe/TASKS.md 2>/dev/null
 ```
 
-Decision:
-- **Open P0 findings, or the final review has not passed** → **STOP**. Do not
-  generate deploy configs. Tell the user which P0s are open (with the
-  `phase-N-review.md` reference) and that `review: final` must pass first.
+Decision (read `vibe/.gates.json` first; fall back to backlog.md only if it's absent):
+- **`final.review` is not `passed` (P0 > 0, or a phase gate still open), or — no
+  gates.json — open P0 in backlog.md** → **STOP**. Do not generate deploy configs.
+  Name the open P0s / unpassed gate and say `review: final` must pass first.
 - **Open P1 findings** → **warn and require explicit confirmation**:
   > "Deploy gate: [N] P1 issues are still open in vibe/reviews/backlog.md.
   > vibe-review marks P1 as must-fix-before-deploy. Deploy anyway? (y/n)"

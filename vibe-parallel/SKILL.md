@@ -13,8 +13,10 @@ description: >
   Wave cost annotation for vibe-cost. Triggers on "parallel:" prefix,
   "run tasks in parallel", "spawn subagents", "parallelise the build",
   "which tasks can run in parallel", "run independent tasks simultaneously".
-  Called automatically by vibe-add-feature, vibe-fix-bug, vibe-new-app
-  when VIBE_MODE=autonomous or parallel tasks exist and user approves.
+  Invoked by vibe-mode's autonomous-execution block (which vibe-new-app,
+  vibe-add-feature, and vibe-fix-bug hand off to when VIBE_MODE=autonomous), or
+  directly when the user runs `parallel:`. In manual mode the build skills do not
+  call it automatically — the user opts in.
 ---
 
 # Vibe Parallel Skill v2

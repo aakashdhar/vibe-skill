@@ -42,8 +42,10 @@ If the answer is "maybe" — that's a finding.
 
 ## Trigger points — how this skill is invoked
 
-This skill is never triggered by the user typing `spec-review:` alone.
-It is handed off from other skills at exactly the right moment:
+This skill is **primarily** handed off from other skills at exactly the right moment
+(Triggers 1–4 below) — that is the common path. It can **also** be run on demand by
+the user typing `spec-review:` (Trigger 5), e.g. to re-check documents before a build.
+Both are valid entry points.
 
 ### Trigger 1 — After `vibe-brainstorm`
 Invoked by: the final step of `vibe-brainstorm` after BRIEF.md is written.

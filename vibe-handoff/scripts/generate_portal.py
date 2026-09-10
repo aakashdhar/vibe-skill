@@ -327,7 +327,7 @@ body{display:flex;min-height:100vh}
 }
 .hero::before{
   content:'';position:absolute;top:-80px;right:-80px;width:360px;height:360px;
-  background:radial-gradient(circle,rgba(176,65,46,0.22) 0%,transparent 68%);
+  background:radial-gradient(circle,color-mix(in srgb, var(--accent) 20%, transparent) 0%,transparent 68%);
   pointer-events:none;
 }
 .hero::after{

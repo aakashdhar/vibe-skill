@@ -119,7 +119,14 @@ Wait for confirmation before proceeding.
 - `cypress.config.*` present → Cypress installed
 - Neither present → E2E runner missing
 
-**If E2E runner missing:**
+> **Coordinate with `vibe-e2e`:** if the `vibe-e2e` skill is available, it owns the
+> full isolated E2E suite (its own `e2e/` folder, live-URL runs, cleanup). Prefer
+> delegating end-to-end coverage to it rather than writing a second, parallel
+> Playwright suite here — two E2E suites (`vibe-test`'s vs `vibe-e2e`'s `e2e/`) will
+> drift. Use this skill's E2E layer only for lightweight in-suite flows, or when
+> vibe-e2e isn't present.
+
+**If E2E runner missing (and not delegating to vibe-e2e):**
 > "No E2E runner detected. Which would you like to set up?
 > 1. Playwright — recommended for most projects
 > 2. Cypress — if your team already uses it

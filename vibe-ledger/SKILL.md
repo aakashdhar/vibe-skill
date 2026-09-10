@@ -118,8 +118,10 @@ vibe/cost/
     └── index.html        ← generated report (open this)
 ```
 
-`index.html` is fully self-contained — no internet required to view it.
-Share it with a client or team member by just sending the file.
+`index.html` is a single self-contained file (all data + CSS + JS inlined) — share
+it by just sending the file. It renders fully offline; the only network use is the
+optional VT323/Share Tech Mono web font, which gracefully falls back to the system
+`monospace` if there's no connection (the layout and numbers are unaffected).
 
 ---
 

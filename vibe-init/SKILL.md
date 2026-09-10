@@ -476,9 +476,28 @@ If a command wasn't observed, write: `# Not observed during init — confirm wit
 
 ---
 
-## Stage 6 — Post-generation report
+## Stage 6 — Spec review gate
 
-After all files are written, output a single consolidated report in the conversation:
+`vibe-spec-review` documents "Trigger 3 — after vibe-new-app or vibe-init", and a
+retrofit is exactly where it matters most: the SPEC.md was inferred from code and is
+marked PROVISIONAL. Invoke it **before** presenting the completion report — the gate
+runs first, not after you've told the user the job is done.
+
+> "vibe/ folder generated from the codebase. Running spec-review — the SPEC.md is
+>  PROVISIONAL, so this checks it before you build on it..."
+
+Invoke `vibe-spec-review`:
+- Trigger source: `vibe-init`
+- Scope: SPEC.md + ARCHITECTURE.md + BRIEF.md (all that exist)
+
+It will flag the PROVISIONAL SPEC.md as a P1 to verify — expected for a retrofit, not
+a failure. Present findings, then continue to the report.
+
+---
+
+## Stage 7 — Post-generation report
+
+After spec-review has run, output a single consolidated report in the conversation:
 
 ```
 ✅ vibe-init complete — [Project Name]
@@ -525,24 +544,6 @@ WHAT WORKS NOW
 SUGGESTED FIRST STEP
   review:              ← establishes quality baseline on the existing codebase
 ```
-
----
-
-## Stage 6 — Spec review gate
-
-`vibe-spec-review` documents "Trigger 3 — after vibe-new-app or vibe-init", and a
-retrofit is exactly where it matters most: the SPEC.md was inferred from code and is
-marked PROVISIONAL. Invoke it before handing off.
-
-> "vibe/ folder generated from the codebase. Running spec-review — the SPEC.md is
->  PROVISIONAL, so this checks it before you build on it..."
-
-Invoke `vibe-spec-review`:
-- Trigger source: `vibe-init`
-- Scope: SPEC.md + ARCHITECTURE.md + BRIEF.md (all that exist)
-
-It will flag the PROVISIONAL SPEC.md as a P1 to verify — expected for a retrofit, not
-a failure. Present findings, then continue.
 
 ---
 

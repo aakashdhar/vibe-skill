@@ -49,10 +49,12 @@ def compute_metrics(sessions, summary):
                 "output": t.get("output_tokens", 0), "note": t.get("note", ""),
             })
 
-    total_cost   = sum(s["cost_usd"] for s in sessions)
-    total_input  = sum(s["input_tokens"] for s in sessions)
-    total_output = sum(s["output_tokens"] for s in sessions)
-    total_tasks  = sum(s["tasks_completed"] for s in sessions)
+    # Defensive: older/partial history.json entries may miss keys or carry nulls.
+    def num(s, k): return s.get(k) or 0
+    total_cost   = sum(num(s, "cost_usd") for s in sessions)
+    total_input  = sum(num(s, "input_tokens") for s in sessions)
+    total_output = sum(num(s, "output_tokens") for s in sessions)
+    total_tasks  = sum(num(s, "tasks_completed") for s in sessions)
     total_tokens = total_input + total_output
     n_sessions   = len(sessions)
 
@@ -68,13 +70,13 @@ def compute_metrics(sessions, summary):
     day_totals = defaultdict(lambda: {"cost": 0, "sessions": 0, "tasks": 0, "phases": []})
     for s in sessions:
         d = s.get("date", "unknown")[:10]
-        day_totals[d]["cost"]     += s["cost_usd"]
+        day_totals[d]["cost"]     += (s.get("cost_usd") or 0)
         day_totals[d]["sessions"] += 1
-        day_totals[d]["tasks"]    += s["tasks_completed"]
+        day_totals[d]["tasks"]    += (s.get("tasks_completed") or 0)
         day_totals[d]["phases"].append(s.get("phase", ""))
 
-    peak     = max(sessions, key=lambda x: x["cost_usd"])
-    cheapest = min(sessions, key=lambda x: x["cost_usd"])
+    peak     = max(sessions, key=lambda x: x.get("cost_usd") or 0)
+    cheapest = min(sessions, key=lambda x: x.get("cost_usd") or 0)
     top_tasks = sorted(all_tasks, key=lambda x: x["cost"], reverse=True)[:5]
 
     all_patterns  = [p for s in sessions for p in s.get("patterns_detected", [])]
@@ -93,7 +95,7 @@ def compute_metrics(sessions, summary):
     else:
         date_range = "unknown"
 
-    max_cost  = max(s["cost_usd"] for s in sessions)
+    max_cost  = max((s.get("cost_usd") or 0) for s in sessions)
     dot_value = max_cost / 7
 
     def session_dots(cost, s):
@@ -220,7 +222,7 @@ def render_day_by_day(m):
 def render_session_rows(sessions, m):
     rows = ""
     for s in reversed(sessions):
-        filled, empty, colour = m["session_dots_fn"](s["cost_usd"], s)
+        filled, empty, colour = m["session_dots_fn"]((s.get("cost_usd") or 0), s)
         cost_cls = {"#ff4060":"cr","#ffb800":"ca","#00cfff":"cb","#39ff14":"cg"}.get(colour,"cg")
         peak_badge = flag("peak","#ff4060","#880022","rgba(255,64,96,0.07)") if s["session_id"]==m["peak"]["session_id"] else ""
         sid_short  = s["session_id"].split("-")[-1].upper()

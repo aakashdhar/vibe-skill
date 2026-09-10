@@ -428,12 +428,11 @@ def compute_god_nodes(graph_path, top_n=5):
     for file_path, node in graph.items():
         if not isinstance(node, dict):
             continue
-        # Count imports (files this node depends on)
-        imports = node.get("imports", [])
-        import_count = len(imports) if isinstance(imports[0], str) else len(imports)
-        # Count imported_by (files that depend on this node)
-        imported_by = node.get("imported_by", [])
-        importedby_count = len(imported_by) if not imported_by or isinstance(imported_by[0], str) else len(imported_by)
+        # NOTE: this is illustrative only — scripts/graph.py is the authoritative
+        # implementation (run `graph.py godnodes`). Count = len(list) either way;
+        # guard the empty case (no [0] indexing).
+        import_count = len(node.get("imports", []) or [])
+        importedby_count = len(node.get("imported_by", []) or [])
         # Total degree
         degree[file_path] = import_count + importedby_count
 

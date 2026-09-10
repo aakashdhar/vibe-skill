@@ -327,9 +327,10 @@ SKIP    — check not applicable to this project
 ```
 
 **Auto-remediation safe list** (fix without asking):
-- node_modules missing → `npm install`
+- node_modules **missing** → `npm install` (nothing to lose)
 - husky hooks not executable → `chmod +x .husky/*`
-- node_modules stale → `npm install`
+- node_modules **stale but present** → **confirm first** (a large reinstall takes
+  minutes — this matches the Absolute rule below, not a silent auto-fix)
 
 **Flag for human action** (show exact command, do not run):
 - Tailwind version mismatch → show the specific file and line

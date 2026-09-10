@@ -5,7 +5,9 @@ description: >
   before any code is written. Runs after brainstorm: and before new: on every project.
   Triggers on "architect:" prefix, "plan the architecture", "architect this",
   "how should we structure this", "what patterns should we use".
-  Always runs on every project — no exceptions, no shortcuts.
+  Runs on every project — architecture is never skipped (it can proceed without
+  BRIEF.md by asking the stack questions directly, but the architecture step itself
+  is not optional).
   Reads BRIEF.md stack decisions and confirms them explicitly before asking any questions —
   prevents scaffolding with wrong framework (e.g. Next.js when React+Vite is specified).
   Produces ARCHITECTURE.md from canonical template — structurally consistent so

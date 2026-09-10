@@ -4,8 +4,11 @@ Cross-cutting design intelligence extracted from studying 55+ real products
 in the awesome-design-md catalog. These patterns are what separates products
 that feel considered from products that look generic.
 
-Read by vibe-design during Step 3 when no DESIGN.md exists.
-Read by vibe-design-md when generating a new DESIGN.md to validate quality.
+Read by **vibe-design-md** when generating/validating a DESIGN.md (Mode B/C quality
+check). It is NOT the aesthetic source of truth — `vibe-design/references/ANTI_GENERIC.md`
+owns design direction (domain × audience × emotion → archetype). Where these differ,
+ANTI_GENERIC.md wins; treat the patterns below as generic craft checks, not a default
+style, and never let them push a project toward the SaaS-editorial look ANTI_GENERIC bans.
 
 ---
 

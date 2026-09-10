@@ -1,6 +1,6 @@
 # vibe-* skills
 
-> A framework of 27 Claude Code skills that covers the complete software development lifecycle — from first idea to client sign-off.
+> A framework of 26 Claude Code skills that covers the complete software development lifecycle — from first idea to client sign-off.
 
 Built by **Aakash Dhar** at [BetaCraft](https://betacraft.in) for production AI-assisted development workflows.
 
