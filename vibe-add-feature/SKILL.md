@@ -187,7 +187,15 @@ Ask:
 
 **(c)** → skip to Step 6.
 **(b)** → add a brief UI note to FEATURE_SPEC.md, skip to Step 6.
-**(a)** → continue to Step 5.
+**(a)** → **design-gate check first:** if the project has **no** design system yet
+(`DESIGN.md` / `vibe/DESIGN_SYSTEM.md` / `vibe/design/CONTRACT.md` all absent),
+this feature would invent a look from scratch — the "skipped design" failure.
+Offer to establish it before building:
+> "No design language exists yet. Run `design:` first (optionally `design-md:` to
+>  lock brand tokens) so this and future screens are consistent? Recommended.
+>  Reply 'skip design' to build this feature's UI ad hoc."
+Invoke `design:` on yes; log the skip in DECISIONS.md if declined. Then continue
+to Step 5. If a design system already exists, go straight to Step 5.
 
 ---
 

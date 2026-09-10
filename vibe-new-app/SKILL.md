@@ -76,7 +76,17 @@ Note: `vibe/DESIGN_SYSTEM.md` is not created here — it is generated the first 
 
 ## Step 1 — Capture the idea and check for existing files
 
-**Check for BRIEF.md and ARCHITECTURE.md at project root.**
+**Run the parity check first.** Read `references/PIPELINE.md` and follow its parity
+check: classify UI vs non-UI, detect the pipeline stage, and route to any missing
+upstream step. In particular:
+- If `BRIEF.md` is **missing, empty, or in a foreign shape** (an idea pasted or
+  dropped from elsewhere, e.g. the Claude desktop app): route to `brainstorm:`
+  first — its Step 0 ingests and normalizes external input into a canonical
+  BRIEF.md. This is what brings an externally-produced idea to parity. Don't
+  scaffold from a hollow or non-canonical brief.
+- Note whether this is a **UI project** — it determines the design gate in Step 10C.
+
+**Then check for BRIEF.md and ARCHITECTURE.md at project root.**
 
 **Both exist** (ran brainstorm: and architect: — recommended path):
 - Read both fully before doing anything else
@@ -364,6 +374,10 @@ Each task as a checkbox with one plain English line.
 
 ## Phase 1 gate
 ⬜ review: phase 1 — pending
+
+## Design gate (UI projects)
+⬜ design: — pending · UI features in Phase 2 need a design language first
+   (run `design-md:` then `design:`, or `design:` alone). Skip only for non-UI.
 ```
 
 **Phase 2 — Core features (fully ordered from PLAN.md feature map):**
@@ -543,6 +557,30 @@ all planned nodes created before any code is written.
 Nodes will transition from `planned` to `built` as features are implemented.
 
 After graph init completes:
+
+## Step 10C — Design gate (UI projects)
+
+Design is a required pipeline step for UI projects, not an afterthought (see
+`references/PIPELINE.md`). Do not let the build start UI features with no design
+language — that is the "it skipped design" failure.
+
+- **Non-UI project** (API / CLI / library / pure backend): skip this step; note
+  "design gate N/A — no UI" and continue.
+- **UI project, no design system yet** (`DESIGN.md` / `vibe/DESIGN_SYSTEM.md` /
+  `vibe/design/CONTRACT.md` all absent): announce and hand off —
+  > "This is a UI project. Before building screens, let's lock the design so they
+  >  share one derived design language. Optionally run `design-md:` first to
+  >  capture brand tokens, then `design:` to produce the design contract.
+  >  Recommended. Reply 'skip design' to build without a design pass."
+  Invoke `design:` on a clear yes. If the user says skip, log it in
+  `vibe/DECISIONS.md` ("design gate skipped by user") so it's a visible decision.
+- **Design system already exists** (user ran `design-md:`/`design:` earlier):
+  design gate already passed — continue.
+
+The generated TASKS.md carries a matching **Design gate** line before Phase 2 so
+this is visible in the human-facing plan.
+
+After the design gate resolves:
 
 ## Step 11 — Tell the user
 

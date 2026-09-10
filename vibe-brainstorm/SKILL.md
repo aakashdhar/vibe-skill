@@ -11,9 +11,16 @@ description: >
   BRIEF.md is structurally consistent — architect:, new-app:, change-spec:,
   and review: all read known field names. Does not create code or project
   structure — thinking and brief only.
+  Step 0 INGESTS an idea produced elsewhere (pasted text, or a dropped file —
+  canonical BRIEF.md, an arbitrary idea doc, or an empty/sparse file) and
+  normalizes it to a canonical BRIEF.md so it reaches parity and flows through
+  the full downstream pipeline (architect → scaffold → design → build) instead
+  of skipping steps.
   Triggers on "brainstorm:" prefix, "I have an idea", "I want to build",
   "help me think through", "I have a client project", "thinking about building",
-  "I want to validate this idea", "let's plan a project".
+  "I want to validate this idea", "let's plan a project", "I already have a
+  brief", "here's my idea/spec from elsewhere", "I brainstormed this in another
+  chat", "ingest this idea", "onboard this brief", "I dropped a file with my idea".
 ---
 
 # Vibe Brainstorm Skill v2
@@ -46,6 +53,39 @@ Every question skipped here becomes a scope change mid-build.
 - **Agentic detection** — detects AI/agent projects and routes appropriately
 - **Fast path floor** — minimum P0 verification even on fast path
 - **Complexity estimate** — S/M/L/XL sizing in every brief
+
+---
+
+## Step 0 — Ingest external input (idea done elsewhere, or a dropped file)
+
+Thinking often happens somewhere else (e.g. the Claude desktop app) and arrives
+here as pasted text or a dropped file. Handle that first so the project still
+reaches full parity instead of skipping steps.
+
+**Detect the input source:**
+1. A file at the project root — `BRIEF.md`, or any idea doc (`IDEA.md`, `notes.md`,
+   a pasted spec, etc.). Read it fully.
+2. Pasted text in the user's message.
+3. Nothing substantive.
+
+**Then:**
+- **Empty or near-empty file** (exists but < ~5 lines of real content): say so —
+  "That file is empty/sparse, so I'll build the brief with you" — and run the
+  normal path below (do not silently produce a hollow BRIEF.md).
+- **A file/paste that is already a canonical BRIEF.md** (has the fields from
+  `references/BRIEF_MD.md`): treat it as a completed brainstorm — jump to the
+  **Pre-write quality check**, then hand off downstream. No re-interviewing.
+- **A file/paste with real content in a *different* shape** (an external
+  brainstorm, a PRD, a loose idea doc): **normalize it** — map what it contains
+  onto the canonical BRIEF.md fields (problem, user, core value, features,
+  non-goals, stack, complexity), then treat missing/weak fields as gaps: run the
+  Fast Path P0 checks and ask only about what's genuinely missing. Do NOT discard
+  their work by re-running the full interview.
+
+After normalization, continue exactly like a native brainstorm — the same
+Pre-write quality check, BRIEF.md generation, spec-review, and downstream handoff
+(including the design step). This is what brings an externally-produced idea to
+parity with one brainstormed here.
 
 ---
 

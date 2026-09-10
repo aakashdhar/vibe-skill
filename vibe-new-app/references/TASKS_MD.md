@@ -30,6 +30,10 @@ dependencies visible — not slugs.
 ## Phase 1 gate
 ⬜ review: phase 1 — pending
 
+## Design gate (UI projects)
+⬜ design: — pending · UI features need a shared design language first
+   (`design-md:` then `design:`, or `design:` alone). Skip only for non-UI projects.
+
 ## Phase 2 — Core features
 > Build order is deliberate. Features are sequenced by dependency.
 > A feature marked [needs: X] cannot start until X is complete.

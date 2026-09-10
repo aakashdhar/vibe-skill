@@ -85,9 +85,14 @@ Skills trigger automatically from natural language. No slash commands needed.
 ```
 PLAN
   brainstorm: → spec-review (auto) → architect: → new: / vibe-init
+  (idea from elsewhere / dropped or empty file → still start at brainstorm:;
+   its Step 0 ingests + normalizes it to a canonical BRIEF.md)
+
+DESIGN  (required for UI projects — the gate between scaffold and build)
+  design-md: (brand tokens, optional) → design:
 
 BUILD
-  feature: → review: → test:
+  feature: → design: (if the feature adds new UI) → review: → test:
   bug: (when needed)
   change: (when needed)
 
@@ -95,9 +100,6 @@ WATCH
   progress: ← always available
   cost: → ledger: ← after sessions
   graph: ← when architecture questions arise
-
-DESIGN
-  design-md: → design:
 
 ADVANCED
   parallel: / mode: / perf: / doctor:
@@ -351,13 +353,16 @@ The `index.html` portal is a fully designed, light-mode web page — sidebar nav
 
 ```
 THINK    brainstorm: → architect: → new: / vibe-init
-BUILD    feature: → review: → test:
+DESIGN   design-md: → design:    ← required for UI projects, BEFORE build
+BUILD    feature: → design: (if new UI) → review: → test:
 WATCH    progress: / cost: / ledger: / graph:
-DESIGN   design-md: → design:
 FIX      bug: / change: / doctor:
 SHIP     deploy: [platform] → e2e: [url]
 CLOSE    document: → changelog: → handoff: [mode]
 ```
+> Idea brainstormed elsewhere (or a dropped/empty file)? Start at `brainstorm:` —
+> its Step 0 ingests and normalizes external input, so the project still flows
+> through architect → scaffold → **design** → build and reaches full parity.
 
 ### Every trigger at a glance
 
