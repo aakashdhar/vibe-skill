@@ -62,14 +62,18 @@ The result: extremely precise, not loud
 
 **Observed in:** Linear, Vercel, Notion, Mistral
 
-Dark mode first products (and many light mode ones) create depth through
-surface colour variation, not box-shadows. A sidebar at #1A1A1A on a
-background of #0F0F0F creates hierarchy without any shadows.
+Products create depth through surface colour variation, not box-shadows. A
+sidebar at #1A1A1A on a background of #0F0F0F creates hierarchy without shadows.
 
-**Light mode equivalent:**
-background: #FAFAF8 (warm off-white, page background)
-surface-1: #FFFFFF (cards, inputs — slightly brighter)
-surface-2: #F2F0EB (secondary areas, hover states — slightly warmer)
+**Light-mode equivalent — three steps, in the brand's temperature (NOT reflex warm cream):**
+```
+page bg  →  surface-1 (slightly brighter, cards/inputs)  →  surface-2 (secondary/hover)
+```
+Pick the family from the derived palette (ANTI_GENERIC.md Steps A–C):
+- cool brand → cool neutrals, e.g. `#FBFBFD → #FFFFFF → #F1F3F6`
+- warm/organic brand → warm neutrals, e.g. `#FAF8F4 → #FFFFFF → #F2F0EB` (this is the
+  warm-cream ramp — use it only when the archetype earns it, not as the default)
+- clinical/luxe → true `#FFFFFF → #FFFFFF → #F4F4F5`
 
 The three layers are subtle but immediately readable.
 

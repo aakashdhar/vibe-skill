@@ -6,8 +6,11 @@ description: >
   any code is written. Enforces a written design contract that is re-read before
   every single component — not once and forgotten. Creates separate files per
   page and component, never monolithic output. Reads DESIGN.md if present for
-  exact brand tokens. Reads ANTI_GENERIC.md to kill SaaS dashboard defaults.
-  Reads SITE_TYPE_PLAYBOOK.md for site-type-specific vocabulary.
+  exact brand tokens. Derives the design from the product's domain × audience ×
+  emotion (ANTI_GENERIC.md) — killing BOTH the SaaS-generic look AND the
+  anti-generic cliché (warm-cream+terracotta, the Fraunces/DM-Sans reflex,
+  dark-as-premium, SaaS layouts on non-SaaS products). Reads SITE_TYPE_PLAYBOOK.md
+  for domain-specific design worlds well beyond software.
   Triggers on "design:" prefix, "style this", "make this look better",
   "redesign this page", "the UI needs work", "can you polish",
   "do a design pass", "it looks too plain", "it looks generic",
@@ -68,10 +71,14 @@ If the `frontend-design` skill is genuinely unavailable in the session — proce
 using `references/ANTI_GENERIC.md`, but note the output quality will be lower.
 
 **After reading frontend-design — internalise this:**
-> "I will commit to a bold, specific aesthetic direction.
-> I will not produce a SaaS dashboard.
-> I will not use Inter, blue-500, shadow-md, or centered columns.
-> Every component will reflect the committed direction."
+> "I will DERIVE the design from this product's domain × audience × emotion
+>  (ANTI_GENERIC.md), not stamp on a house style.
+>  I will not produce a SaaS dashboard — and I will not reach for the
+>  anti-generic cliché either (warm-cream + terracotta, the Fraunces/DM-Sans
+>  reflex, dark-as-premium, a 140px editorial hero on everything).
+>  I will pick the archetype that fits THIS domain, derive the palette and
+>  typography from it, and be able to justify every choice from the audience.
+>  Every component will reflect that derived direction."
 
 ---
 
@@ -107,8 +114,10 @@ Extract:
 
 This is the most important step. Do not rush it.
 
-Read `references/ANTI_GENERIC.md` in full.
-Read `references/SITE_TYPE_PLAYBOOK.md` — find the matching site type.
+Read `references/ANTI_GENERIC.md` in full — do the domain × audience × emotion
+derivation and pick the archetype.
+Read `references/SITE_TYPE_PLAYBOOK.md` — find the matching domain / design world
+(software is only a few entries — most products aren't SaaS).
 
 Then write the design contract. This is a concrete, named document.
 
@@ -117,49 +126,48 @@ Then write the design contract. This is a concrete, named document.
 DESIGN CONTRACT — [Project name] — [date]
 ═══════════════════════════════════════════════════════════
 
-SITE TYPE: [AI/SaaS / Agency / Marketing / Developer tool / Dashboard]
+DERIVATION (fill first — everything below traces to this):
+  Domain:   [what world — e.g. children's education, private banking, taqueria]
+  Audience: [who + what they find credible/delightful]
+  Emotion:  [the one feeling in 3 seconds]
+  Archetype: [from ANTI_GENERIC.md — e.g. Playful / Swiss / Luxe / Crafted …]
+  Theme:    [light | dark] — with the reason it fits this domain
+            (do NOT pick dark for "premium"; do NOT default to warm cream)
 
-ONE BOLD CHOICE: [Name it explicitly — this is non-negotiable]
-Examples:
-  "Headlines are Fraunces 120px+ left-anchored — never centered"
-  "No cards anywhere — all content is in full-width rows"
-  "Brand colour appears in exactly 3 places — nowhere else"
-  "Navigation is 32px tall, text only, no icons"
+ONE FITTING BOLD CHOICE: [Name it — bold AND right for this audience]
+  (bold ≠ random; a private bank being loud is wrong, not brave)
 
-TYPOGRAPHY CONTRACT:
-  Display font: [exact name — NOT Inter, NOT system-ui]
-  Body font: [exact name]
-  Mono font: [exact name — for labels, data, metadata]
-  Display size: [clamp(72px, 9vw, 140px) or specific px]
-  Display weight: [800 or 700 — not 400, not 500]
-  Display tracking: [-0.04em or tighter]
-  Body size: [17px or 18px]
-  Body line-height: [1.7]
+TYPOGRAPHY CONTRACT: (chosen for the archetype/emotion — justify, don't reflex)
+  Display font: [exact name — for THIS archetype; not the Fraunces/DM-Sans reflex]
+  Body font: [exact name — NOT Inter/system-ui]
+  Mono font: [exact name, if used]
+  Why these: [one line tying the pairing to the emotion]
+  Display size: [fits the archetype — Luxe may be small+airy, not 140px]
+  Weight contrast: [display weight vs caption weight — the gap is the design]
 
-COLOUR CONTRACT:
-  Surface: [warm off-white hex — NOT #ffffff]
-  Text: [warm near-black hex — NOT #000 or gray-900]
-  Brand accent: [one colour only — NOT blue-500 or indigo-600]
-  Brand appears on: [list exactly where]
-  Brand does NOT appear on: [everything else]
+COLOUR CONTRACT: (DERIVED via ANTI_GENERIC.md Steps A–D)
+  Theme + neutrals: [near-white/near-black hexes in the hue's TEMPERATURE —
+                     cool brand → cool neutrals, not warm cream by default]
+  Brand hue: [one specific, slightly-unexpected shade — NOT the category default
+              (not SaaS blue, not eco green, not reflex terracotta)]
+  Brand appears on: [list exactly where] · Brand does NOT appear on: [rest]
+  (Playful/Maximalist archetypes may use multiple saturated hues — say so.)
 
 MOTION CONTRACT:
-  Library: [Framer Motion | CSS + IntersectionObserver | Vue Transition]
-  Hero: [specific animation]
-  Sections: [scroll-triggered reveal approach]
-  Interactions: [hover/tap approach]
+  Library: [CSS + View Transitions (default) | Framer Motion | GSAP — only if needed]
+  Energy: [matches archetype — Luxe slow/few · Playful springy · Swiss minimal]
+  Hero / sections / interactions: [specific approaches] · reduced-motion honoured
 
 FILE STRUCTURE:
   [Every file to be created — one page per file, one component family per file]
 
 BANNED FOR THIS PROJECT:
-  ❌ Inter as display font
-  ❌ blue-500 / indigo-600 / violet-500 as primary colour
-  ❌ white card with shadow-md
-  ❌ Centered hero headline
-  ❌ 3-column icon feature grid
-  ❌ Gray-100 section backgrounds
-  [add project-specific bans here]
+  Enemy 1 (SaaS generic): Inter display · blue/indigo/violet primary · white
+    shadow-md cards · centered hero · 3-col icon grid · gray-100 sections
+  Enemy 2 (anti-generic cliché): warm-cream + terracotta as default · the
+    Fraunces/DM-Sans reflex · dark-as-premium · 140px editorial hero on a
+    non-editorial product · SaaS layout on a non-SaaS domain
+  [add project-specific bans]
 ═══════════════════════════════════════════════════════════
 ```
 
@@ -199,7 +207,10 @@ Create the structure:
 mkdir -p src/pages src/components src/lib src/styles
 
 # Create animation tokens file FIRST — everything imports from here
-# Write src/lib/animations.ts with tokens from ANTI_GENERIC.md
+# Write src/lib/animations.ts (or CSS keyframes) with motion tokens whose ENERGY
+# matches the contract's archetype (Luxe slow/few · Playful springy · Swiss minimal).
+# Prefer CSS transitions + View Transitions; use a motion library only if the
+# contract's Motion section calls for one. Always gate on prefers-reduced-motion.
 
 # Create CSS tokens file with values from the contract
 # Write src/styles/tokens.css with all CSS custom properties
@@ -298,26 +309,31 @@ landing), not on what the code says it should look like.
 (contrast ratios, keyboard nav, focus states, `prefers-reduced-motion`); else
 spot-check contrast on text/brand-colour pairs and confirm focus-visible states.
 
+**Derivation held:**
+- [ ] The design still reads as THIS domain/audience (domain test) — not re-skinnable
+- [ ] Palette was derived (theme + hue + temperature-matched neutrals), not fallen
+      back to warm cream or dark-for-premium
+- [ ] Fonts fit the archetype — not the reflex Fraunces/DM-Sans pairing
+
 **Typography:**
-- [ ] Display font is the font from the contract — everywhere
-- [ ] No Inter as display font unless it IS in the contract
-- [ ] Mono font used for labels, metadata, numbers
+- [ ] Display + body fonts are the contract's — everywhere; display ≠ body
+- [ ] No Inter/system-ui as display unless the contract genuinely chose it
+- [ ] Weight contrast (heavy display vs light caption) is visible
 
 **Colour:**
-- [ ] Brand colour in ONLY the places the contract specifies
-- [ ] Surface is warm off-white, NOT #ffffff
-- [ ] Text is warm near-black, NOT gray-900 or #000000
-- [ ] No blue-500, indigo-600 anywhere
+- [ ] One brand hue, only where the contract specifies (or the multi-hue set a
+      Playful/Maximalist contract declared)
+- [ ] Neutrals match the brand's temperature; theme matches the contract
+- [ ] Brand hue is not the category default (SaaS blue / eco green / reflex terracotta)
 
 **Motion:**
-- [ ] All animations from animations.ts
-- [ ] `prefers-reduced-motion` handled
+- [ ] Motion energy matches the archetype; `prefers-reduced-motion` handled
 
 **Layout:**
-- [ ] The bold choice is visible on the page
-- [ ] No centered hero headline (unless contract says so)
-- [ ] No 3-column icon grid
-- [ ] No white cards with shadow-md (unless in contract)
+- [ ] The fitting bold choice is visible; structure fits the domain (not a SaaS
+      scroll-journey forced onto a non-SaaS product)
+- [ ] No unintended SaaS defaults (centered hero / 3-col icon grid / shadow-md cards)
+      unless the contract chose them
 
 **Files:**
 - [ ] Every page is a separate file

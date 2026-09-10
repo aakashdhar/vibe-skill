@@ -1,385 +1,179 @@
 # ANTI_GENERIC.md
 
-Read in full during Step 3 of vibe-design before committing to any design direction.
-This file is the difference between a design that looks like every other SaaS dashboard
-and one that someone screenshots and sends to their team.
+Read in full during Step 3 of vibe-design, before committing to a design direction.
+Beautiful, *fitting* design sells and engages — this file exists to make the design
+specific to **this** product, not a house style stamped onto every project.
 
 ---
 
-## The problem this file solves
+## Two enemies, not one
 
-Claude's training data is dominated by generic SaaS UIs.
-Left to its own defaults it produces:
-- Navy/indigo sidebar + white main content area
-- Cards with `shadow-md` and `rounded-lg` on white backgrounds
-- Blue primary buttons (`blue-500` / `indigo-600`)
-- Inter or system-ui for everything
-- 8px border radius on everything
-- Flat sections stacked vertically with 80px padding between them
-- Hero with centered headline, subheading, two CTAs, stock photo or abstract gradient blob
+**Enemy 1 — the SaaS generic** (Claude's training-data default):
+navy/indigo sidebar + white cards with `shadow-md rounded-lg`, blue-500 buttons,
+Inter everywhere, 8px radius on all, stacked 80px sections, centered hero with two CTAs.
 
-This is not a design. It is the statistical average of 10,000 SaaS landing pages.
-The agent must be stopped from producing this before a single line of code is written.
+**Enemy 2 — the "anti-generic" generic** (the *new* cliché — just as tired):
+- **Warm cream `#faf...` + terracotta/rust/amber** as the go-to light palette. It is
+  now its own template. Ban it as a default.
+- The **Fraunces / DM Serif + DM Sans + JetBrains Mono** reflex. These are fine fonts,
+  but reaching for them every time is the same failure as always reaching for Inter.
+- **Dark mode as a shortcut to "premium."** Dark is a *choice for specific domains*,
+  not a default and not a substitute for taste. Most consumer products should be light.
+- The **140px editorial serif hero + parallax** applied to everything, including
+  products that are not magazines or agencies.
+- **"SaaS-shaped" layouts on non-SaaS products** — a bakery, a kids' app, a law firm,
+  a game, a fashion label do not want a 100vh hero, a logo strip, and a metrics row.
 
----
-
-## Step 0 — Kill the defaults before starting
-
-Before choosing anything, explicitly reject these patterns for this session:
-
-**Typography defaults to kill:**
-- Inter as the primary typeface — it's fine, it's everywhere, it signals nothing
-- System-ui / -apple-system — invisible, generic, zero personality
-- Single font for everything — display and body should never be the same typeface
-- Font weight 400 for headlines — headlines should be extreme: 100 or 800+, not 400
-
-**Colour defaults to kill:**
-- blue-500, indigo-600, violet-500 as primary — the three colours of generic SaaS
-- bg-white + text-gray-900 as the base — technically correct, aesthetically dead
-- Evenly distributed palette (primary + secondary + accent + neutral all at similar saturation)
-- Gray-100 section backgrounds — the most overused "separation" technique in existence
-- Default Tailwind colours directly in JSX — always define named tokens
-
-**Layout defaults to kill:**
-- Centered content column with max-w-7xl mx-auto padding on both sides on every section
-- Cards as the primary content container — not every piece of content needs a card
-- 12 equal columns with content always in the middle 8 — asymmetry is interesting
-- Same vertical rhythm on every section — variety creates breathing room and emphasis
-- Horizontal rule separators between sections — use space, not lines
-
-**Component defaults to kill:**
-- Pill badges in brand colour for labels — use mono type instead
-- Icon + heading + body text stacked vertically for feature lists — find a different form
-- Testimonial cards in a 3-column grid — everyone does this
-- Pricing cards with a "most popular" highlight — everyone does this too
-- Footer with 4 columns of links — try something different
+If the output could be re-skinned for a different company in a different industry
+without changing the structure, it has failed. **Both** enemies produce that.
 
 ---
 
-## The design vocabulary for this framework
+## The core principle: derive, don't default
 
-### Typography system
+The design language is **derived from the product**, along three axes. Answer these
+from BRIEF.md / SPEC.md / the request *before* choosing a single font or colour:
 
-**Display headlines:** Dramatic, opinionated, makes a statement
-- Use variable fonts with extreme weight shifts — `font-weight: 800` to `100` within one typeface
-- OR use a display serif (Playfair Display, DM Serif Display, Cormorant, Freight Display)
-  paired with a clean geometric sans (DM Sans, Geist, Outfit, Plus Jakarta Sans)
-- Headlines at 96px–160px on desktop for hero. Not 48px. Not 64px. Go bigger.
-- Tight tracking on large display text: `letter-spacing: -0.04em` to `-0.06em`
-- Never center-align large headlines on marketing pages — left-align reads stronger
-- Line height on display: 0.9–1.0 (tighter than you think)
+1. **Domain** — what world is this in? (finance, healthcare, food, fashion, kids,
+   music, developer tools, civic/gov, luxury goods, fitness, gaming, education…)
+2. **Audience** — who uses it, and what do they find credible / delightful?
+   (a surgeon, a teenager, a CFO, a parent, a designer, a retiree…)
+3. **Emotion** — the one feeling it should evoke in 3 seconds
+   (trust, joy, calm, energy, prestige, safety, nostalgia, awe, playfulness, focus…).
 
-**Body text:** Readable, restrained, serves the headline
-- Generous line height: 1.6–1.8
-- Max width: 65ch — never wider, readability drops
-- Size: 17px–19px on desktop — slightly larger than default feels considered
-- Weight: 400 for body, 500 for UI labels, never 600+ for paragraphs
-
-**Mono as a design element:**
-- Use mono (`JetBrains Mono`, `Fira Code`, `IBM Plex Mono`) for labels, metadata,
-  version numbers, category tags, technical details
-- NOT for code only — mono at small size with tracking creates visual texture
-- Example: a feature label in mono caps at 11px tracking-widest feels editorial
-
-**Weight contrast:**
-- Headlines at 800+ weight, captions at 300 — the gap is the design
-- Never have all text at similar weight — contrast creates hierarchy
+Domain × audience × emotion → an **aesthetic archetype** (below) → concrete type,
+colour, layout, and motion. Every choice traces back to this. If you can't say
+*why* a choice fits the domain/audience/emotion, it's a default — kill it.
 
 ---
 
-### Colour system
+## Aesthetic archetypes — pick the one that fits (not always the same one)
 
-**One dominant brand colour, everything else neutral:**
+Twelve starting worlds. Pick the one the product actually lives in; blend at most two.
+None of these is the "right" one — the point is *variety matched to domain*.
 
-```css
-/* The formula */
---color-brand: [single colour — could be unusual: terracotta, forest green, warm amber, deep plum];
---color-brand-subtle: [brand at 10% opacity — used for subtle backgrounds];
---color-brand-text: [brand darkened for text use — maintains contrast];
+| Archetype | Feels like | Fits | Type character | Colour character |
+|-----------|-----------|------|----------------|------------------|
+| **Editorial** | a considered magazine | media, essays, some B2B | expressive serif + clean sans | restrained, 1 accent |
+| **Swiss / functional** | precise, gridded, calm | finance, analytics, enterprise | neutral grotesk, tight grid | near-mono + 1 signal |
+| **Brutalist / raw** | confident, unpolished | agencies, music, streetwear | heavy grotesk, system mono | high-contrast mono + shock accent |
+| **Playful / toy** | fun, rounded, alive | kids, consumer social, games | rounded sans, chunky weights | bright, multi-hue, saturated |
+| **Luxe / minimal** | expensive, quiet, sparse | luxury goods, hospitality, beauty | high-contrast serif or refined sans, lots of air | deep neutral + metallic/jewel accent |
+| **Organic / natural** | warm, human, earthy | food, wellness, sustainability, craft | humanist serif/sans, soft curves | earth/botanical tones (this is where cream *may* belong — earned, not default) |
+| **Retro / nostalgic** | a specific era | entertainment, food, indie brands | period-authentic display | period palette (70s, 90s, Y2K…) |
+| **Technical / precise** | built by engineers | dev tools, infra, security | mono-forward, monospace headings ok | minimal, near-monochrome, semantic only |
+| **Cinematic / dark** | dramatic, immersive | gaming, film, crypto, nightlife | display sans, tight tracking | true dark, one luminous accent |
+| **Soft / calm** | gentle, safe, reassuring | health, meditation, finance-for-humans, kids' health | soft humanist sans, low contrast | desaturated, cool or pastel |
+| **Bold / maximalist** | loud, memorable, dense | events, fashion drops, campaigns | oversized display, clashing pairs | vivid, multiple chromatic colours (rule below is relaxed here) |
+| **Crafted / handmade** | tactile, artisanal | makers, local business, food | characterful serif, hand elements | ink-and-paper, muted, textured |
 
-/* Neutrals — NOT gray-100/200/300 */
---color-surface: #fafaf8;   /* warm off-white, not pure white */
---color-surface-2: #f2f0ec; /* warm light gray — section backgrounds */
---color-text: #1a1814;      /* warm near-black, not #000000 or gray-900 */
---color-text-secondary: #6b6560; /* warm mid-gray for secondary text */
---color-border: #e5e0d8;    /* warm light border */
-```
-
-**Brand colour selection rules:**
-- Pick one colour that's slightly unexpected for the category
-- Security SaaS? Not blue — try deep amber or slate green
-- Analytics? Not green — try warm coral or indigo
-- The brand colour should appear sparingly — in CTAs, accents, highlights
-- Everything else is neutral — the brand colour pops because it has room to breathe
-
-**Never:**
-- Gradient from brand to brand-light as a background — overused
-- Multi-colour gradients as hero backgrounds — 2019 called
-- Pure black (#000000) or pure white (#ffffff) as surface/text — use near-black, near-white
-- More than one chromatic colour in the palette — neutrals don't count
+**Choosing rules:**
+- Default consumer/lifestyle products to a **light** archetype unless the domain is
+  genuinely nocturnal/dramatic (gaming, film, nightlife, some crypto). Don't reach for dark.
+- Match the archetype to the *audience's* taste, not the designer's. A children's
+  maths app is Playful, never Swiss. A private bank is Luxe or Swiss, never Playful.
+- SaaS/software is **not automatically Editorial or Brutalist** — a calm analytics
+  tool may be Swiss; a health app may be Soft. Let the domain decide.
 
 ---
 
-### Layout system — judgement-based
+## Colour — a derivation method, not a formula
 
-**For marketing/landing pages:**
+There is **no default palette.** Build one per project:
 
-The goal is a sense of journey — each section has a distinct character.
-One section is dense with information. The next breathes. The next is typographic.
-Rhythm matters more than consistency.
+**Step A — Light or dark?** Decide from domain, not habit.
+- Light by default for: consumer, commerce, health, finance-for-humans, education,
+  food, most marketing. Reading and trust favour light.
+- Dark only when the domain is dramatic/immersive (gaming, film, music, nightlife,
+  some developer/crypto) — or when you genuinely offer both and dark is the hero.
+- Never pick dark because it "looks premium." Prove it fits.
 
-Principles:
-- Hero: full viewport height, massive type, one dominant visual element
-- Don't center everything — left-anchored content with asymmetric right-side element
-- Let text break out of the grid occasionally — a headline that runs edge to edge
-- Use negative space as a design element, not just padding
-- Feature sections: try a 2-column layout where text is 40% and visual is 60%
-- Never stack identical-height sections with identical padding — vary the rhythm
+**Step B — The primary hue comes from meaning.** Map the domain/emotion to a hue,
+then pick a *specific, slightly unexpected* shade — not the category default:
+- trust/finance → often blue, so go adjacent: deep teal, ink navy, slate green.
+- health/calm → sage, eucalyptus, soft blue — not clinical cyan.
+- food/warmth → yes, warm tones exist here, but vary: tomato, saffron, olive,
+  aubergine — **not reflexively terracotta**.
+- energy/youth → coral, electric blue, lime, magenta.
+- luxury → deep jewel (emerald, oxblood, sapphire) or near-black + one metallic.
+- The category default (blue fintech, green eco, purple AI) is the thing to *avoid*.
 
-**For product/dashboard UIs:**
+**Step C — Neutrals match the hue's temperature — not always warm cream.**
+- Warm hue → warm neutrals. **Cool hue → cool/true-gray neutrals.** A cool teal brand
+  on `#faf...` cream reads muddy. Pick neutrals in the same temperature family.
+- Near-white options: cool `#FBFBFD`, true `#FFFFFF` (fine for clinical/luxe), warm
+  `#FAF8F4` (only when the archetype is Organic/Crafted). Rotate — cream is one option, not the answer.
+- Near-black text: warm `#1A1814`, cool `#0E1116`, or true-ish `#111` — pick to match.
 
-Swiss grid discipline with typographic hierarchy doing the heavy lifting.
-- Strong left rail — not a sidebar, a navigation column with a specific character
-- Content area with clear typographic hierarchy — H1 → H2 → body, all consistent
-- Tables and data: mono for numbers, extreme precision in alignment
-- Status indicators: colour-coded dots, not badges and cards
+**Step D — Restraint, with one exception.** One dominant chromatic colour, everything
+else neutral — *except* Playful and Bold/Maximalist archetypes, which legitimately use
+multiple saturated hues. Use `color-mix()` / OKLCH to derive tints so the palette is coherent.
 
-**Asymmetry techniques:**
-```
-// Good — headline breaks the grid
-<section className="grid grid-cols-12">
-  <div className="col-span-8 col-start-1">
-    <h1 className="text-[120px] font-[800] leading-[0.95] tracking-[-0.04em]">
-      Headline that commands attention
-    </h1>
-  </div>
-  <div className="col-span-4 col-start-9 self-end pb-8">
-    <p>Supporting text positioned at the bottom right, creating tension</p>
-  </div>
-</section>
-
-// Bad — everything centered in the same column
-<section className="max-w-4xl mx-auto text-center">
-  <h1>Headline</h1>
-  <p>Subheading</p>
-  <Button>CTA</Button>
-</section>
-```
+**Never (all archetypes):** brand→brand-light background gradients; 2019 multi-colour
+hero gradients; pure-black-on-pure-white unless deliberate; the category-default hue as primary.
 
 ---
 
-### Animation system — Framer Motion
+## Type — choose for character, and rotate
 
-All motion in this framework uses Framer Motion. Never use `transition-all`.
+Match typeface *personality* to the archetype and emotion. Do **not** reach for the
+same families every time. Below is a broad palette organized by mood — treat it as a
+starting set to draw from and go beyond, not a canonical list.
 
-**Core animation philosophy:**
-Motion should feel purposeful and slightly surprising.
-Not every element needs animation. But when something moves, it should feel alive.
+- **Editorial serifs:** Fraunces, Freight, Newsreader, Spectral, Lora, GT Sectra,
+  Canela, Tiempos — *rotate*; Fraunces is not the default.
+- **Luxe / high-contrast serifs:** Cormorant, Playfair, Bodoni, Didot, GT Super.
+- **Humanist / warm serifs & sans:** Source Serif, Besley; Söhne, Inter Tight,
+  Hanken Grotesk, Figtree.
+- **Neutral / Swiss grotesks:** Neue Haas / Helvetica Now, Söhne, Suisse, Aeonik,
+  ABC Diatype, Basis Grotesque.
+- **Distinctive / brutalist display:** Syne, Space Grotesk, Clash Display, Unbounded,
+  Monument Extended, Druk.
+- **Rounded / playful:** Poppins-round, Quicksand, Baloo, Fredoka, Nunito, Sharp Grotesk Rounded.
+- **Mono (as texture, not just code):** Berkeley Mono, JetBrains Mono, IBM Plex Mono,
+  Space Mono, Commit Mono — *rotate*.
 
-**Standard animation tokens:**
-```typescript
-// Entrance animations — elements appearing
-export const fadeUp = {
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
-}
-
-// Stagger for list items
-export const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } }
-}
-
-// Scale entrance — for cards and modals
-export const scaleIn = {
-  initial: { opacity: 0, scale: 0.96 },
-  animate: { opacity: 1, scale: 1 },
-  transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] } // spring
-}
-
-// Hover lift — for interactive cards
-export const hoverLift = {
-  whileHover: { y: -4, transition: { duration: 0.2 } }
-}
-```
-
-**Scroll-triggered reveals:**
-```typescript
-import { useInView } from 'framer-motion'
-
-// Use for any section that enters the viewport
-const ref = useRef(null)
-const isInView = useInView(ref, { once: true, margin: "-100px" })
-
-<motion.div
-  ref={ref}
-  initial={{ opacity: 0, y: 40 }}
-  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-  transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-/>
-```
-
-**Parallax on hero sections:**
-```typescript
-import { useScroll, useTransform } from 'framer-motion'
-
-const { scrollY } = useScroll()
-const y = useTransform(scrollY, [0, 500], [0, -150]) // background moves slower
-const opacity = useTransform(scrollY, [0, 300], [1, 0]) // text fades as scrolled
-
-<motion.div style={{ y }} className="absolute inset-0 bg-[image]" />
-<motion.h1 style={{ opacity }} className="relative">Headline</motion.h1>
-```
-
-**Cursor-following effects:**
-```typescript
-import { useMotionValue, useSpring } from 'framer-motion'
-
-const mouseX = useMotionValue(0)
-const mouseY = useMotionValue(0)
-const smoothX = useSpring(mouseX, { stiffness: 100, damping: 30 })
-const smoothY = useSpring(mouseY, { stiffness: 100, damping: 30 })
-
-// Attach to container mousemove
-// Use for: spotlight effects, magnetic buttons, floating decorative elements
-```
-
-**Micro-interactions — every interactive element:**
-```typescript
-// Button — tactile press feeling
-<motion.button
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.97 }}
-  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-/>
-
-// Link — subtle underline grow
-// Use CSS: after pseudo-element width: 0 → 100% on hover with transition
-
-// Input focus — border brightens, slight scale
-// Use Framer layoutId for shared element transitions between states
-
-// Card hover — shadow deepens, slight lift
-<motion.div whileHover={{ y: -4, boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }} />
-```
-
-**Page transitions:**
-```typescript
-// Wrap pages in AnimatePresence
-// Simple fade works beautifully — don't over-engineer
-<AnimatePresence mode="wait">
-  <motion.div
-    key={router.route}
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.25 }}
-  />
-</AnimatePresence>
-```
-
-**Motion rules:**
-- Duration: 200ms for micro-interactions, 400–600ms for layout transitions
-- Never use `ease-in` alone — always `ease-in-out` or custom cubic-bezier
-- Spring physics for UI interactions (`type: "spring"`) — feels alive
-- Cubic-bezier for scroll-triggered animations — more controlled
-- Never animate more than 2 properties simultaneously on the same element
-- `will-change: transform` on elements that animate — performance
-- Reduced motion: always wrap in `useReducedMotion()` check
+**Rules:**
+- Display ≠ body typeface. Pairing creates hierarchy.
+- Weight contrast is the design: headline 700–900 vs caption 300–400.
+- Sizing serves the archetype — a Luxe hero may be *small and airy*, not 140px. Don't
+  auto-scale every hero to 96–140px; that's a SaaS-editorial tic.
+- Licensing/loading: prefer variable fonts; load locally (`next/font` / `@font-face`),
+  never CDN links in production (CLS + perf). If a listed face isn't freely available,
+  substitute one of equal character from the same mood group.
 
 ---
 
-### Surface and depth system
+## Layout & motion — fit the archetype
 
-**Layers:**
-```css
-/* Not flat. Not cards-on-white. Depth through colour and blur. */
-
-/* Layer 0 — page background */
-background: #fafaf8; /* warm off-white */
-
-/* Layer 1 — content surface */
-background: #ffffff;
-box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-
-/* Layer 2 — elevated card */
-background: #ffffff;
-box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-
-/* Layer 3 — modal / floating panel */
-background: rgba(255,255,255,0.9);
-backdrop-filter: blur(20px) saturate(180%);
-box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
-```
-
-**Texture:**
-```css
-/* Subtle grain texture — adds warmth and craftsmanship */
-.grain {
-  position: relative;
-}
-.grain::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,..."); /* SVG noise pattern */
-  opacity: 0.03;
-  pointer-events: none;
-}
-
-/* Or use CSS gradient noise */
-background-image: 
-  url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E"),
-  linear-gradient(to bottom, var(--color-surface), var(--color-surface));
-```
-
----
-
-## Site-type design rules
-
-**Marketing / Landing page:**
-- Hero takes 100vh. Full stop.
-- Headline is 96px minimum on desktop. Closer to 140px is better.
-- One CTA in the hero. Never two equal-weight CTAs fighting for attention.
-- Scroll-triggered animations on every section reveal
-- Parallax on the hero background element
-- Social proof: numbers in giant type, not cards
-- Footer: minimal, typographic, not a sitemap
-
-**Product dashboard:**
-- Navigation: narrow, dark, typographic. Not a wide sidebar with icons + labels.
-- Data: mono font for all numbers. Always.
-- Status: colour dots, not badges with background fill
-- Empty states: illustrated or typographic, never a gray box with placeholder text
-- Micro-interactions on every data point — hover reveals detail
-
-**Documentation / Content:**
-- Reading width: 680px maximum
-- Large, generous line height (1.8)
-- Code blocks: dark surface, always, even on light pages
-- Navigation: sticky left rail, current item is obvious
-- No decorative images — type and structure do all the work
+- **Don't default every project to the marketing scroll-journey.** An app's home is a
+  workspace; a shop's home is products; a kids' app is a playful launchpad. Structure
+  follows what the user came to do.
+- Grid discipline for functional/Swiss; asymmetry and rule-breaking for Editorial/Brutalist;
+  generous negative space for Luxe; density and delight for Playful.
+- **Motion is library-agnostic.** Prefer CSS transitions/animations and the View
+  Transitions API for most work; reach for a motion library (Framer Motion, Motion One,
+  GSAP) only when the interaction needs it. Match motion energy to the archetype
+  (Luxe = slow and few; Playful = springy and frequent; Swiss = minimal). Always honour
+  `prefers-reduced-motion`.
 
 ---
 
 ## The quality check
 
-Before submitting any design, ask:
+Before submitting, ask — and actually look at a rendered screenshot (see SKILL Step 6):
 
-1. **The screenshot test** — if you screenshot this and show it to a designer,
-   would they say "nice" or "another SaaS dashboard"?
+1. **Domain test** — could this be re-skinned for a company in a *different industry*
+   with no structural change? If yes → too generic. It must look like it belongs to
+   THIS domain and audience.
+2. **Not-cream, not-dark-by-default test** — did the palette get *derived* (Steps A–C)
+   or did it fall back to warm cream / dark-for-premium? If the latter → redo it.
+3. **Not-the-same-fonts test** — are these typefaces chosen for this archetype, or the
+   reflex Fraunces/DM-Sans pairing again? Justify the pairing from the emotion.
+4. **Removal test** — cover the logo. Can you still tell what this is for?
+5. **Bold-and-fitting test** — there's one choice a stranger might question, *and* it's
+   right for the audience (bold ≠ random; a private bank being loud is wrong, not brave).
+6. **Motion + typography tests** — does it feel alive at the archetype's energy level,
+   and does the type carry character with images covered?
 
-2. **The removal test** — if you remove the brand name, can you still tell
-   what company/product this is for? If the answer is no — it's too generic.
-
-3. **The bold choice test** — what is the one thing in this design that
-   someone might push back on? If the answer is nothing — it's not bold enough.
-   Good design always makes at least one choice that requires defending.
-
-4. **The motion test** — does the page feel alive? Click something. Hover something.
-   Scroll down. Is there a moment of delight anywhere?
-
-5. **The typography test** — cover the images. Does the page still have character
-   from type alone? If not — the typography is not doing its job.
-
-If any of these fail — the design is not done. Go back.
+If any fail — it's not done. Go back to domain × audience × emotion and re-derive.
