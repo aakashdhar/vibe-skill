@@ -1,6 +1,6 @@
 # vibe-skill Framework — Analysis & Upgrade Plan
 
-> **Status:** Analysis complete (7-layer deep read, one sub-agent per layer).
+> **Status:** Analysis complete (7-layer deep read). **Wave 0 ✅ done · Wave 1 ✅ done** (committed & synced to `~/.claude/skills`). Waves 2-4 pending.
 > **Core goal:** Not a version-string sweep. Re-architect the framework to exploit the *capabilities* of the current Anthropic model generation (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5). The framework was authored for Sonnet 4.6, whose capabilities defined its design constraints at the time; those constraints no longer bind.
 
 ---
@@ -106,9 +106,9 @@ The framework repeatedly promises handoffs the receiving skill knows nothing abo
 
 ## 4. Upgrade roadmap (sequenced)
 
-**Wave 0 — Correctness (cheap, model-independent, first):** progress $0 bug; CODEBASE.md concurrency; settings.json clobber; portal path/regex; create the 6 missing reference files; fix the 2 broken rubric pointers.
+**Wave 0 — Correctness (cheap, model-independent, first): ✅ DONE.** progress $0 bug; CODEBASE.md concurrency; settings.json clobber; portal path/regex; created the 6 missing reference files; fixed the 2 broken rubric pointers.
 
-**Wave 1 — Model & capability refresh:** rewrite PRICING.md to the current lineup **incl. Fable 5.1 + Opus 5**; single-source the default model; replace hardcoded IDs in vibe-agent templates; swap tiktoken → Anthropic token counting; add a **per-task model-tiering table**; introduce **extended-thinking budgets** at high-leverage decision points; add the Claude Agent SDK / native sub-agents as a first-class option in vibe-agent.
+**Wave 1 — Model & capability refresh: ✅ DONE.** rewrote PRICING.md to the current lineup (Fable 5.1 + Opus 5 + Sonnet 5 + Haiku 4.5) as the single source of truth; single-sourced the default model; replaced hardcoded IDs in vibe-agent templates (incl. generated config.py) with per-role tiering; swapped tiktoken → `messages.count_tokens`; added the per-task model-tiering table + effort/adaptive-thinking guidance; added AP-09 (prompt caching) to vibe-perf. *Carried to Wave 3:* injecting extended-thinking effort into each skill's high-leverage steps, and adding the Claude Agent SDK / native sub-agents as a first-class option in vibe-agent's framework roster.
 
 **Wave 2 — Wiring integrity (makes "one-stop" real):** enforce the deploy gate inside vibe-deploy; make the test handoff real; wire perf↔review tags + god-node safety; add architect→spec-review; wire design artifacts into new-app/add-feature.
 
