@@ -1,6 +1,6 @@
 # vibe-skill Framework — Analysis & Upgrade Plan
 
-> **Status:** Analysis complete (7-layer deep read). **Wave 0 ✅ · Wave 1 ✅ · Wave 2 ✅ done** (committed & synced to `~/.claude/skills`). Waves 3-4 pending.
+> **Status:** Analysis complete (7-layer deep read). **Wave 0 ✅ · Wave 1 ✅ · Wave 2 ✅ · Wave 3 ✅ done** (committed & synced to `~/.claude/skills`). Wave 4 (hygiene) pending.
 > **Core goal:** Not a version-string sweep. Re-architect the framework to exploit the *capabilities* of the current Anthropic model generation (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5). The framework was authored for Sonnet 4.6, whose capabilities defined its design constraints at the time; those constraints no longer bind.
 
 ---
@@ -112,7 +112,7 @@ The framework repeatedly promises handoffs the receiving skill knows nothing abo
 
 **Wave 2 — Wiring integrity (makes "one-stop" real): ✅ DONE.** enforced the deploy gate inside vibe-deploy (Step 0.5 reads vibe/reviews/, blocks on open P0/final-gate, warns on P1); made the test handoff real (vibe-add-feature Step 13, vibe-fix-bug Step 11 invoke vibe-test on the blast radius); wired the god-node safety check into WAVE_BUILDER as Pass 2.5; tagged review findings `performance` + suggest `perf:` (perf↔review); added architect→spec-review (Step 7.5 + spec-review Trigger 2.5); wired DESIGN.md / vibe/design/CONTRACT.md into vibe-new-app Step 3 and vibe-add-feature Step 5.
 
-**Wave 3 — Architecture modernization (the deep one):** structured sub-agent outputs (schema-validated JSON); repurpose vibe-graph to semantic navigation; caching-aware prompt conventions; loosen rigid checkpoints/retries with self-verification; delegate to `/code-review`, `/security-review`, `frontend-design`, and a real screenshot loop; structured (JSON) findings across review/perf/test.
+**Wave 3 — Architecture modernization (the deep one): ✅ DONE.** structured schema-validated subagent JSON reports (vibe-parallel, replacing regex); repurposed vibe-graph to a semantic-navigation / focus-overlay model with a cached hybrid baseline; extended-thinking effort callouts at the high-leverage one-shot decisions (brainstorm/architect/agent/new-app/fix-bug/review); diagnosis-first self-verifying retry + looser triage/question ergonomics; Anthropic-native agents (Agent SDK / Tool Runner / Managed Agents) as a first-class framework option; delegate to `/code-review`, `/security-review`, `frontend-design` (proper Skill invocation) + a real screenshot loop + `design:accessibility-review`; browser-rendered token extraction in design-md. *Note:* structured JSON findings live in vibe-review; extending the same to vibe-perf/vibe-test reports is a small follow-up.
 
 **Wave 4 — Hygiene:** de-hardcode install paths; strip client fingerprints; dedupe single-source files; split vibe-deploy into `references/platforms/*`.
 
