@@ -56,36 +56,95 @@ Every question skipped here becomes a scope change mid-build.
 
 ---
 
-## Step 0 — Ingest external input (idea done elsewhere, or a dropped file)
+## How to run this skill — the AI co-founder, not an interrogator
 
-Thinking often happens somewhere else (e.g. the Claude desktop app) and arrives
-here as pasted text or a dropped file. Handle that first so the project still
-reaches full parity instead of skipping steps.
+This is the **single front door** for every project. Whether the user brings a raw
+idea, a stack of documents, or both, it always starts here and always flows fully
+downstream (architect → scaffold → design → build) — nothing is skipped.
 
-**Detect the input source:**
-1. A file at the project root — `BRIEF.md`, or any idea doc (`IDEA.md`, `notes.md`,
-   a pasted spec, etc.). Read it fully.
-2. Pasted text in the user's message.
-3. Nothing substantive.
+Behave like a sharp co-founder who is skeptical *for the user's benefit* — and who
+knows when to stop talking and start building.
 
-**Then:**
-- **Empty or near-empty file** (exists but < ~5 lines of real content): say so —
-  "That file is empty/sparse, so I'll build the brief with you" — and run the
-  normal path below (do not silently produce a hollow BRIEF.md).
-- **A file/paste that is already a canonical BRIEF.md** (has the fields from
-  `references/BRIEF_MD.md`): treat it as a completed brainstorm — jump to the
-  **Pre-write quality check**, then hand off downstream. No re-interviewing.
-- **A file/paste with real content in a *different* shape** (an external
-  brainstorm, a PRD, a loose idea doc): **normalize it** — map what it contains
-  onto the canonical BRIEF.md fields (problem, user, core value, features,
-  non-goals, stack, complexity), then treat missing/weak fields as gaps: run the
-  Fast Path P0 checks and ask only about what's genuinely missing. Do NOT discard
-  their work by re-running the full interview.
+**1. Research before you interrogate.** Do real web research on the idea first (see
+`## Co-founder research`), so your questions are specific and evidence-based, not
+generic. A co-founder who's read the market asks better questions and asks fewer.
 
-After normalization, continue exactly like a native brainstorm — the same
-Pre-write quality check, BRIEF.md generation, spec-review, and downstream handoff
-(including the design step). This is what brings an externally-produced idea to
-parity with one brainstormed here.
+**2. Weight the thinking: desirability → viability → feasibility.**
+Lead with **user-desirability** (does anyone actually want this — the #1 killer),
+then **commercial viability** (does the model work), then **technical feasibility**
+last (with AI-assisted coding it's rarely the binding constraint). Adapt per idea: a
+deep-tech idea pulls feasibility up; a marketplace pulls viability up.
+
+**3. Bounded questioning — DO NOT PESTER.** This is a hard rule, not a preference.
+- Ask only the **few highest-leverage questions** — the ones that would change the
+  build if answered. Target **≤ 3 questions per round** and **≤ 2 rounds** before you
+  have enough for a solid brief. Batch them; never ask one at a time; never re-ask.
+- Stop at **"good enough to build,"** not "perfect." Diminishing-returns questions
+  (edge cases, far-future features, nice-to-knows) do NOT get asked — they become
+  *assumptions to validate* in the brief instead.
+- The moment you have enough to write a solid brief, **stop asking and offer to
+  proceed.** Over-questioning is a failure mode here, equal to under-questioning.
+
+**4. The user can start building at any time — and they win.** If the user says
+"let's build", "start building", "just proceed", "enough questions", or similar —
+**stop immediately.** Do not argue or squeeze in "just one more". Show the
+**readiness card** (see `## Readiness gate`), get a single "Yes, continue", write the
+brief with the open items recorded as assumptions-to-validate, and hand off
+downstream. Their call overrides your desire for a tighter brief. Every time.
+
+**5. When documents are provided, critique — don't just accept.** Read them, find
+disparities, gaps, and things that could be stronger, and surface those concisely.
+But the same bounded/advisory rules apply: point it out once, don't nag.
+
+The path sections (Fast / Personal / Client) below are the *menu of topics* to cover.
+Under co-founder mode they are a checklist to satisfy efficiently — not a script to
+march the user through step by step. Cover what research and the docs didn't already
+answer, within the question budget above.
+
+---
+
+## Step 0 — Intake: read everything the user already has
+
+Thinking, specs, and even the visual design often happen elsewhere (e.g. the Claude
+desktop app) and arrive here as pasted text or **one or more dropped files**. This is
+the universal front door — inventory and understand it all first, so nothing the user
+already produced is ignored and no downstream step is skipped.
+
+**Inventory the project root and the user's message.** There may be several documents
+of different kinds. Read each one fully and classify it to the pipeline artifact it
+maps to:
+
+| Provided document | Maps to | Satisfies stage |
+|-------------------|---------|-----------------|
+| idea / brief / PRD / pitch / notes | `BRIEF.md` | THINK (brief) |
+| architecture / tech-stack / system-design notes | `ARCHITECTURE.md` | architect |
+| spec / requirements / detailed feature list | `vibe/SPEC.md` (via new-app) | — |
+| **design: mockup image (PNG/JPG), prototype HTML, Figma export, or a written "the look I want" description** | `DESIGN.md` (ingest via `design-md:` design-artifact mode) | **DESIGN gate** |
+| existing source code | → this is `vibe-init:` territory, not new-app |
+
+**Then, as the co-founder:**
+- **Empty / near-empty file** (< ~5 lines of real content): say so briefly and build
+  the brief together — don't emit a hollow BRIEF.md.
+- **Already a canonical BRIEF.md**: accept it, but still **critique it once** (below)
+  before moving on — you're a co-founder, not a printer.
+- **Real content in a different shape** (external brainstorm, PRD, loose notes):
+  **normalize** it onto the canonical BRIEF.md fields (problem, user, core value,
+  features, non-goals, stack, complexity) — never discard the user's work by
+  re-running a full interview over it.
+- **A provided design artifact**: note it — it will satisfy the design gate via
+  `design-md:` design-artifact ingestion (image/HTML/prose → DESIGN.md). Do not make
+  the user re-do design they already brought.
+
+**Critique what was provided (once, concisely — then stop).** Cross-check the docs for
+disparities and gaps: contradictions between docs (e.g. target user vs pricing),
+missing brief essentials (unnamed failure mode, no measurable success, no non-goals),
+or a claim the research (next section) contradicts. Surface these as a short list —
+"here's what's strong, here's what's soft" — and fold the genuine gaps into the
+bounded question round. Do **not** nag; point each thing out once.
+
+Whatever the entry, continue through the *same* pipeline: research → (bounded)
+questions → quality check → BRIEF.md → spec-review → downstream handoff (architect →
+scaffold → design → build). This is what brings externally-produced work to parity.
 
 ---
 
@@ -116,6 +175,34 @@ If any of these is missing or vague → run the full path.
 
 If extremely vague — ask ONE question first:
 > "What problem are you trying to solve, or what made you think of this?"
+
+---
+
+# CO-FOUNDER RESEARCH
+
+Run this **before** the question rounds (and before Fast/Personal/Client topics),
+so questions are specific and evidence-based. This is what makes it feel like a
+co-founder who did their homework rather than a form.
+
+**If web tools are available** (WebSearch / WebFetch): do focused research —
+- **What already exists** — direct competitors and substitutes (what people use
+  today, even if it's a spreadsheet). Note how the idea is differentiated, or isn't.
+- **How similar ideas fail** — common failure modes / graveyard for this category.
+- **Market & timing** — is there a "why now"? demand signals, obvious tailwinds/headwinds.
+- **Landmines** — regulatory, privacy, platform-policy, or technical constraints that
+  could block v1 (e.g. health data, payments, scraping, app-store rules).
+- Keep it tight — a few high-signal searches, not a literature review. Capture 3–6
+  findings with source URLs; they feed both the questions and the BRIEF's research/risk
+  section.
+
+**If web tools are NOT available:** say so plainly —
+> "I can't run live research in this session, so I'll reason from what I know and
+>  flag assumptions to validate. (Enable web tools for grounded market research.)"
+Then proceed from domain knowledge and mark research-dependent claims as assumptions.
+
+**Turn research into leverage, not lecture.** Use findings to sharpen the ≤3 questions
+that matter (e.g. "X already does this well for $9/mo — what's your wedge?") — not to
+deliver a report the user didn't ask for. Two or three crisp insights, then the questions.
 
 ---
 
@@ -585,6 +672,49 @@ If 0 signals — no flag.
 
 ---
 
+# READINESS GATE (advisory — the user decides)
+
+Reached two ways: (a) you've satisfied the question budget and have enough for a solid
+brief, or (b) **the user says "let's build" / "start building" / "just proceed" /
+"enough questions" at ANY point** — including mid-interview. Either way, stop asking
+and show the readiness card. This is the anti-pester escape hatch.
+
+Compute a quick **readiness read** — how complete the brief is against the P0
+essentials (specific user, single core value, measurable success, non-goals, clear v1
+boundary) plus any research risks still unaddressed. Express it simply and show what's
+still soft. Do **not** turn this into more questions.
+
+```
+IDEA READINESS — [project name]
+
+  Ready:  ~[N]%   [▓▓▓▓▓▓▓░░░]
+
+  Solid:
+    ✓ [thing that's well-defined]
+    ✓ [thing that's well-defined]
+  Still open (would be recorded as assumptions to validate):
+    • [open item — e.g. pricing model not decided]
+    • [open item — e.g. primary user is still two personas]
+    • [research risk — e.g. competitor X already owns this wedge]
+
+  You can keep sharpening, or build now and validate the open items as you go.
+```
+
+Then a single choice — never a wall of follow-ups:
+> "Continue to build with these open items noted, or sharpen a bit more?
+>  [Yes, continue] / [Keep sharpening]"
+
+- **Yes, continue** → write BRIEF.md now, recording every open item in its
+  **Open assumptions to validate** section (so nothing is lost), and hand off
+  downstream. Do not re-litigate. The user chose; respect it fully.
+- **Keep sharpening** → ask the *single* highest-value open question, then offer the
+  card again. Still bounded — don't spiral.
+
+A brief written this way is valid. Downstream skills read the open-assumptions section
+and treat those items as things to confirm, not as blockers.
+
+---
+
 # PRE-WRITE QUALITY CHECK
 
 > 🧠 **Effort:** synthesising the brief is a high-leverage, one-shot decision —
@@ -598,10 +728,14 @@ Read `references/BRIEF_QUALITY_CHECK.md` in full.
 Run all P0 checks against the confirmed conversation answers.
 Run applicable P1 checks.
 
-If any P0 check fails — ask one targeted follow-up question.
-Wait for answer. Re-run the check.
+If a P0 check fails **and the user has not chosen to proceed**: fold it into the
+bounded question round (within the ≤3-per-round budget) — don't fire a fresh
+follow-up for every failing check one at a time.
 
-Do not write BRIEF.md until all P0 checks pass.
+**If the user has chosen "Yes, continue" at the readiness gate:** do NOT block.
+Record each unmet P0 as an entry in the brief's **Open assumptions to validate**
+section and write BRIEF.md. The user's decision to build outranks a perfect P0 pass —
+never trap them in the quality check.
 
 Log the quality summary internally:
 ```
@@ -694,7 +828,10 @@ No parsing variation. No missing data.
 
 ## Conversation principles
 
-**One topic at a time.** 3-4 questions per step is fine. All steps at once is not.
+**Bounded, not exhaustive.** ≤3 questions per round, ≤2 rounds, batched. Ask only what
+would change the build. Stop at "good enough to build." Over-questioning is a failure.
+**The user can build anytime.** "Let's build" → stop, show the readiness card, respect
+the choice. Never pester, never squeeze in "one more question", never re-ask.
 **Reflect and confirm.** Misunderstandings caught here are free. Mid-build they cost days.
 **Push for specifics.** Vague answers produce vague briefs produce expensive surprises.
 **Non-goals are not optional.** They protect the build. Always get at least 2 (personal) or 3 (client).

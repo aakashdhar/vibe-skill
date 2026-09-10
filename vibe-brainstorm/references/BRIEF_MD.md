@@ -18,7 +18,9 @@ Downstream consumers and what they read:
 
 ```markdown
 # BRIEF.md
-> Created: [date] via brainstorm: | Path: Personal | Complexity: [S/M/L/XL]
+> Created: [date] via brainstorm: | Path: Personal | Complexity: [S/M/L/XL] | Readiness: [N]%
+> Readiness = how complete this brief is against the P0 essentials at write time.
+> < 100% is fine — the user chose to proceed; open items live in "Open assumptions to validate".
 
 ---
 
@@ -126,6 +128,18 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 
 ---
 
+## Market & research
+> From co-founder research. Cite sources when web research ran; mark items
+> "(assumption — no live research)" when it didn't.
+
+- **What exists today:** [competitors / substitutes — what users use now] [source]
+- **Differentiation / wedge:** [how this is different, or the honest "it isn't yet"]
+- **How similar ideas fail:** [common failure mode for this category] [source]
+- **Why now / timing:** [demand signal, tailwind, or "unclear"] [source]
+- **Landmines:** [regulatory / privacy / platform / technical constraints for v1] [source]
+
+---
+
 ## Risks
 
 | Risk | Implication | Mitigation |
@@ -161,6 +175,16 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 
 ---
 
+## Open assumptions to validate
+> Items left open when the user chose to build before every P0 was nailed
+> (readiness gate). Downstream skills treat these as things to confirm, NOT
+> blockers. Delete the section only if truly none.
+
+- [ ] [Open item — e.g. pricing model undecided] — validate by [how/when]
+- [ ] [Research risk carried forward — e.g. competitor owns this wedge] — validate by [how]
+
+---
+
 ## Agentic flag
 
 **Contains AI agent logic:** [Yes / No]
@@ -177,7 +201,7 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 
 ```markdown
 # BRIEF.md
-> Created: [date] via brainstorm: | Path: Client | Complexity: [S/M/L/XL]
+> Created: [date] via brainstorm: | Path: Client | Complexity: [S/M/L/XL] | Readiness: [N]%
 
 ---
 
@@ -412,6 +436,16 @@ If they don't align — flag explicitly and resolve before proceeding.]
 - [ ] [Question requiring client confirmation before architect:]
 - [ ] [Question requiring client confirmation before architect:]
 (Delete section if no open questions — resolve all before proceeding)
+
+---
+
+## Open assumptions to validate
+> Items left open when the user chose to build before every P0 was nailed
+> (readiness gate). Downstream treats these as things to confirm, NOT blockers.
+> For client work, flag any that need client sign-off before Phase 1. Delete only if none.
+
+- [ ] [Open item] — validate by [how/when] — [needs client sign-off? Y/N]
+- [ ] [Research risk carried forward] — validate by [how]
 
 ---
 
