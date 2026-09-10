@@ -286,8 +286,11 @@ Additional context from failure analysis:
 After wave completes, compute cost annotation for the progress log.
 
 ```python
-SONNET_INPUT_COST_PER_M = 3.0    # $3.00 per million input tokens (Sonnet 4.6)
-SONNET_OUTPUT_COST_PER_M = 15.0  # $15.00 per million output tokens
+# Source of truth: vibe-cost/references/PRICING.md. Defaults to the build-loop
+# workhorse (claude-sonnet-5). If subagents ran on a different tier, use that
+# model's row from PRICING.md instead of these two constants.
+SONNET_INPUT_COST_PER_M = 2.0    # claude-sonnet-5 input ($/MTok)
+SONNET_OUTPUT_COST_PER_M = 10.0  # claude-sonnet-5 output ($/MTok)
 
 def compute_wave_cost(reports, wave_tasks, use_graph):
     """

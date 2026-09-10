@@ -69,7 +69,14 @@ cat vibe/TASKS.md 2>/dev/null | head -50
 
 **Detect current model from CLAUDE.md:**
 Look for `MODEL=` or `## Model` section.
-If not found → assume `claude-sonnet-4-6` (default).
+If not found → use the `DEFAULT_MODEL` from `references/PRICING.md`
+(currently `claude-sonnet-5`). Do not hardcode a model here — PRICING.md is the
+single source of truth for the lineup, prices, and default.
+
+**Staleness check:** read the "Last updated" date at the top of
+`references/PRICING.md`. If it is more than ~90 days old, prepend a one-line
+warning to the cost report ("⚠️ Pricing data is N days old — verify at
+anthropic.com/pricing") so estimates don't silently drift after a price change.
 
 **Create cost directory if needed:**
 ```bash
@@ -312,11 +319,13 @@ COST RECOMMENDATIONS
    dynamic sections (VIBE_MODE, ACTIVE FEATURE). Cache the stable part.
    Est. saving: ~$0.20/session on large sessions (cache reads = 90% cheaper)
 
-💡 Model consideration
-   Sessions averaging $1.10 with claude-sonnet-4-6.
+💡 Model consideration (see references/PRICING.md → model selection guide)
+   Sessions averaging $0.75 with claude-sonnet-5.
    Tasks TASK-001, TASK-002 (scaffold + schema) are straightforward —
-   could run on claude-haiku-4-5 at ~8× lower cost.
-   Est. saving: ~$0.18/session if routine tasks use Haiku
+   could run on claude-haiku-4-5 at ~2× lower cost.
+   Also try Sonnet 5 at effort:low before switching models — often matches a
+   weaker model and keeps one cache namespace.
+   Est. saving: ~$0.12/session if routine tasks use Haiku
 ```
 
 **Never recommend a change without an estimated saving.**

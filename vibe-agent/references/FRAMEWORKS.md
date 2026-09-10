@@ -126,7 +126,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 
-llm = ChatAnthropic(model="claude-sonnet-4-6")
+llm = ChatAnthropic(model="claude-sonnet-5")
 
 @tool
 def search_web(query: str) -> str:
@@ -248,7 +248,7 @@ before responding. The most natural HITL implementation of any framework.
 ```python
 from autogen import AssistantAgent, UserProxyAgent, GroupChat, GroupChatManager
 
-config_list = [{"model": "claude-sonnet-4-6", "api_key": "..."}]
+config_list = [{"model": "claude-sonnet-5", "api_key": "..."}]
 
 researcher = AssistantAgent(
     name="Researcher",
@@ -309,7 +309,7 @@ import { z } from 'zod'
 
 // Structured output with Zod
 const brandDNA = await generateObject({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-sonnet-5'),
   schema: z.object({
     voiceAttributes: z.array(z.string()),
     missionStatement: z.string(),
@@ -321,7 +321,7 @@ const brandDNA = await generateObject({
 
 // Tool-using agent
 const result = await generateText({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-sonnet-5'),
   tools: {
     searchCompetitors: tool({
       description: 'Search for competitor companies',
@@ -383,7 +383,7 @@ class PipelineState(TypedDict):
 
 async def guardian_agent(state: PipelineState) -> PipelineState:
     response = await client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-sonnet-5",
         max_tokens=1000,
         messages=[{"role": "user", "content": f"Extract brand DNA from {state['url']}"}]
     )

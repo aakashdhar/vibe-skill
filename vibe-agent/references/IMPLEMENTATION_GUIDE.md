@@ -197,14 +197,14 @@ const brandDNASchema = z.object({
 })
 
 const { object: brandDNA } = await generateObject({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-sonnet-5'),
   schema: brandDNASchema,
   prompt: `Extract brand DNA from this website: ${url}`
 })
 
 // Step 2: Verifier — checks the output
 const verifierResult = await generateObject({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-sonnet-5'),
   schema: z.object({
     passed: z.boolean(),
     contractCheck: z.boolean(),
@@ -234,7 +234,7 @@ import { streamText, tool } from 'ai'
 import { z } from 'zod'
 
 const result = await streamText({
-  model: anthropic('claude-sonnet-4-6'),
+  model: anthropic('claude-sonnet-5'),
   tools: {
     searchCompetitors: tool({
       description: 'Search for competitor companies in a given industry',
@@ -276,7 +276,7 @@ async def call_with_retry(prompt: str, schema: dict, max_attempts: int = 2):
         try:
             response = await asyncio.wait_for(
                 client.messages.create(
-                    model="claude-sonnet-4-6",
+                    model="claude-sonnet-5",
                     max_tokens=1000,
                     messages=[{"role": "user", "content": prompt}]
                 ),
@@ -325,9 +325,12 @@ total_output_tokens = 0
 total_input_tokens += response.usage.input_tokens
 total_output_tokens += response.usage.output_tokens
 
-# Log at end of run:
+# Log at end of run (per-MTok rates from vibe-cost/references/PRICING.md;
+# these are claude-sonnet-5 — swap for your agent's actual model, and prefer
+# looking up the model's row over hardcoding, since a tiered system mixes models):
+IN_PER_M, OUT_PER_M = 2, 10   # claude-sonnet-5
 logger.info(f"Run complete: {total_input_tokens} in, {total_output_tokens} out, "
-            f"est. cost: ${(total_input_tokens * 3 + total_output_tokens * 15) / 1_000_000:.4f}")
+            f"est. cost: ${(total_input_tokens * IN_PER_M + total_output_tokens * OUT_PER_M) / 1_000_000:.4f}")
 ```
 
 ### 2. Verification verdict logging

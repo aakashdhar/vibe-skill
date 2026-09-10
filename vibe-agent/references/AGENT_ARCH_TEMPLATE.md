@@ -329,7 +329,15 @@ Phase 4 — Production hardening
 
 ```python
 # config.py
-MODEL = "claude-sonnet-4-6"
+# Per-role model tiering (see vibe-cost/references/PRICING.md). Match the model
+# to the role instead of one model everywhere:
+ORCHESTRATOR_MODEL = "claude-opus-5"    # hardest planning / routing
+AGENT_MODEL        = "claude-sonnet-5"  # main worker agents (workhorse default)
+VERIFIER_MODEL     = "claude-haiku-4-5" # rubric/schema checks — cheap, deterministic
+MODEL = AGENT_MODEL                     # default when a single model is used
+# Thinking: current models use adaptive thinking + output_config.effort
+# (`{"type": "adaptive"}`, effort high/xhigh for hard reasoning). budget_tokens
+# is deprecated and rejected on the current lineup — do not set it.
 MAX_RETRIES = 1                  # retry once, then HITL
 AGENT_TIMEOUT = 30               # seconds per LLM call
 PIPELINE_TIMEOUT = 300           # seconds total

@@ -11,15 +11,20 @@ Token costs are not just monetary — they drive latency directly.
 More tokens in = longer TTFT (time to first token).
 More tokens out = longer total generation time.
 
-**Rough latency impact (Claude Sonnet, typical):**
-- 1000 input tokens ≈ +50ms latency
-- 1000 output tokens ≈ +200ms latency
-- Each additional agent hop ≈ +500ms–2s end-to-end
+**Rough latency impact (order-of-magnitude, current models — measure per model;
+throughput differs across Haiku/Sonnet/Opus/Fable and with effort level):**
+- Output tokens dominate wall-clock — generation is far slower per token than
+  prefill. Fewer output tokens is the biggest single win.
+- Input tokens add TTFT, but **prompt caching collapses this** for repeated
+  context: a cached prefix is served far faster and ~10× cheaper than re-reading
+  it. Uncached large contexts add real TTFT; cached ones mostly don't.
+- Each additional agent hop adds a full round-trip of TTFT + generation — the
+  serial hop count, not raw token count, usually sets end-to-end latency.
+- Higher `effort` = more thinking tokens = higher latency and cost. Use `low`
+  for mechanical subagents; reserve `high`/`xhigh` for hard reasoning.
 
-At 5 agents each with 4000-token contexts: ~100s minimum theoretical latency
-just from token processing, before any tool calls or external requests.
-
-Token efficiency is the single highest-leverage performance lever in agentic systems.
+Token efficiency **and cache-hit rate** are the highest-leverage performance
+levers in agentic systems — see AP-09.
 
 ---
 
@@ -159,15 +164,42 @@ already extracted.
 
 ---
 
+### AP-09 — No prompt caching on repeated static context
+**What it looks like:**
+```python
+# Every agent call re-sends the same large system prompt / tool list / rules
+# as fresh input tokens — no cache_control breakpoint, so it's billed and
+# re-processed in full on every turn and every subagent.
+resp = client.messages.create(model=..., system=BIG_STATIC_SYSTEM, messages=[...])
+```
+**Why it matters:** on repeated large contexts, cache hits are ~10× cheaper on
+input and materially faster (TTFT). Missing caching is often the single biggest
+cost/latency leak in an agentic system — bigger than model choice.
+**Fix:** Put stable content first (frozen system prompt, deterministic tool
+list), mark the end of the stable prefix with `cache_control: {type: "ephemeral"}`,
+and keep volatile content (timestamps, per-request IDs, the current task) after
+it. Verify `usage.cache_read_input_tokens` is non-zero across repeated calls; if
+it's zero, a silent invalidator (a timestamp or unsorted JSON in the prefix) is
+breaking the cache. Caches are model-scoped — a multi-model cascade can't share
+one, which is a reason to prefer one model at tuned effort over a cascade.
+**Severity:** P1 (cost + latency).
+
+---
+
 ## Measurement approach
 
 For agentic audits without instrumentation in place, estimate from code:
 
-1. Count tokens in each agent's system prompt using:
+1. Count tokens in each agent's system prompt using the Anthropic token
+   counter — never `tiktoken` (that is an OpenAI BPE tokenizer and systematically
+   mis-counts Claude tokens):
    ```python
-   import tiktoken
-   enc = tiktoken.encoding_for_model("gpt-4")
-   token_count = len(enc.encode(system_prompt))
+   from anthropic import Anthropic
+   client = Anthropic()
+   token_count = client.messages.count_tokens(
+       model="claude-sonnet-5",
+       messages=[{"role": "user", "content": system_prompt}],
+   ).input_tokens
    ```
 
 2. Trace data flow through the orchestrator to find sequential vs parallelisable calls.
@@ -176,6 +208,7 @@ For agentic audits without instrumentation in place, estimate from code:
    - AP-01, AP-02, AP-07: P1 (high impact)
    - AP-03, AP-04: P1 (medium-high impact)
    - AP-05, AP-06: P1 (reliability + cost)
+   - AP-09: P1 (cost + latency — cache hit rate)
    - AP-08: P2 (efficiency)
 
 ---

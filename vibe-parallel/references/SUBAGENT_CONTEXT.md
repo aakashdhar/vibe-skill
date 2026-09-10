@@ -264,11 +264,13 @@ def estimate_subagent_tokens(task, use_graph=True):
         )
 
 def estimate_wave_cost(tasks, use_graph=True):
-    # Rough estimate: $3/M tokens (Sonnet 4.6 input)
+    # Rough estimate at claude-sonnet-5 input ($2/MTok). Source of truth for
+    # prices: vibe-cost/references/PRICING.md. With prompt caching on a shared
+    # prefix, real input cost is materially lower — this is an upper bound.
     total_tokens = sum(estimate_subagent_tokens(t, use_graph) for t in tasks)
     return {
         "tokens": total_tokens,
-        "cost_usd": round(total_tokens / 1_000_000 * 3.0, 4)
+        "cost_usd": round(total_tokens / 1_000_000 * 2.0, 4)
     }
 ```
 

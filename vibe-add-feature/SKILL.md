@@ -389,10 +389,12 @@ Say "next" to begin.
 ```
 
 **Cost estimate per task (Mode A — automatic):**
-Read task size from FEATURE_TASKS.md (S / M / L). Apply estimate:
-- S task: ~$0.05-0.10
-- M task: ~$0.12-0.20
-- L task: ~$0.25-0.45
+Read task size from FEATURE_TASKS.md (S / M / L). Rough estimate at
+`claude-sonnet-5` pricing (source of truth: vibe-cost/references/PRICING.md —
+scale for other tiers, and expect lower with prompt caching):
+- S task: ~$0.03-0.07
+- M task: ~$0.08-0.15
+- L task: ~$0.18-0.35
 
 Running session total = sum of all tasks completed this session.
 These are estimates. User can run `cost:` for precise numbers from `/cost` output.
