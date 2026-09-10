@@ -260,421 +260,23 @@ If a worker or cron service is detected, identify the entry point and add it as 
 
 ## Step 3 — Generate platform config
 
-### Railway — `railway.json`
 
-Single file at repo root. Covers all services.
-Non-secret env vars inlined per service.
-Secrets get placeholder comments.
-DATABASE_URL linked via Railway's internal reference syntax.
+The platform config blocks now live in `references/platforms/<platform>.md` —
+**read only the file for the triggered platform** so a run doesn't load the
+other six. Map the trigger to its file:
 
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "services": {
-    "backend": {
-      "source": {
-        "repo": ".",
-        "rootDirectory": "backend"
-      },
-      "build": {
-        "buildCommand": "pip install -r requirements.txt"
-      },
-      "deploy": {
-        "startCommand": "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT",
-        "healthcheckPath": "/health",
-        "healthcheckTimeout": 30,
-        "restartPolicyType": "ON_FAILURE",
-        "restartPolicyMaxRetries": 3
-      },
-      "variables": {
-        "ENVIRONMENT": "production",
-        "FRONTEND_URL": "${{web.RAILWAY_PUBLIC_DOMAIN}}",
-        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
-        "PORT": "8000"
-      }
-    },
-    "web": {
-      "source": {
-        "repo": ".",
-        "rootDirectory": "web"
-      },
-      "build": {
-        "buildCommand": "npm install && npm run build"
-      },
-      "deploy": {
-        "startCommand": "npm run start",
-        "healthcheckPath": "/api/health",
-        "healthcheckTimeout": 30
-      },
-      "variables": {
-        "NODE_ENV": "production",
-        "NEXT_PUBLIC_API_URL": "${{backend.RAILWAY_PUBLIC_DOMAIN}}"
-      }
-    }
-  }
-}
-```
+| Trigger | Config reference |
+|---------|------------------|
+| `deploy: railway` | `references/platforms/railway.md` |
+| `deploy: render` | `references/platforms/render.md` |
+| `deploy: fly` | `references/platforms/fly.md` |
+| `deploy: heroku` | `references/platforms/heroku.md` |
+| `deploy: vercel` | `references/platforms/vercel.md` |
+| `deploy: netlify` | `references/platforms/netlify.md` |
+| `deploy: github-pages` | `references/platforms/github-pages.md` |
 
-**Worker service** (add if detected):
-```json
-"worker": {
-  "source": { "repo": ".", "rootDirectory": "backend" },
-  "deploy": {
-    "startCommand": "celery -A app.celery worker --loglevel=info"
-  },
-  "variables": {
-    "DATABASE_URL": "${{Postgres.DATABASE_URL}}"
-  }
-}
-```
-
-**Cron service** (add if detected):
-```json
-"cron": {
-  "source": { "repo": ".", "rootDirectory": "backend" },
-  "deploy": {
-    "startCommand": "python -m app.cron",
-    "cronSchedule": "0 * * * *"
-  },
-  "variables": {
-    "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
-    "CRON_SECRET": "set-in-dashboard"
-  }
-}
-```
-
----
-
-### Render — `render.yaml`
-
-Single file at repo root. Multi-service blueprint.
-`fromDatabase` links DATABASE_URL automatically.
-`generateValue: true` for auto-generated secrets.
-
-```yaml
-databases:
-  - name: [project]-db
-    databaseName: [project]
-    user: [project]
-    plan: free
-
-services:
-  - type: web
-    name: [project]-backend
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: [project]-db
-          property: connectionString
-      - key: JWT_SECRET
-        generateValue: true
-      - key: CRON_SECRET
-        generateValue: true
-      - key: FRONTEND_URL
-        sync: false   # set in dashboard — Railway web URL not known at config time
-      # External API keys the project actually uses — detect from .env.example
-      # or ask; a Claude-powered app typically needs ANTHROPIC_API_KEY.
-      - key: ANTHROPIC_API_KEY
-        sync: false   # set in dashboard
-      - key: [OTHER_API_KEY]
-        sync: false   # set in dashboard
-
-  - type: web
-    name: [project]-web
-    runtime: node
-    rootDir: web
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        sync: false   # set to backend URL after first deploy
-
-  - type: worker
-    name: [project]-worker
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A app.celery worker --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: [project]-db
-          property: connectionString
-```
-
----
-
-### Fly.io — `fly.toml` per service
-
-Fly deploys one app per toml. Generate one per service directory.
-
-**`backend/fly.toml`:**
-```toml
-app = "[project]-backend"
-primary_region = "[region]"  # pick the region closest to your users — `fly platform regions`
-
-[build]
-
-[env]
-  ENVIRONMENT = "production"
-  PORT = "8080"
-
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-
-  [[http_service.checks]]
-    grace_period = "10s"
-    interval = "30s"
-    method = "GET"
-    path = "/health"
-    timeout = "5s"
-
-[[vm]]
-  cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 512
-
-[deploy]
-  release_command = "alembic upgrade head"
-```
-
-**`web/fly.toml`:**
-```toml
-app = "[project]-web"
-primary_region = "[region]"  # match the backend's region
-
-[build]
-
-[env]
-  NODE_ENV = "production"
-
-[http_service]
-  internal_port = 3000
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-
-  [[http_service.checks]]
-    grace_period = "10s"
-    interval = "30s"
-    method = "GET"
-    path = "/api/health"
-    timeout = "5s"
-
-[[vm]]
-  cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 512
-```
-
-**Dockerfile** — generate if not present. Detect stack and generate minimal production Dockerfile:
-
-FastAPI example:
-```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-EXPOSE 8080
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
-```
-
----
-
-### Heroku — `Procfile` + `app.json`
-
-**`Procfile`** (root):
-```
-web: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
-worker: celery -A app.celery worker --loglevel=info
-```
-
-**`app.json`** (root):
-```json
-{
-  "name": "[project]",
-  "description": "[project description from BRIEF.md]",
-  "repository": "",
-  "addons": [
-    {
-      "plan": "heroku-postgresql:mini"
-    }
-  ],
-  "env": {
-    "ENVIRONMENT": {
-      "value": "production"
-    },
-    "JWT_SECRET": {
-      "description": "Secret key for JWT signing",
-      "generator": "secret"
-    },
-    "FRONTEND_URL": {
-      "description": "URL of the frontend web app",
-      "required": true
-    },
-    "ANTHROPIC_API_KEY": {
-      "description": "Anthropic API key — get from console.anthropic.com (example; use whatever external keys the project actually needs)",
-      "required": false
-    }
-  },
-  "formation": {
-    "web": { "quantity": 1, "size": "eco" },
-    "worker": { "quantity": 1, "size": "eco" }
-  },
-  "buildpacks": [
-    { "url": "heroku/python" }
-  ]
-}
-```
-
----
-
-### Vercel — `vercel.json`
-
-Frontend only. Generated at web service root or repo root.
-
-```json
-{
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://[backend-url]/api/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }
-      ]
-    }
-  ],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@next_public_api_url"
-  }
-}
-```
-
-For static React/Vite (no SSR):
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
-```
-
----
-
-### Netlify — `netlify.toml`
-
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"         # or "out" for Next.js static export
-  functions = "netlify/functions"
-
-[build.environment]
-  NODE_VERSION = "20"
-  NODE_ENV = "production"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Cache-Control = "public, max-age=0, must-revalidate"
-
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-```
-
----
-
-### GitHub Pages — `.github/workflows/deploy.yml`
-
-Static export only. Generates the workflow even if user said no to GitHub Actions
-(GitHub Pages requires a workflow — it's how it deploys).
-
-```yaml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm install
-      - run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out   # or dist for Vite
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/deploy-pages@v4
-        id: deployment
-```
-
----
+Generate the config file(s) exactly as that reference specifies, substituting
+`[project]`, `[region]`, and detected services/secrets. Then continue to Step 4.
 
 ## Step 4 — GitHub Actions CI/CD (if user said yes)
 
@@ -902,6 +504,25 @@ Source files patched:
 After first deploy — update cross-service URLs:
   · [exact commands]
 ```
+
+---
+
+## Step 8 — Record the deploy decision
+
+Like every sibling delivery skill (vibe-document, vibe-handoff, vibe-changelog),
+persist the decision so later runs and handoffs can reference it. Append to
+`vibe/DECISIONS.md` (if the project has a vibe/ folder):
+
+```
+### D-[ID] — Deployment target: [platform]
+- Date: [date] · Type: tech-choice
+- What: prepared deploy config for [platform] ([services])
+- Why: [one line — why this platform for this project]
+- Source patches applied: [files]
+- Approved by: human | agent-autonomous
+```
+
+Also add a one-line entry to `vibe/TASKS.md` "What just happened".
 
 ---
 
