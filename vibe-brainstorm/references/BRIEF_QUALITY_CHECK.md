@@ -161,21 +161,38 @@ Simpler: weekly email digest instead — no backend needed."
 
 Run after features are locked. Before writing BRIEF.md.
 
-Scan the confirmed feature set and description for these signals:
+The real test is **judgment, not keyword-matching**: does the product require an
+**LLM/AI model to make decisions, generate content, or take actions** as part of
+its core behavior? Use the signals below as prompts for that judgment — do not
+flag on a bare substring match.
 
 ```
-AGENTIC_SIGNALS = [
+# STRONG signals (any one → likely agentic):
+STRONG = [
     "AI agent", "LLM", "language model", "GPT", "Claude", "Gemini",
-    "autonomous", "tool use", "function calling", "orchestrat",
-    "multi-agent", "pipeline", "workflow automation", "AI decides",
-    "AI generates", "AI extracts", "AI classifies", "AI summarises",
-    "AI writes", "AI scrapes", "AI researches", "verifier", "subagent",
-    "web search", "web scraping", "AI-powered", "intelligent",
-    "automat* the *ing", "agent that", "bot that"
+    "autonomous agent", "tool use / function calling", "multi-agent",
+    "orchestrator + sub-agents", "the AI decides / generates / extracts /
+    classifies / summarises / writes", "verifier agent", "RAG",
+]
+# WEAK/AMBIGUOUS signals — do NOT flag on these alone; they have common
+# non-AI meanings. Only count them if the surrounding intent is clearly an
+# LLM making the decision:
+WEAK = [
+    "pipeline"      # usually CI/CD or data ETL — NOT agentic
+    "intelligent"   # marketing adjective — usually not literal AI
+    "automation"    # a cron job / script is not an agent
+    "workflow"      # plain app workflow
+    "search"        # keyword/DB search ≠ AI
+    "bot"           # could be a rule-based bot
 ]
 ```
 
-If 2+ signals found:
+Judge intent: "deployment pipeline", "intelligent search" (Elasticsearch),
+"automate the report" (a scheduled script) are **not** agentic. "an agent that
+researches competitors and writes a summary" **is**. When only WEAK signals
+appear, ask one clarifying question rather than flagging.
+
+If 2+ STRONG signals (or 1 STRONG confirmed by intent):
 
 **High confidence — announce and flag:**
 > "This project involves AI agent logic — I can see [signal A] and [signal B].

@@ -134,7 +134,7 @@ def resolve_read_write_conflicts(waves, tasks_by_id):
         for tid in wave:
             task = tasks_by_id[tid]
             for f in task.get("touches", []):
-                if f not in APPEND_ONLY_FILES:
+                if f not in MAIN_SESSION_OWNED_FILES:
                     written_this_wave[f] = tid
 
         deferred = []

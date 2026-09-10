@@ -399,6 +399,13 @@ After all MD files are written, generate a single `index.html` portal.
 This is a self-contained web page combining all documents — clean, light-mode,
 elegantly designed, optimised for reading and sharing with clients.
 
+> **Portal theming:** the generator uses a neutral, brand-agnostic default and
+> automatically picks up the project's own design when a `DESIGN.md` /
+> `vibe/design/CONTRACT.md` exists (so the portal isn't one fixed house style on
+> every client). To set colours/fonts explicitly, drop a
+> `vibe/design/portal-theme.json` with `{paper, accent, serif, sans, mono}` and the
+> generator applies it.
+
 ```bash
 python3 "$(ls ~/.claude/skills/vibe-handoff/scripts/generate_portal.py ~/.claude/plugins/marketplaces/*/skills/vibe-handoff/scripts/generate_portal.py 2>/dev/null | head -1)" vibe/handoff/[mode]-[date]/
 ```

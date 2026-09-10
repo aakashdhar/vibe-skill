@@ -528,9 +528,27 @@ SUGGESTED FIRST STEP
 
 ---
 
+## Stage 6 — Spec review gate
+
+`vibe-spec-review` documents "Trigger 3 — after vibe-new-app or vibe-init", and a
+retrofit is exactly where it matters most: the SPEC.md was inferred from code and is
+marked PROVISIONAL. Invoke it before handing off.
+
+> "vibe/ folder generated from the codebase. Running spec-review — the SPEC.md is
+>  PROVISIONAL, so this checks it before you build on it..."
+
+Invoke `vibe-spec-review`:
+- Trigger source: `vibe-init`
+- Scope: SPEC.md + ARCHITECTURE.md + BRIEF.md (all that exist)
+
+It will flag the PROVISIONAL SPEC.md as a P1 to verify — expected for a retrofit, not
+a failure. Present findings, then continue.
+
+---
+
 ## Post-completion — Build dependency graph
 
-After outputting the completion report, invoke `vibe-graph: build`.
+After spec-review and the completion report, invoke `vibe-graph: build`.
 
 This converts the CODEBASE.md just written into a queryable dependency graph.
 No extra file reads — the information was just extracted for CODEBASE.md.

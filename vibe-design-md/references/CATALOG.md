@@ -5,6 +5,13 @@ Read during Step 1A of vibe-design-md to find the correct slug and fetch URL.
 
 Base URL: https://raw.githubusercontent.com/VoltAgent/awesome-design-md/main/design-md/
 
+> ⚠️ This is an **external, unpinned third-party repo** — it can be renamed, moved,
+> rate-limited, or removed. It is a convenience, not a hard dependency: if a fetch
+> fails or returns non-200/HTML, do NOT retry blindly — fall back to **Mode B**
+> (generate the DESIGN.md by rendering the real site's URL) or **Mode C** (ingest a
+> design the user provides), and tell the user the catalog was unavailable. Never
+> block the pipeline on this repo.
+
 ---
 
 ## How to use this catalog
@@ -107,6 +114,14 @@ If a site isn't listed — use Mode B (URL generation).
 ---
 
 ## Closest match guide
+
+> ⚠️ A fetched DESIGN.md is **one real company's specific identity**, not a generic
+> "feeling." Do not launder it into a default (e.g. always answering "warm" with
+> Claude/Notion's palette). Only fetch a match when the project's domain × audience ×
+> emotion (vibe-design/references/ANTI_GENERIC.md) genuinely calls for that identity —
+> otherwise derive a fresh palette/type via `design:` or generate from a more fitting
+> reference. A borrowed identity dropped onto an unrelated domain is exactly the
+> generic-by-imitation failure the design layer exists to prevent.
 
 When a client describes a feeling rather than naming a site, use this guide:
 

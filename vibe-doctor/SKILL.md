@@ -412,22 +412,36 @@ If `.claude/settings.json` does not already have a doctor hook:
 > "Doctor complete. Want me to add a session-start reminder hook to
 > `.claude/settings.json` so this runs automatically? (y/n)"
 
-If yes — append to `.claude/settings.json` (creating if needed):
-```json
-{
-  "hooks": {
-    "PostToolUse": [{
-      "matcher": "Edit|Write",
-      "hooks": [{
-        "type": "command",
-        "command": "npm run lint --silent 2>&1 | tail -5 || true"
-      }]
-    }]
-  }
-}
+If yes — **merge** the hook into `.claude/settings.json` (never overwrite it — the
+file may already hold `permissions`, `env`, or hooks from vibe-review). Prefer the
+`update-config` skill if it is available in the session; otherwise read-merge-write,
+and no-op if an equivalent lint hook already exists:
+```bash
+LINT_CMD='npm run lint --silent 2>&1 | tail -5 || true'   # or the project's linter
+mkdir -p .claude
+python3 - "$LINT_CMD" << 'PY'
+import json, sys, pathlib
+lint_cmd = sys.argv[1]
+p = pathlib.Path(".claude/settings.json")
+cfg = {}
+if p.exists() and p.read_text().strip():
+    try:
+        cfg = json.loads(p.read_text())          # preserve existing config
+    except json.JSONDecodeError:
+        print("settings.json is not valid JSON — leaving it untouched"); sys.exit(0)
+post = cfg.setdefault("hooks", {}).setdefault("PostToolUse", [])
+already = any("lint" in h.get("command","") or "tsc" in h.get("command","") or "ruff" in h.get("command","")
+             for entry in post for h in entry.get("hooks", []))
+if not already:
+    post.append({"matcher": "Edit|Write", "hooks": [{"type": "command", "command": lint_cmd}]})
+    p.write_text(json.dumps(cfg, indent=2) + "\n"); print("Lint hook merged")
+else:
+    print("A lint/typecheck PostToolUse hook already exists — no change")
+PY
 ```
 
-Also offer the PostToolUse lint hook while here — one setup, permanent benefit.
+This is the same safe merge vibe-review uses — the two skills must not clobber each
+other's `.claude/settings.json`.
 
 ---
 

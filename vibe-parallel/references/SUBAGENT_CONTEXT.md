@@ -226,24 +226,31 @@ The following tasks completed partially — account for these:
 
     prompt += """
 ═══ COMPLETION REPORT ═══
-When done, output this report EXACTLY (no extra text before or after):
+When done, end your turn with a single fenced ```json block matching this schema
+exactly (see vibe-parallel/references/REPORTING.md). Do NOT edit vibe/CODEBASE.md,
+DECISIONS.md, TASKS.md, or CLAUDE.md yourself — report deltas; the main session
+applies them.
 
-TASK_COMPLETE: {task_id}
-STATUS: [DONE|PARTIAL|FAILED]
-FILES_MODIFIED: [comma-separated or "none"]
-FILES_CREATED: [comma-separated or "none"]
-TESTS_PASSED: [N]/[total]
-CRITERIA:
-  [x or space] [criterion text]
-  [x or space] [criterion text]
-CODEBASE_UPDATE: [YES: what changed | NO]
-BLOCKERS: [none | what downstream tasks should know]
-RATIONALE_ADDED: [YES: WHY/DECISION comments added to which files | NO]
-ERROR_IF_FAILED: [error message if STATUS=FAILED | none]
+{
+  "task_id": "{task_id}",
+  "status": "DONE" | "PARTIAL" | "FAILED",
+  "files_modified": ["path", ...],
+  "files_created": ["path", ...],
+  "tests": { "passed": N, "total": N },
+  "criteria": [ { "text": "...", "met": true|false, "note": "reason if unmet" } ],
+  "codebase_update": "what changed, for the main session to record | ",
+  "blockers": ["anything downstream tasks must know", ...],
+  "rationale_added": "WHY/DECISION comments added | ",
+  "error": "failure detail | null"
+}
 """.replace("{task_id}", task['id'])
 
     return prompt
 ```
+
+Where the runtime supports schema-validated output/tool calls, bind this schema with
+`strict: true`. The orchestrator parses it JSON-first (REPORTING.md) — the legacy
+text format is gone.
 
 ---
 

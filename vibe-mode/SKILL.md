@@ -11,7 +11,9 @@ description: >
   "turn on autonomous", "turn off autonomous", "what mode am I in".
   Always use when the user wants to control how much the framework
   runs automatically vs waits for human input.
-  Writes VIBE_MODE to CLAUDE.md. All vibe-* skills read this on startup.
+  Writes VIBE_MODE to CLAUDE.md. Execution-driving skills (vibe-new-app,
+  vibe-add-feature, vibe-fix-bug, vibe-parallel, vibe-review, vibe-cost) read it
+  on startup; skills with no mode-dependent behavior don't need to.
 ---
 
 # Vibe Mode Skill

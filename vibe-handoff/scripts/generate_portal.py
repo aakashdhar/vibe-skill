@@ -262,12 +262,16 @@ def md_to_html(text):
 CSS = """
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --paper:#faf8f4;--paper2:#f4f1eb;--paper3:#ede9e1;
-  --ink:#1a1710;--ink2:#3d3a33;--ink3:#7a756a;--ink4:#b0aa9e;
-  --accent:#b0412e;--accent2:#8c3122;--gold:#c9922a;--rule:#ddd8cf;
-  --serif:'Cormorant Garamond',Georgia,serif;
-  --sans:'DM Sans',system-ui,sans-serif;
-  --mono:'DM Mono',monospace;
+  /* Neutral, brand-agnostic default — deliberately not a warm editorial house style;
+     a specific palette/typeface identity is a per-project choice, not a universal default.
+     Overridden per project by theme_override_css() when a DESIGN.md / design CONTRACT /
+     portal-theme.json is present, so the portal reflects the project's own design. */
+  --paper:#ffffff;--paper2:#f6f7f9;--paper3:#eceef1;
+  --ink:#15171c;--ink2:#3a3e46;--ink3:#697079;--ink4:#a3a9b2;
+  --accent:#2b303a;--accent2:#171b22;--gold:#5c6572;--rule:#e3e6ea;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
 }
 html{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;scroll-behavior:smooth}
 body{display:flex;min-height:100vh}
@@ -443,10 +447,54 @@ def nav_group_label(mode):
         "maintenance": "Maintenance Package",
     }.get(mode, "Documents")
 
+def theme_override_css(folder):
+    """Make the portal reflect the PROJECT's design, not a house style.
+    Reads (in order) an optional vibe/design/portal-theme.json, else a few tokens
+    from vibe/design/CONTRACT.md / DESIGN.md if present. Returns a `:root{...}`
+    override string (or "" to keep the neutral default). Never fabricates a palette.
+    """
+    import json as _json, re as _re
+    root = folder
+    for _ in range(6):  # walk up to project root
+        if (root / "vibe").is_dir() or (root / ".git").exists() or (root / "CLAUDE.md").exists():
+            break
+        if root.parent == root:
+            break
+        root = root.parent
+
+    # 1) Explicit theme file wins.
+    tf = root / "vibe" / "design" / "portal-theme.json"
+    if tf.exists():
+        try:
+            t = _json.loads(tf.read_text())
+            keys = ["paper", "paper2", "paper3", "ink", "accent", "serif", "sans", "mono"]
+            decls = "".join(f"--{k}:{t[k]};" for k in keys if k in t and t[k])
+            if decls:
+                return f"\n:root{{{decls}}}\n"
+        except Exception:
+            pass
+
+    # 2) Otherwise pull hex colours + a font hint from a design doc, if one exists.
+    for name in ("vibe/design/CONTRACT.md", "DESIGN.md"):
+        p = root / name
+        if p.exists():
+            txt = p.read_text(errors="ignore")
+            hexes = _re.findall(r"#[0-9a-fA-F]{6}", txt)
+            decls = ""
+            if hexes:
+                # First distinct hex → accent; keep neutral surfaces unless the doc
+                # clearly names a light background hex. Conservative on purpose.
+                decls += f"--accent:{hexes[0]};"
+            if decls:
+                return f"\n:root{{{decls}}}\n"
+    return ""
+
+
 def generate_html(docs, folder, mode, project_name, generated_at):
     folder_date = folder.name
     doc_count   = len(docs)
     has_credentials = any(d.name == "CREDENTIALS.md" for d in docs)
+    theme_css = theme_override_css(folder)
 
     # Build nav items
     nav_items_html = ""
@@ -519,10 +567,7 @@ def generate_html(docs, folder, mode, project_name, generated_at):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{project_name} — Handoff Package</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>{CSS}</style>
+<style>{CSS}{theme_css}</style>
 </head>
 <body>
 
@@ -544,7 +589,7 @@ def generate_html(docs, folder, mode, project_name, generated_at):
 <div class="topbar">
   <div class="topbar-left">{project_name} · {mode.title()} Handoff · {generated_at}</div>
   <div class="topbar-right">
-    {"<span style='font-size:11px;color:#b0412e;font-family:var(--mono)'>⚠ Fill CREDENTIALS.md before sharing</span>" if has_credentials else ""}
+    {"<span style='font-size:11px;color:var(--accent);font-family:var(--mono)'>⚠ Fill CREDENTIALS.md before sharing</span>" if has_credentials else ""}
     <button class="topbar-btn" onclick="window.print()">Print / Save PDF</button>
   </div>
 </div>
@@ -568,7 +613,7 @@ def generate_html(docs, folder, mode, project_name, generated_at):
         <div class="meta-label">Generated</div>
         <div class="meta-value">{generated_at}</div>
       </div>
-      {"<div class='meta-item'><div class='meta-label'>Action required</div><div class='meta-value' style='color:#b0412e'>Fill CREDENTIALS.md before sharing</div></div>" if has_credentials else ""}
+      {"<div class='meta-item'><div class='meta-label'>Action required</div><div class='meta-value' style='color:var(--accent)'>Fill CREDENTIALS.md before sharing</div></div>" if has_credentials else ""}
     </div>
   </div>
 

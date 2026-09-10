@@ -317,8 +317,10 @@ Generate CLAUDE.md at **project root** substituting all [placeholders]:
 1. Verify acceptance criteria in FEATURE_TASKS.md are all ticked
 2. Run tests: `[test command]` — must pass before commit
 3. Run lint: `[lint command] --silent` — must pass before commit
-4. Commit code changes:
-   git add -A
+4. Commit code changes — stage the files THIS task touched, not `git add -A`
+   (blanket-staging risks committing .env, build artifacts, or stray files;
+   ensure .gitignore covers .env*, node_modules, build output first):
+   git add [the specific paths this task created/modified]
    git commit -m "feat([scope]): [TASK-ID] — [one line plain English description]"
 5. Commit doc updates separately:
    git add vibe/TASKS.md vibe/DECISIONS.md vibe/CODEBASE.md

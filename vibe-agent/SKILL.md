@@ -513,12 +513,14 @@ Same topology, same colour coding.
 No JavaScript. No event handlers. No interactive elements.
 Clean enough to paste into a Notion page, Figma, or a slide deck.
 
-Save to `agent-architecture.svg` at project root.
-Present it using the present_files tool.
+Write the SVG to `agent-architecture.svg` at the project root and tell the user the
+path (e.g. "Static diagram saved to agent-architecture.svg — open it or drop it into
+a doc/slide"). Use SendUserFile to surface it if that tool is available; otherwise
+just state the path. Do not reference any `present_files` tool — it does not exist.
 
 ---
 
-## Step 13 — Hand off to spec-review
+## Step 14 — Hand off to spec-review
 
 Before telling the user anything, announce:
 > "AGENT_ARCH.md written. Running spec-review to validate agent design..."
@@ -529,7 +531,7 @@ Invoke `vibe-spec-review` with:
 
 After spec-review completes:
 
-## Step 14 — Tell the user
+## Step 15 — Tell the user
 
 ```
 ✅ Agentic architecture complete — [System Name]
