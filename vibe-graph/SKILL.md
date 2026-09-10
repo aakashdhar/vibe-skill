@@ -35,6 +35,31 @@ Three concepts from graphify integrated throughout:
 
 ---
 
+## Execution model — extract with judgment, compute with the script
+
+Split the work so the model never hand-simulates graph algorithms (a real
+silent-error risk on any non-trivial codebase):
+
+- **Extraction is the LLM's job** (needs code comprehension): read the code / specs
+  and write `vibe/graph/DEPENDENCY_GRAPH.json` and `CONCEPT_GRAPH.json` — the nodes,
+  edges, confidence tags, and rationale.
+- **Computation is `scripts/graph.py`'s job** (deterministic): god-node degree
+  ranking, blast-radius queries, stats, and the `graph.html` render. **Run it via
+  Bash — do not mentally sort degrees or traverse the graph.** The Python shown in
+  the reference files documents the algorithm; the script is what actually runs it.
+
+Resolve the script path across install layouts:
+```bash
+GRAPH=$(ls ~/.claude/skills/vibe-graph/scripts/graph.py \
+           ~/.claude/plugins/marketplaces/*/skills/vibe-graph/scripts/graph.py 2>/dev/null | head -1)
+python3 "$GRAPH" godnodes --top 5      # compute god nodes → .graph-meta.json
+python3 "$GRAPH" query src/x.py        # blast radius (certain / probable / ambiguous + rationale)
+python3 "$GRAPH" stats                 # nodes, edges, confidence + AMBIGUOUS count
+python3 "$GRAPH" html                  # render vibe/graph/graph.html
+```
+
+---
+
 ## The two layers
 
 ### Layer 1 — DEPENDENCY_GRAPH.json (file-level)
@@ -208,7 +233,9 @@ Feature folder Touches field → EXTRACTED, 1.0.
 Naming match → INFERRED, 0.85.
 Fallback → foundation, INFERRED, 0.70.
 
-**Step 6 — Compute god nodes:**
+**Step 6 — Compute god nodes:** run the engine, don't compute by hand —
+`python3 "$GRAPH" godnodes --top 5` (writes `.graph-meta.json`). The Python below
+documents the algorithm the script implements; it is not for you to execute mentally.
 ```python
 import json
 from pathlib import Path
@@ -314,8 +341,8 @@ For each concept affected by changed files:
 - Update `files` list, `tasks_complete` count
 - Update concept edges: if corresponding file import was confirmed → edge source = EXTRACTED
 
-**Step 6 — Recompute god nodes:**
-God nodes change as files are added and connections grow.
+**Step 6 — Recompute god nodes:** run `python3 "$GRAPH" godnodes --top 5` (do not
+recompute by hand). God nodes change as files are added and connections grow.
 Recompute after every update that adds 3+ new edges.
 
 **Step 7 — Update graph.html:**
@@ -354,7 +381,11 @@ vibe-graph: update complete
 **Called by:** `vibe-fix-bug`, `vibe-test`, `vibe-review` at task start.
 Also available manually for debugging.
 
-Read `references/GRAPH_QUERY_PATTERNS.md` for the full query protocol.
+For a **file** query, run the engine — it computes the blast radius (certain /
+probable / ambiguous) and surfaces rationale deterministically:
+`python3 "$GRAPH" query <file> --depth 2`. Use `python3 "$GRAPH" stats` for the
+health/ambiguous summary. Read `references/GRAPH_QUERY_PATTERNS.md` for the concept
+query protocol and how to interpret results.
 
 ```
 vibe-graph: query scout_agent.py
