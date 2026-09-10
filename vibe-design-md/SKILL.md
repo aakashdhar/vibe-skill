@@ -6,13 +6,18 @@ description: >
   complete design system of a real product — exact hex/oklch values, font
   families, spacing scales, shadow formulas, component states, do's and don'ts
   — in a format vibe-design reads to produce pixel-accurate matching UI.
-  Two modes: fetch a pre-built DESIGN.md from the catalog by site name
-  (instant, exact tokens), or generate one from any URL by reading the site's
-  CSS and visual language (works on any site, ~2 min).
+  Three modes: (A) fetch a pre-built DESIGN.md from the catalog by site name
+  (instant, exact tokens); (B) generate one from any URL by reading the site's
+  rendered CSS and visual language (~2 min); (C) INGEST a design the user already
+  made — a mockup/screenshot image (PNG/JPG), a prototype HTML/CSS file, or a
+  written description — and extract it into DESIGN.md, so a look designed
+  elsewhere (e.g. in the Claude desktop app) satisfies the pipeline's design gate
+  without redoing it.
   Output always saved to project root as DESIGN.md.
   Triggers on "design-md:", "generate a design system for", "extract design
   tokens from", "make it look like [brand]", "get the design system for",
-  "fetch DESIGN.md for", "create DESIGN.md from".
+  "fetch DESIGN.md for", "create DESIGN.md from", "ingest this mockup/design",
+  "turn this prototype/screenshot into DESIGN.md", "here's the design I made".
   After output: vibe-design reads DESIGN.md automatically in Step 2.
 ---
 
@@ -64,18 +69,41 @@ extract design tokens from https://raycast.com
 
 ---
 
+## Mode C — Ingest a design the user already made (image / prototype / description)
+
+**When:** the user brings their own design — a mockup/screenshot **image** (PNG/JPG),
+a **prototype HTML/CSS** file, or a **written description** of the look (often
+produced in Claude desktop, then dropped into the project root).
+**How:** analyze the provided artifact and extract its design language into DESIGN.md.
+This is what lets a design done elsewhere satisfy the pipeline's design gate — the
+user should never be asked to re-do a design they already have.
+**Accuracy:** high for HTML (computed/authored values) and images (read the image
+directly — palette, type feel, spacing, layout, mood); prose fills the rest.
+
+**Triggers:**
+```
+design-md: ingest mockup.png
+design-md: use this prototype (prototype.html)
+"here's the design I made — turn it into DESIGN.md"
+[a design image or prototype file dropped in the project root]
+```
+
+---
+
 ## Step 0 — Parse the request
 
 Determine mode:
 
 ```
-Input contains "http" or "https" → Mode B (URL generation)
-Input contains a known site name → Mode A (catalog fetch)
-Input is ambiguous → check CATALOG.md first, ask if not found
+A provided image / prototype file / "here's my design" → Mode C (ingest artifact)
+Input contains "http" or "https"                        → Mode B (URL generation)
+Input contains a known site name                        → Mode A (catalog fetch)
+Input is ambiguous                                      → check CATALOG.md, then ask
 ```
 
 **If ambiguous — ask once, concisely:**
-> "Is this [site name] in the catalog (instant) or a URL I should visit and extract?"
+> "Is this [site name] in the catalog (instant), a URL I should visit and extract,
+>  or a design file/mockup you've already made that I should ingest?"
 
 ---
 
@@ -129,6 +157,28 @@ the static HTML — and warn the user:
 > the computed colours/fonts may be incomplete. Share a screenshot or the site's
 > style-guide URL for higher accuracy."
 Flag every inferred value explicitly.
+
+---
+
+## Step 1C — Ingest a provided design artifact (Mode C)
+
+Extract the design language from whatever the user brought:
+
+- **Image mockup / screenshot (PNG/JPG):** read the image directly (it's multimodal —
+  actually look at it). Extract: the palette (sample the real colours — background,
+  text, primary/accent, borders; give hex/OKLCH), the type feel (serif/sans/mono,
+  weight contrast, display vs body; name the closest real families), spacing/rhythm,
+  radius and shadow character, layout structure, and the overall mood/archetype
+  (per vibe-design ANTI_GENERIC.md). Where a value can't be read exactly from the
+  image, infer and mark it "(from mockup — verify)".
+- **Prototype HTML/CSS file:** read the file; pull authored/`getComputedStyle` values —
+  CSS custom properties, font stacks, colours, spacing, radii, shadows. Highest fidelity.
+- **Written design description (prose):** map the described intent onto the DESIGN.md
+  fields; fill unstated specifics with archetype-appropriate defaults and mark them
+  "(inferred from description)".
+
+Do NOT overwrite an existing DESIGN.md silently — if one exists, diff and confirm.
+The goal is to faithfully capture *the user's* design, not to redesign it.
 
 ---
 
