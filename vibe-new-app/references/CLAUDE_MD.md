@@ -106,13 +106,26 @@ Confirm the actual request before opening any file.
 
 ---
 
-## Phase gates
+## Phase gates — ENFORCED, not advisory
 > A phase cannot advance until `review:` passes with 0 P0 findings.
-> Final phase blocks deploy until 0 P0 + 0 P1.
+> Final phase blocks deploy until 0 P0 + 0 P1. This holds in manual mode too.
 
 - Phase 1 → run `review: phase 1`
 - Phase 2 → run `review: phase 2`
 - Final → run `review: final`
+
+**Advancement rule (check every time before starting a new phase):**
+Before the FIRST task of Phase N+1, read `vibe/.gates.json`. If
+`phases["N"].review` is not `"passed"`, **STOP** and say:
+"Phase N's review gate is [status] — run `review: phase N` before Phase N+1."
+Do not start the next phase until it passes. Same rule for the design gate
+(no UI-feature build before `design` when no design system exists) and the
+deploy gate (no `deploy:` until `final.review` is `passed`).
+
+When the last task of a phase is done, run the phase review immediately
+(autonomous) or announce and run it (manual) — don't drift into the next phase.
+The hard lock is the git pre-push hook installed at setup (blocks a push while
+P0s are open; override once with `git push --no-verify`, logged in DECISIONS.md).
 
 ## Active feature
 > Set when `feature:` runs. Cleared when the feature completes.

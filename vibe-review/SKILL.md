@@ -386,6 +386,38 @@ Add all P1/P2/P3 findings. Use the format in `references/REVIEW_REPORT.md`.
 
 ---
 
+## Step 11.5 — Record the gate state (enforcement)
+
+Read `references/GATES.md`. Write the outcome to `vibe/.gates.json` so phase
+advancement and the deploy gate can *check* this review rather than trust memory —
+this is what makes the gate hold in manual mode. Merge into the existing file; never
+drop other phases' entries.
+
+```bash
+python3 - "$PHASE" "$P0" "$P1" << 'PY'
+import json, sys, pathlib, datetime
+phase, p0, p1 = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+p = pathlib.Path("vibe/.gates.json")
+g = json.loads(p.read_text()) if p.exists() and p.read_text().strip() else {"phases": {}}
+g.setdefault("phases", {})
+status = "passed" if p0 == 0 else "open"
+entry = {"review": status, "p0": p0, "p1": p1,
+         "date": datetime.date.today().isoformat(),
+         "report": f"vibe/reviews/phase-{phase}-review.md"}
+if phase == "final":
+    g["final"] = {"review": "passed" if (p0 == 0 and p1 == 0) else "open", **entry}
+else:
+    g["phases"][phase] = entry
+p.write_text(json.dumps(g, indent=2) + "\n")
+print(f"gate recorded: phase {phase} → {status} (P0={p0}, P1={p1})")
+PY
+```
+
+If P0 > 0, the phase gate is **open** — the generated CLAUDE.md's advancement rule
+will block the next phase from starting until a re-review passes.
+
+---
+
 ## Step 12 — Update vibe/ARCHITECTURE.md (if gaps found)
 
 If review reveals a pattern being used that isn't documented:

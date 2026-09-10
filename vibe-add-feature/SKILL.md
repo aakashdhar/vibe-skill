@@ -519,3 +519,14 @@ advertises as its auto-handoff from vibe-add-feature.
 
 vibe-test reads the `Touches` sections of this feature's `FEATURE_TASKS.md`
 (and the graph, if present) to scope coverage. Skip only if the user declines.
+
+---
+
+## Step 14 — Phase gate check
+
+If this feature was the **last task of a phase**, the phase review gate runs now —
+run `review: phase N` (autonomous: automatically; manual: announce and run). Do not
+drift into the next phase's features first. The gate is enforced by the CLAUDE.md
+advancement rule + `vibe/.gates.json` (see `vibe-review/references/GATES.md`): the
+next phase cannot start until `phases["N"].review` is `passed`. If the feature is
+mid-phase, just continue.

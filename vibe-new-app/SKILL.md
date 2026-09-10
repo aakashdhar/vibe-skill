@@ -584,6 +584,21 @@ this is visible in the human-facing plan.
 
 After the design gate resolves:
 
+## Step 10D — Install the gate hard-lock (git pre-push hook)
+
+The phase/deploy gates are enforced by flow + `vibe/.gates.json` (see
+`vibe-review/references/GATES.md`), but the only true machine-level lock is a git
+hook. Offer to install it:
+
+> "Install the gate hard-lock? It blocks `git push` while any P0 review finding is
+>  open — so quality gates hold even if a step is skipped. Override anytime with
+>  `git push --no-verify`. (y/n)"
+
+If yes, write `.git/hooks/pre-push` (chmod +x) with the check from GATES.md
+(grep open P0 in `vibe/reviews/backlog.md` → exit 1). If the project uses husky,
+add it as a husky `pre-push` instead. If declined, note it — gates then rely on
+flow + state only.
+
 ## Step 11 — Tell the user
 
 ---
