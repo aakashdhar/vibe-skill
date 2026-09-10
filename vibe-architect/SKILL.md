@@ -195,6 +195,10 @@ Lock the testing philosophy.
 
 ## Step 5 — Synthesise and confirm
 
+> 🧠 **Effort:** architecture trade-offs are one-shot and load-bearing — `review:`
+> enforces this document every phase. Reason at high/xhigh effort with adaptive
+> thinking; weigh the alternatives explicitly before committing to patterns.
+
 > **Architecture summary for [App Name]:**
 >
 > **Project type:** [type]

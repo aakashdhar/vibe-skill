@@ -209,6 +209,10 @@ P2 appearing unresolved across 3+ phase reviews → escalate to P1.
 
 ## Step 3 — Architecture drift detection
 
+> 🧠 **Effort:** drift detection and the SOLID/security judgment in Steps 3-7 are
+> the highest-value reasoning in a review — run the review at high/xhigh effort
+> with adaptive thinking. For the final-gate review, consider claude-opus-5.
+
 **Most important section. Check ARCHITECTURE.md (or PLAN.md if no ARCHITECTURE.md) first.**
 
 For each documented decision, check the actual code.

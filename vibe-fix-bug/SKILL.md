@@ -148,6 +148,11 @@ Also read vibe/DESIGN_SYSTEM.md if the bug is in a styled component.
 
 ## Step 3 — Explore and diagnose (time-boxed)
 
+> 🧠 **Effort:** root-cause diagnosis is where extended thinking pays off most —
+> run this at high/xhigh effort with adaptive thinking. Prefer thinking harder
+> over reading more files: the time-box below is a floor for *giving up on a
+> hypothesis*, not a substitute for reasoning. Form and test hypotheses explicitly.
+
 **Check for dependency graph first:**
 ```bash
 ls vibe/graph/DEPENDENCY_GRAPH.json 2>/dev/null && echo "GRAPH EXISTS" || echo "NO GRAPH"

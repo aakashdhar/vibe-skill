@@ -215,6 +215,11 @@ This is the most common source of inter-feature conflicts caught too late.
 
 **Step 5B — Build the Feature Map (Section 6) — the most important step:**
 
+> 🧠 **Effort:** sequencing features by dependency is the reasoning that every
+> later build wave and parallel dispatch relies on. Run it at high/xhigh effort
+> with adaptive thinking — get the dependency ordering and shared-data analysis
+> right here, because errors propagate through the whole build.
+
 Read vibe/SPEC.md features section. Read BRIEF.md feature list and non-goals.
 
 For every v1 feature, determine:

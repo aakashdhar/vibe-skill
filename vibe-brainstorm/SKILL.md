@@ -547,6 +547,11 @@ If 0 signals — no flag.
 
 # PRE-WRITE QUALITY CHECK
 
+> 🧠 **Effort:** synthesising the brief is a high-leverage, one-shot decision —
+> every downstream skill treats BRIEF.md as fixed. Run this with adaptive
+> thinking at high effort (`thinking: {type: "adaptive"}`, `output_config.effort:
+> "high"`); reason through gaps and alternatives before writing, don't pattern-fill.
+
 **Internal step — not shown to user.**
 
 Read `references/BRIEF_QUALITY_CHECK.md` in full.

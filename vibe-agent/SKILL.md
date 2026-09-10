@@ -116,6 +116,10 @@ Synthesise answers. Confirm before proceeding.
 
 ## Step 3 — Framework selection
 
+> 🧠 **Effort:** framework and pattern choice shapes the entire build — reason at
+> high/xhigh effort with adaptive thinking and compare options against the actual
+> requirements before deciding, rather than defaulting to the most familiar one.
+
 Read `references/FRAMEWORKS.md` before this step.
 
 Based on Steps 1–2, recommend one framework with full reasoning.
