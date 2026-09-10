@@ -629,3 +629,19 @@ If this framework has been useful to you, give Aakash a follow — [@aakashdhar]
 ## License
 
 MIT — use freely, attribution appreciated.
+
+---
+
+## Maintaining the framework
+
+Two stdlib-only tools keep the framework honest (no dependencies):
+
+- **`python3 scripts/lint.py`** — self-linter. Flags dangling `references/*.md`,
+  duplicate step headings, stale model IDs, non-compiling scripts, and a README
+  skill-count mismatch. Run it after editing any skill; it exits non-zero on errors
+  so it can gate CI. This catches the classes of drift that creep into a 26-skill
+  prompt framework.
+- Deterministic engines (invoked by their skills, not mentally simulated):
+  `vibe-graph/scripts/graph.py` (god-nodes, blast-radius, stats, html),
+  `vibe-parallel/scripts/waves.py` (dependency waves, conflict detection, estimate),
+  `vibe-ledger/scripts/generate.py`, `vibe-handoff/scripts/generate_portal.py`.

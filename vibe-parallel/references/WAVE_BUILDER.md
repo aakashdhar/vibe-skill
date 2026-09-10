@@ -3,7 +3,25 @@
 Read during Step 2 of vibe-parallel.
 Full dependency wave construction algorithm including
 write-write conflict detection, read-write conflict detection,
-and size-aware wave splitting.
+god-node deferral, and the time estimate.
+
+## Execution model — extract with judgment, compute with the script
+
+Do **not** hand-simulate this algorithm (silent scheduling errors are a real risk).
+The LLM's job is EXTRACTION: read the task file and write `vibe/parallel/tasks.json`
+(each task's `id`, `deps`, `writes`, `reads`, `size`, plus optional `god_nodes` from
+the graph). Then run the deterministic engine:
+
+```bash
+WAVES=$(ls ~/.claude/skills/vibe-parallel/scripts/waves.py \
+           ~/.claude/plugins/marketplaces/*/skills/vibe-parallel/scripts/waves.py 2>/dev/null | head -1)
+python3 "$WAVES" plan vibe/parallel/tasks.json          # human-readable plan
+python3 "$WAVES" plan --json vibe/parallel/tasks.json   # machine-readable, for dispatch
+```
+
+It returns the waves, the conflict resolutions (write-write / read-write / god-node),
+and the sequential-vs-parallel time estimate. The Python below documents the
+algorithm the script implements — it is reference, not something to run mentally.
 
 ---
 
