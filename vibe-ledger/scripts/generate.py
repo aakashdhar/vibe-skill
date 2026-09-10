@@ -67,7 +67,7 @@ def compute_metrics(sessions, summary):
 
     day_totals = defaultdict(lambda: {"cost": 0, "sessions": 0, "tasks": 0, "phases": []})
     for s in sessions:
-        d = s.get("date", "unknown")
+        d = s.get("date", "unknown")[:10]
         day_totals[d]["cost"]     += s["cost_usd"]
         day_totals[d]["sessions"] += 1
         day_totals[d]["tasks"]    += s["tasks_completed"]
@@ -80,12 +80,15 @@ def compute_metrics(sessions, summary):
     all_patterns  = [p for s in sessions for p in s.get("patterns_detected", [])]
     clean_sessions = sum(1 for s in sessions if not s.get("patterns_detected"))
 
-    dates = sorted(set(s.get("date", "") for s in sessions))
+    def parse_date(d):
+        return datetime.strptime(d[:10], "%Y-%m-%d")
+
+    dates = sorted(set(s.get("date", "")[:10] for s in sessions))
     if len(dates) == 1:
-        date_range = datetime.strptime(dates[0], "%Y-%m-%d").strftime("%b %d, %Y")
+        date_range = parse_date(dates[0]).strftime("%b %d, %Y")
     elif len(dates) > 1:
-        d1 = datetime.strptime(dates[0],  "%Y-%m-%d").strftime("%b %d")
-        d2 = datetime.strptime(dates[-1], "%Y-%m-%d").strftime("%b %d, %Y")
+        d1 = parse_date(dates[0]).strftime("%b %d")
+        d2 = parse_date(dates[-1]).strftime("%b %d, %Y")
         date_range = f"{d1} – {d2}"
     else:
         date_range = "unknown"
