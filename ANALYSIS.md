@@ -1,6 +1,6 @@
 # vibe-skill Framework — Analysis & Upgrade Plan
 
-> **Status:** Analysis complete (7-layer deep read). **Wave 0 ✅ · Wave 1 ✅ · Wave 2 ✅ · Wave 3 ✅ done** (committed & synced to `~/.claude/skills`). Wave 4 (hygiene) pending.
+> **Status:** Analysis complete (7-layer deep read). **Wave 0 ✅ · Wave 1 ✅ · Wave 2 ✅ · Wave 3 ✅ · Wave 4 ✅ done** — all five waves committed, synced to `~/.claude/skills`, and pushed.
 > **Core goal:** Not a version-string sweep. Re-architect the framework to exploit the *capabilities* of the current Anthropic model generation (Sonnet 5, Opus 5, Fable 5.1, Haiku 4.5). The framework was authored for Sonnet 4.6, whose capabilities defined its design constraints at the time; those constraints no longer bind.
 
 ---
@@ -114,7 +114,7 @@ The framework repeatedly promises handoffs the receiving skill knows nothing abo
 
 **Wave 3 — Architecture modernization (the deep one): ✅ DONE.** structured schema-validated subagent JSON reports (vibe-parallel, replacing regex); repurposed vibe-graph to a semantic-navigation / focus-overlay model with a cached hybrid baseline; extended-thinking effort callouts at the high-leverage one-shot decisions (brainstorm/architect/agent/new-app/fix-bug/review); diagnosis-first self-verifying retry + looser triage/question ergonomics; Anthropic-native agents (Agent SDK / Tool Runner / Managed Agents) as a first-class framework option; delegate to `/code-review`, `/security-review`, `frontend-design` (proper Skill invocation) + a real screenshot loop + `design:accessibility-review`; browser-rendered token extraction in design-md. *Note:* structured JSON findings live in vibe-review; extending the same to vibe-perf/vibe-test reports is a small follow-up.
 
-**Wave 4 — Hygiene:** de-hardcode install paths; strip client fingerprints; dedupe single-source files; split vibe-deploy into `references/platforms/*`.
+**Wave 4 — Hygiene: ✅ DONE.** de-hardcoded the `~/.claude/skills/...` install paths (resolve across flat + plugin/marketplace layouts) in vibe-add-feature/fix-bug/new-app/ledger/handoff; stripped client fingerprints (personal names → role placeholders; fly `bom`/Mumbai → `[region]`; Gemini/OpenWeather example keys → `ANTHROPIC_API_KEY`); split vibe-deploy 940→542 lines with per-platform configs in `references/platforms/*` (load only the triggered one) + added the missing deploy→DECISIONS.md step. *Dedup:* cost math and the default-model string are single-sourced at PRICING.md (Wave 1); vibe-design's anti-generic files reframed as supplementary to first-party `frontend-design` (Wave 3f) — no risky physical file merges needed.
 
 ---
 
