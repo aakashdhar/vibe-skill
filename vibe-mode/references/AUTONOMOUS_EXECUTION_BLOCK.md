@@ -46,11 +46,23 @@ If Wave 1 has 1 task:
 **2. Execute each wave**
 
 For each wave (parallel or single):
-- Dispatch subagent(s) with scoped task prompts
-- Wait for completion
-- On success: mark tasks `[x]`, update TASKS.md
-- On first failure: retry once with failure context
-- On second failure: STOP — surface the failure, wait for human
+- Dispatch subagent(s) with scoped task prompts. Each subagent returns the
+  **structured JSON completion report** (see vibe-parallel/references/REPORTING.md) —
+  consume that, don't scrape prose.
+- Wait for completion; read `status` + `criteria` from each report.
+- On `DONE` with all criteria met and tests passing: mark `[x]`, update TASKS.md.
+- On failure or `PARTIAL`, retry with a **diagnosis-first** pass rather than a
+  blind re-run:
+  1. Re-dispatch the task at higher reasoning effort (e.g. `effort: high`/`xhigh`
+     with adaptive thinking), giving the subagent the failing report + error and
+     asking it to state the root cause before fixing.
+  2. Before declaring success, **self-verify**: re-check the task's acceptance
+     criteria against the actual result — don't trust the report's own claim.
+  3. If the second attempt still fails, STOP — surface the failure (root-cause
+     summary + error) and wait for human.
+- Retry budget is per task; a task that converges (fewer unmet criteria on the
+  retry) may warrant one more attempt — use judgment, don't hard-stop at exactly
+  two if it's clearly closing in and cheap. Never loop indefinitely.
 
 **3. Unlock next wave**
 

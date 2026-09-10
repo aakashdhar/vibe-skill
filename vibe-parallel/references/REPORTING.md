@@ -8,132 +8,107 @@ and compute wave cost annotations.
 
 ---
 
-## Completion report format
+## Completion report format (structured JSON)
 
-Every subagent outputs this report when done:
+Current models produce reliable structured output — instruct each subagent to end
+its turn with a single fenced `json` block matching the schema below. This
+replaces the old free-text `TASK_COMPLETE:` block that had to be scraped with
+regex (and failed a whole task whenever the format drifted). Where the runtime
+supports a schema-validated output / tool call, bind this schema with
+`strict: true` so the shape is guaranteed.
 
+**Schema** (all keys required; `files_*` are arrays, empty when none):
+
+```json
+{
+  "task_id": "TASK-003",
+  "status": "DONE",
+  "files_modified": ["src/agents/scout_agent.py", "src/tools/tavily.py"],
+  "files_created": [],
+  "tests": { "passed": 4, "total": 4 },
+  "criteria": [
+    { "text": "ScoutAgent returns top 5 competitors", "met": true, "note": "" },
+    { "text": "Error handling for Tavily timeout", "met": false,
+      "note": "Tavily mock not available in test env" }
+  ],
+  "codebase_update": "updated Agents section with ScoutAgent constructor params",
+  "blockers": [],
+  "rationale_added": "WHY comment at line 12 explaining directory-first approach",
+  "error": null
+}
 ```
-TASK_COMPLETE: TASK-003
-STATUS: DONE
-FILES_MODIFIED: src/agents/scout_agent.py, src/tools/tavily.py
-FILES_CREATED: none
-TESTS_PASSED: 4/4
-CRITERIA:
-  [x] ScoutAgent returns top 5 competitors
-  [x] Results written to Supabase immediately
-  [x] Rate limiter applied between requests
-  [ ] Error handling for Tavily timeout — NOT MET: Tavily mock not available in test env
-CODEBASE_UPDATE: YES: updated Agents section with ScoutAgent constructor params
-BLOCKERS: none
-RATIONALE_ADDED: YES: added WHY comment at line 12 explaining directory-first approach
-ERROR_IF_FAILED: none
-```
+
+`status` is one of `DONE` | `PARTIAL` | `FAILED`. The subagent must NOT write the
+main-session-owned files itself — `codebase_update` / `rationale_added` describe
+deltas for the main session to apply after the wave.
 
 ---
 
 ## Parsing the completion report
 
+Parse the JSON block; only fall back to the legacy text parser if no JSON is
+found (older subagents). A schema-valid JSON report removes the `parse_error →
+auto-FAILED` failure class entirely.
+
 ```python
-import re
+import json, re
 
 def parse_completion_report(raw_output, task_id):
-    """
-    Extracts structured data from a subagent completion report.
-    Handles malformed output gracefully.
-    """
-    # Find the report block — look for TASK_COMPLETE marker
-    report_start = raw_output.find(f"TASK_COMPLETE: {task_id}")
-    if report_start == -1:
-        # Report not found — treat as FAILED
-        return {
-            "task_id": task_id,
-            "status": "FAILED",
-            "parse_error": True,
-            "raw": raw_output[-2000:],  # last 2000 chars for diagnosis
-            "state": "!"
-        }
+    data = _extract_json_report(raw_output, task_id)
+    if data is None:
+        data = _parse_legacy_text_report(raw_output, task_id)   # fallback
+    if data is None:
+        return {"task_id": task_id, "status": "FAILED", "parse_error": True,
+                "raw": raw_output[-2000:], "state": "!"}
+    return _finalize(data, task_id)
 
-    report = raw_output[report_start:]
-
-    def extract_field(key, text):
-        match = re.search(rf"^{key}:\s*(.+)$", text, re.MULTILINE)
-        return match.group(1).strip() if match else ""
-
-    def extract_criteria(text):
-        criteria = []
-        in_criteria = False
-        for line in text.split("\n"):
-            if line.startswith("CRITERIA:"):
-                in_criteria = True
-                continue
-            if in_criteria:
-                if line.startswith("  ["):
-                    met = line.strip().startswith("[x]")
-                    text_part = re.sub(r"^\[.\]\s*", "", line.strip())
-                    note = ""
-                    if " — NOT MET:" in text_part:
-                        parts = text_part.split(" — NOT MET:")
-                        text_part = parts[0].strip()
-                        note = parts[1].strip() if len(parts) > 1 else ""
-                    criteria.append({
-                        "text": text_part,
-                        "met": met,
-                        "note": note
-                    })
-                elif line and not line.startswith(" "):
-                    in_criteria = False
-        return criteria
-
-    status = extract_field("STATUS", report)
-    files_modified = [f.strip() for f in extract_field("FILES_MODIFIED", report).split(",")
-                      if f.strip() and f.strip() != "none"]
-    files_created = [f.strip() for f in extract_field("FILES_CREATED", report).split(",")
-                     if f.strip() and f.strip() != "none"]
-    tests_raw = extract_field("TESTS_PASSED", report)
-    codebase_update = extract_field("CODEBASE_UPDATE", report)
-    blockers = extract_field("BLOCKERS", report)
-    rationale_added = extract_field("RATIONALE_ADDED", report)
-    error = extract_field("ERROR_IF_FAILED", report)
-    criteria = extract_criteria(report)
-
-    # Parse test count
-    tests_passed = tests_total = 0
-    if "/" in tests_raw:
-        parts = tests_raw.split("/")
+def _extract_json_report(raw_output, task_id):
+    # Prefer a fenced ```json block; else the last {...} object in the output.
+    blocks = re.findall(r"```json\s*(\{.*?\})\s*```", raw_output, re.DOTALL)
+    if not blocks:
+        blocks = re.findall(r"(\{(?:[^{}]|\{[^{}]*\})*\})", raw_output, re.DOTALL)
+    for block in reversed(blocks):
         try:
-            tests_passed = int(parts[0])
-            tests_total = int(parts[1])
-        except ValueError:
-            pass
+            d = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if d.get("task_id") == task_id or "status" in d:
+            return d
+    return None
 
-    # Determine task state
-    unmet_criteria = [c for c in criteria if not c["met"]]
-    tests_all_pass = tests_passed == tests_total if tests_total > 0 else True
+def _finalize(d, task_id):
+    tests = d.get("tests") or {}
+    passed, total = int(tests.get("passed", 0)), int(tests.get("total", 0))
+    criteria = d.get("criteria", []) or []
+    unmet = [c for c in criteria if not c.get("met", False)]
+    tests_ok = (passed == total) if total > 0 else True
+    status = (d.get("status") or "").upper()
 
-    if status == "DONE" and not unmet_criteria and tests_all_pass:
-        state = "x"          # [x] complete
-    elif status == "FAILED" or (tests_total > 0 and not tests_all_pass and not unmet_criteria):
-        state = "!"          # [!] failed
+    if status == "DONE" and not unmet and tests_ok:
+        state = "x"
+    elif status == "FAILED" or (total > 0 and not tests_ok and not unmet):
+        state = "!"
     else:
-        state = "~"          # [~] partial
+        state = "~"
 
+    files = lambda k: [f for f in (d.get(k) or []) if f and f != "none"]
     return {
-        "task_id":        task_id,
-        "status":         status,
-        "state":          state,
-        "files_modified": files_modified,
-        "files_created":  files_created,
-        "tests_passed":   tests_passed,
-        "tests_total":    tests_total,
-        "criteria":       criteria,
-        "unmet_criteria": unmet_criteria,
-        "codebase_update": codebase_update,
-        "blockers":       blockers,
-        "rationale_added": rationale_added,
-        "error":          error,
-        "parse_error":    False
+        "task_id": task_id, "status": status, "state": state,
+        "files_modified": files("files_modified"),
+        "files_created":  files("files_created"),
+        "tests_passed": passed, "tests_total": total,
+        "criteria": criteria, "unmet_criteria": unmet,
+        "codebase_update": d.get("codebase_update") or "",
+        "blockers": d.get("blockers") or [],
+        "rationale_added": d.get("rationale_added") or "",
+        "error": d.get("error"),
+        "parse_error": False,
     }
 ```
+
+> `_parse_legacy_text_report` is the pre-JSON regex parser (kept only for
+> backward compatibility with the old `TASK_COMPLETE:` text format); new
+> subagent prompts should always request the JSON schema above.
 
 ---
 

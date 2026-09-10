@@ -359,21 +359,26 @@ Files you MAY read (your imports):
   [slice imports list]
 
 ═══ COMPLETION REPORT ═══
-When your task is complete, output this report EXACTLY:
+When your task is complete, end your turn with a single fenced ```json block
+matching this schema exactly (see references/REPORTING.md for the full spec).
+Do NOT edit vibe/CODEBASE.md, DECISIONS.md, TASKS.md, or CLAUDE.md yourself —
+describe the deltas in the report; the main session applies them.
 
-TASK_COMPLETE: [TASK-ID]
-STATUS: [DONE|PARTIAL|FAILED]
-FILES_MODIFIED: [comma-separated list]
-FILES_CREATED: [comma-separated list]
-TESTS_PASSED: [N]/[total]
-CRITERIA:
-  [x] [criterion 1]
-  [x] [criterion 2]
-  [ ] [criterion 3 — NOT MET: reason]
-CODEBASE_UPDATE: [YES: what changed | NO]
-BLOCKERS: [none | description of anything downstream tasks should know]
-RATIONALE_ADDED: [YES: what WHY/DECISION comments were added | NO]
+{
+  "task_id": "[TASK-ID]",
+  "status": "DONE" | "PARTIAL" | "FAILED",
+  "files_modified": ["path", ...],
+  "files_created": ["path", ...],
+  "tests": { "passed": N, "total": N },
+  "criteria": [ { "text": "...", "met": true|false, "note": "reason if unmet" } ],
+  "codebase_update": "what changed, for the main session to record | ",
+  "blockers": ["anything downstream tasks must know", ...],
+  "rationale_added": "WHY/DECISION comments added | ",
+  "error": "failure detail | null"
+}
 ```
+Where the runtime supports schema-validated output/tool calls, this schema is
+bound with `strict: true` so the shape is guaranteed.
 
 **Dispatch all tasks in the wave simultaneously as subagents.**
 
