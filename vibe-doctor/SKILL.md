@@ -410,7 +410,7 @@ and the PreToolUse hook to know when doctor last ran.
 
 If `.claude/settings.json` does not already have a doctor hook:
 
-> "Doctor complete. Want me to add a session-start reminder hook to
+> "Doctor complete. Want me to add a lint+typecheck hook (runs after edits) to
 > `.claude/settings.json` so this runs automatically? (y/n)"
 
 If yes — **merge** the hook into `.claude/settings.json` (never overwrite it — the

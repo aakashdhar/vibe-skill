@@ -303,7 +303,7 @@ body{display:flex;min-height:100vh}
 /* TOPBAR */
 .topbar{
   position:fixed;top:0;left:240px;right:0;height:44px;
-  background:rgba(250,248,244,0.95);backdrop-filter:blur(8px);
+  background:color-mix(in srgb, var(--paper) 95%, transparent);backdrop-filter:blur(8px);
   border-bottom:1px solid var(--rule);z-index:90;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 48px;
@@ -417,7 +417,7 @@ code{font-family:var(--mono);font-size:12.5px;background:var(--paper3);padding:1
 
 /* WARN BOX */
 .warn-box{
-  background:#fff8f0;border:1px solid #f0c080;border-left:4px solid var(--gold);
+  background:color-mix(in srgb, var(--accent) 6%, var(--paper));border:1px solid var(--rule);border-left:4px solid var(--accent);
   padding:14px 18px;margin-bottom:24px;font-size:14px;color:#5a3a00;
   line-height:1.65;font-family:var(--sans);
 }

@@ -23,7 +23,12 @@ def find_project_root():
 
 def load_history(root):
     with open(root / "vibe" / "cost" / "history.json") as f:
-        return json.load(f)
+        data = json.load(f)
+    # Flat array is canonical; tolerate the legacy {"sessions":[...]} shape
+    # (same tolerance vibe-progress documents) so we degrade instead of crashing.
+    if isinstance(data, dict):
+        data = data.get("sessions", [])
+    return data if isinstance(data, list) else []
 
 def load_summary(root):
     p = root / "vibe" / "cost" / "summary.json"
@@ -55,6 +60,10 @@ def compute_metrics(sessions, summary):
     total_input  = sum(num(s, "input_tokens") for s in sessions)
     total_output = sum(num(s, "output_tokens") for s in sessions)
     total_tasks  = sum(num(s, "tasks_completed") for s in sessions)
+    # Cache metrics — read from real data; don't fabricate a zero.
+    cache_tracked = any(("cache_read_tokens" in s or "cache_write_tokens" in s) for s in sessions)
+    cache_read    = sum(num(s, "cache_read_tokens") for s in sessions)
+    cache_pct     = (cache_read / (total_input + cache_read) * 100) if (total_input + cache_read) else 0
     total_tokens = total_input + total_output
     n_sessions   = len(sessions)
 
@@ -137,6 +146,7 @@ def compute_metrics(sessions, summary):
         "dot_value": dot_value, "session_dots_fn": session_dots,
         "input_pct": (total_input / total_tokens * 100) if total_tokens else 0,
         "output_pct": (total_output / total_tokens * 100) if total_tokens else 0,
+        "cache_read": cache_read, "cache_pct": cache_pct, "cache_tracked": cache_tracked,
         # Rich fields from summary.json
         "at_a_glance":          summary.get("at_a_glance", ""),
         "session_narratives":   summary.get("session_narratives", {}),
@@ -595,8 +605,8 @@ def generate_html(sessions, m, project_name, generated_at):
     <div class="ss">{m['peak']['tasks_completed']} tasks · {m['peak']['session_id']}</div>
   </div>
   <div class="sc" style="border-color:#880022">
-    <div class="sl">CACHE SAVINGS</div><div class="sv cr">$0.00</div>
-    <div class="ss">potential: unlock caching</div>
+    <div class="sl">CACHE HIT</div><div class="sv cr">{f"{m['cache_pct']:.0f}%" if m['cache_tracked'] else "n/a"}</div>
+    <div class="ss">{'of input from cache' if m['cache_tracked'] else 'not tracked in history.json'}</div>
   </div>
 </div>
 
@@ -686,10 +696,10 @@ def generate_html(sessions, m, project_name, generated_at):
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;font-size:16px;margin-bottom:3px">
-            <span style="color:#ff4060">Reused from cache</span><span style="color:#ff4060">0 &nbsp; 0%</span>
+            <span style="color:#39ff14">Reused from cache</span><span style="color:#39ff14">{f"{m['cache_read']:,} &nbsp; {m['cache_pct']:.0f}%" if m['cache_tracked'] else "not tracked"}</span>
           </div>
-          <span style="font-family:'VT323',monospace;font-size:15px;letter-spacing:0;color:#363c5a">{'░'*52}</span>
-          <div style="font-size:13px;color:#ff4060;margin-top:2px">Nothing reused — paying full price every session</div>
+          <span style="font-family:'VT323',monospace;font-size:15px;letter-spacing:0;color:#363c5a">{'█'*round(m['cache_pct']/100*52) if m['cache_tracked'] else ''}{'░'*(52-round(m['cache_pct']/100*52)) if m['cache_tracked'] else '░'*52}</span>
+          <div style="font-size:13px;color:#7a88aa;margin-top:2px">{'Input tokens served from cache (cheaper reads)' if m['cache_tracked'] else 'history.json has no cache_read_tokens — cache use not tracked'}</div>
         </div>
       </div>
     </div>

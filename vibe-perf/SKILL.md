@@ -9,7 +9,9 @@ description: >
   "slow queries", "LLM latency", "token usage", "memory leak",
   "CPU usage", "cold start", "perf regression".
   Runs automatically after vibe-review flags performance as P1/P2,
-  and as a mandatory gate before vibe-deploy.
+  and as a recommended pre-deploy check — any perf **P0** it writes to
+  vibe/reviews/backlog.md is then enforced by vibe-deploy's Step 0.5 gate
+  (which blocks on open P0s), so a perf-critical finding does block deploy.
   Always use when performance is in question — even without the exact prefix.
   Shows fix plan by category, waits for human approval, then writes all fixes.
   Tracks scores over time and compares against previous perf: runs.

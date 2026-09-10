@@ -394,6 +394,10 @@ this is what makes the gate hold in manual mode. Merge into the existing file; n
 drop other phases' entries.
 
 ```bash
+# Set these from the review you just completed:
+#   PHASE = the phase reviewed ("1", "2", … or "final")
+#   P0 / P1 = the P0 / P1 finding counts from this review
+PHASE="[phase]"; P0=[p0 count]; P1=[p1 count]
 python3 - "$PHASE" "$P0" "$P1" << 'PY'
 import json, sys, pathlib, datetime
 phase, p0, p1 = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])

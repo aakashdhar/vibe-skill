@@ -56,8 +56,8 @@ deploy gate (no `deploy:` before the final gate).
 
 ## Layer 3 — The hard lock: a git pre-push hook
 
-The only true machine-level enforcement. Offered during setup (vibe-new-app) or by
-`doctor:`. It blocks a push while P0s are open, so the gate holds even if an agent or
+The only true machine-level enforcement. Offered during setup by vibe-new-app
+(Step 10D). It blocks a push while P0s are open, so the gate holds even if an agent or
 human ignores layers 1-2.
 
 `.git/hooks/pre-push` (or a husky `pre-push`):
