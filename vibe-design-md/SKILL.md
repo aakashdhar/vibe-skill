@@ -102,38 +102,33 @@ If download fails → fall back to Mode B automatically, tell user.
 
 ---
 
-## Step 1B — URL fetch and CSS extraction (Mode B)
+## Step 1B — URL rendering and CSS extraction (Mode B)
 
-**Fetch the target site:**
+**Prefer a real browser over `curl`.** Most catalog-worthy sites (Linear,
+Vercel, Notion, Stripe, …) are JS-rendered and/or use CSS-in-JS or Tailwind —
+raw HTML shows none of the actual colours, fonts, or spacing. Load the page in
+the browser (`navigate` to the URL), then read **computed styles** and a
+screenshot, which reflect what users actually see:
+
+1. **Screenshot** the page (desktop, and mobile if responsive) — judge palette,
+   density, hierarchy, and layout from the rendered image.
+2. **Computed styles** via the page-inspection tools / a small `javascript_tool`
+   snippet: read `getComputedStyle` on `body`, headings, buttons, and links for
+   real colours, `font-family`, font sizes, radius, and shadows; collect any
+   `:root { --var }` custom properties.
+3. **Fonts** — the actually-applied `font-family` stacks (not just `<link>` tags).
+4. **Meta** — title / og:description / brand name for the DESIGN.md header.
+
+**Fallback only if no browser tool is available in the session:**
 ```bash
-# Fetch the page HTML
-curl -fsSL "[URL]" -o /tmp/design_target.html 2>/dev/null
-
-# Check if fetch succeeded
-wc -c /tmp/design_target.html
+curl -fsSL "[URL]" -o /tmp/design_target.html 2>/dev/null && wc -c /tmp/design_target.html
 ```
-
-**Extract what you need from the HTML:**
-
-Read `/tmp/design_target.html` and extract:
-
-1. **Font references** — `<link>` tags with Google Fonts or font CDN URLs, `@font-face` declarations
-2. **CSS custom properties** — any `:root { --variable: value }` declarations
-3. **Inline styles and classes** — colour values, font sizes, spacing patterns
-4. **Meta information** — `<title>`, og:description, brand name
-
-**Inspect visually** (from HTML structure and class names):
-- What's the dominant colour? (look for background, button, link colours)
-- What font families appear in font links?
-- What's the general density? (sparse whitespace vs data-dense)
-- What's the layout approach? (centered column, full-width, asymmetric?)
-- Dark or light mode primary?
-
-If the site requires JavaScript to render (SPA):
-> "This site is JavaScript-rendered — I can see the HTML shell but not computed styles.
-> I'll generate DESIGN.md based on visible static content and inferred patterns.
-> For higher accuracy, share a screenshot or the site's public style guide URL."
-Proceed with what's available. Flag inferred values explicitly.
+Then extract font `<link>`s, `:root` custom properties, and inline colours from
+the static HTML — and warn the user:
+> "No browser was available, so I read static HTML only — for a JS-rendered site
+> the computed colours/fonts may be incomplete. Share a screenshot or the site's
+> style-guide URL for higher accuracy."
+Flag every inferred value explicitly.
 
 ---
 

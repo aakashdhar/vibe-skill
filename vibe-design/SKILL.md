@@ -49,18 +49,23 @@ Re-read the design contract. If the contract says "no cards" — no cards.
 Before reading project files. Before understanding the request.
 Before doing anything else.
 
-Read `~/.claude/skills/frontend-design/SKILL.md` in full right now.
+**Invoke the first-party `frontend-design` skill now** — via the Skill tool
+(`frontend-design`, or the plugin-qualified `frontend-design:frontend-design`),
+not by reading a file path. It ships as a skill/plugin in the current ecosystem;
+a hardcoded `~/.claude/skills/...` path does not resolve under a plugin install.
 
 This is not optional. This is not "if installed." This is the first action.
 
-The frontend-design skill gives you:
-- The instruction to commit to an EXTREME aesthetic direction
-- The anti-generic typography, colour, and motion principles
-- The mindset: make it UNFORGETTABLE, not safe
+**Defer aesthetic direction to frontend-design** — it owns the typography,
+colour, motion, and anti-generic principles. This skill (vibe-design) layers the
+vibe-specific mechanics on top: persisting a design contract, re-reading it
+before every component, one file per page/component, and grounding in
+SPEC/CODEBASE. Do not re-derive aesthetic rules here that frontend-design already
+provides; `references/ANTI_GENERIC.md` and `SITE_TYPE_PLAYBOOK.md` are
+supplementary reminders, not the source of truth.
 
-If the file is not found at `~/.claude/skills/frontend-design/SKILL.md`:
-Check `~/.claude/skills/public/frontend-design/SKILL.md`.
-If neither exists — proceed, but the output quality will be lower.
+If the `frontend-design` skill is genuinely unavailable in the session — proceed
+using `references/ANTI_GENERIC.md`, but note the output quality will be lower.
 
 **After reading frontend-design — internalise this:**
 > "I will commit to a bold, specific aesthetic direction.
@@ -279,6 +284,19 @@ If any check fails — fix before moving to the next file.
 ## Step 6 — Full consistency check after all files
 
 After all files written:
+
+**Screenshot verification (do this first — actually look, don't self-report):**
+Render the built UI and inspect it visually rather than checking boxes from
+memory. Run the app (`preview_start` / dev server) or open the page in the
+browser, take a screenshot of each page at desktop and mobile widths, and judge
+the *rendered image* against the contract and the checks below. This is the
+"screenshot test" from `references/ANTI_GENERIC.md` — run it for real. Iterate on
+what the screenshot reveals (spacing, hierarchy, the bold choice actually
+landing), not on what the code says it should look like.
+
+**Accessibility:** if the session has `design:accessibility-review`, run it
+(contrast ratios, keyboard nav, focus states, `prefers-reduced-motion`); else
+spot-check contrast on text/brand-colour pairs and confirm focus-visible states.
 
 **Typography:**
 - [ ] Display font is the font from the contract — everywhere

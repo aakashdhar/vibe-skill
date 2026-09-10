@@ -132,6 +132,15 @@ No pre-screening available. Read all files in the phase as normal.
 
 ## Step 0 — Run automated checks first
 
+> **Prefer first-party review tools when available.** If the session has the
+> `/code-review` and/or `/security-review` commands, run them here — they are
+> deeper and produce structured findings. Fold their output into this review's
+> P0-P3 findings (map their severities onto ours) rather than re-deriving
+> everything by hand. The stack commands below still run (tests/lint/typecheck/
+> audit are ground truth); the manual Steps 3-8 then focus on what the tools
+> don't cover (architecture drift vs ARCHITECTURE.md, spec alignment). Treat the
+> hand-rolled grep checks as the fallback when those tools aren't available.
+
 Run these before reading any code. Adapt to the project stack from CODEBASE.md section 2.
 
 **Node / npm projects:**
