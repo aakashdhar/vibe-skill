@@ -1,24 +1,42 @@
 # SUBAGENT_CONTEXT.md
 
 Read during Step 3 of vibe-parallel.
-How to build targeted context slices for each subagent.
-Graph-aware slicing when vibe-graph is available.
-Fallback to CODEBASE.md when not.
+How to build each subagent's context.
+
+**Design note (current models):** context windows are large and prompt caching
+makes a shared, stable prefix cheap to re-read. So the graph is a **focus
+overlay**, not a way to *avoid* loading context. The old "slice instead of
+CODEBASE.md" design traded fidelity for token savings that no longer matter much —
+and a lossy slice can miss files not yet in the graph. Prefer the **hybrid** mode
+below: give every subagent the same cached baseline (ARCHITECTURE.md + CODEBASE.md)
+so nothing is missed, plus a graph-derived **focus block** telling it exactly which
+files are in its blast radius and why (rationale). Precision without blind spots.
 
 ---
 
 ## Context modes
 
 ```
-GRAPH_AVAILABLE:    vibe/graph/DEPENDENCY_GRAPH.json exists
-                    → use graph-aware slicing
-                    → do NOT load CODEBASE.md in subagent prompt
-                    → estimated 60-70% token reduction per subagent
+HYBRID (preferred when GRAPH_AVAILABLE):
+    vibe/graph/DEPENDENCY_GRAPH.json exists
+    → cached baseline prefix: ARCHITECTURE.md + CODEBASE.md (identical across
+      all subagents in the wave → one cache write, N-1 cache reads)
+    → per-task focus block from the graph: blast-radius files, rationale
+      (WHY/HACK/DECISION), god-node warnings, concept name
+    → the subagent reads the focus files fully; the baseline gives it the map
 
-NO_GRAPH:           DEPENDENCY_GRAPH.json not found
-                    → load CODEBASE.md + ARCHITECTURE.md
-                    → standard context, no slicing
+NO_GRAPH:
+    DEPENDENCY_GRAPH.json not found
+    → cached baseline: ARCHITECTURE.md + CODEBASE.md
+    → no focus block; the subagent scopes from its task's Touches list
 ```
+
+> Cache-friendliness matters more than slice size now: keep the baseline prefix
+> **byte-identical** across every subagent in a wave (same file order, no
+> per-task timestamps/IDs before the focus block) so the wave pays one cache
+> write and reads it back cheaply for every remaining subagent. The graph
+> `build_context_slice` below now produces the *focus block*, not a replacement
+> for CODEBASE.md.
 
 ---
 
@@ -231,17 +249,22 @@ ERROR_IF_FAILED: [error message if STATUS=FAILED | none]
 
 ## Context size estimates
 
-Use these to compute the cost annotation in the wave progress log.
+Rough numbers for the wave cost annotation. **These are an upper bound** — under
+the hybrid model the ARCHITECTURE.md + CODEBASE.md baseline is a stable cached
+prefix, so only the *first* subagent in a wave pays the full input cost; the rest
+read it from cache at ~10% of the price (see vibe-cost/references/PRICING.md →
+Cache economics). Model the wave as: baseline (once) + focus block (per task) +
+output — not baseline × N.
 
 ```python
 CONTEXT_TOKENS = {
-    # With graph slicing
-    "graph_slice_per_file":   800,    # imports + rationale per file
+    # Per-task focus block (added on top of the cached baseline)
+    "graph_slice_per_file":   800,    # blast-radius file: imports + rationale
     "graph_overhead":         500,    # concept, arch patterns, warnings
     "task_prompt_base":       600,    # task description, criteria, boundaries
     "completion_report":      200,    # report template
 
-    # Without graph
+    # Shared cached baseline (one cache write per wave, then cache reads)
     "codebase_md_avg":       25000,   # typical CODEBASE.md
     "architecture_md_avg":    3000,   # typical ARCHITECTURE.md
 }

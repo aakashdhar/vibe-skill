@@ -12,7 +12,11 @@ description: >
   CONCEPT_GRAPH.json maps semantic relationships (features, agents,
   models, components). graph.html is an interactive visual.
   Auto-updated via git diff. Queried by vibe-fix-bug, vibe-test,
-  vibe-review, vibe-parallel. Saves 65-70% context tokens.
+  vibe-review, vibe-parallel. Primary value is semantic navigation:
+  accurate blast-radius, intent-drift detection via rationale nodes, and
+  safe parallel dispatch via god nodes — not raw token savings (current
+  models have large context windows + prompt caching, so the graph is a
+  precision/focus overlay, not a way to avoid loading context).
   Triggers on "vibe-graph: build", "vibe-graph: update", "vibe-graph: init",
   "vibe-graph: rebuild", "vibe-graph: query", "vibe-graph: status".
 ---
@@ -388,9 +392,9 @@ PROBABLE (INFERRED ≥0.80 — load if needed):
 AMBIGUOUS (human review needed):
   (none)
 
-Blast radius — certain: 6 files (~7,200 tokens)
-vs loading CODEBASE.md: 25,000 tokens
-Saving: 17,800 tokens (71%)
+Blast radius — certain: 6 files · probable: +1 · ambiguous: 0
+→ These are the files to focus on / read fully. The value is precision
+  (exactly what this change touches), not avoiding the rest of the context.
 ```
 
 **Returns for a god node:**

@@ -5,8 +5,9 @@ description: >
   builds dependency waves, detects file conflicts AND read-write conflicts,
   and spawns tasks as parallel subagents. Size-aware wave splitting unlocks
   downstream tasks early when large tasks are in the same wave as small ones.
-  If vibe-graph is installed, each subagent gets a targeted context slice
-  instead of full CODEBASE.md — 60-70% cheaper per subagent on large projects.
+  If vibe-graph is installed, each subagent gets a graph-derived focus block
+  (blast-radius files + rationale) on top of a shared cached baseline — precise
+  scoping without blind spots, cheap via prompt caching.
   Structured subagent reporting with [x]/[~]/[!] states. Diagnostic retry on
   failure. Live wave progress log at vibe/parallel/. Post-wave graph update.
   Wave cost annotation for vibe-cost. Triggers on "parallel:" prefix,
@@ -229,19 +230,21 @@ def build_context_slice(task, graph, meta):
     return slice
 ```
 
-Context slice replaces CODEBASE.md in the subagent prompt.
-CODEBASE.md is NOT loaded by subagents when vibe-graph is available.
+The graph slice is a **focus block layered on top of** a shared cached baseline
+(ARCHITECTURE.md + CODEBASE.md), not a replacement for it — see
+`references/SUBAGENT_CONTEXT.md` (Hybrid mode). It tells the subagent exactly
+which files are in its blast radius and why (rationale), so it reads those fully
+while the baseline gives it the whole map. This avoids the lossy-slice failure
+mode (files not yet in the graph) that the token-savings-first design risked.
 
 **If no vibe-graph:**
-Fall back to providing: CODEBASE.md + ARCHITECTURE.md (standard).
+Provide CODEBASE.md + ARCHITECTURE.md; the subagent scopes from its task's
+Touches list.
 
-**Context size estimate:**
-```python
-# With graph slice: ~2,000–4,000 tokens per subagent
-# Without graph:    ~25,000–40,000 tokens per subagent
-# Saving per subagent: ~60-70%
-# On a 6-subagent wave: saves ~120,000–216,000 tokens total
-```
+**Cost note:** keep the baseline prefix byte-identical across every subagent in
+the wave so it's written to cache once and read back at ~10% cost for the rest
+(see vibe-cost/references/PRICING.md → Cache economics). Cache-hit rate, not
+slice size, is the dominant cost lever on current models.
 
 ---
 

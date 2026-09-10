@@ -82,9 +82,10 @@ RATIONALE (read before diagnosing):
   HACK [line 47]: Rate limiting at 2s — Tavily free tier hard limit
   DECISION [line 89]: Returns top 5 only — UI constraint from IdentityScreen
 
-Total certain: 6 files (~7,200 tokens)
-vs loading CODEBASE.md: 25,000 tokens
-Saving: 17,800 tokens (71%)
+Total certain: 6 files · probable: +1 · ambiguous: 0
+→ The graph tells you *which* files this change touches and *why* (rationale),
+  so you focus reading and reasoning on the blast radius. On current models the
+  win is precision + intent-drift detection, not skipping context.
 ```
 
 **Read rationale before reading the file:**
