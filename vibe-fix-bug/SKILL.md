@@ -65,7 +65,10 @@ Check for these signals first:
 - `.git` operation failures or submodule errors
 - Build tool errors (Vite, Webpack, tsc) that aren't TypeScript type errors
 
-If 2+ environment signals → this is an environment bug:
+Weigh the evidence — some single signals are conclusive on their own ("app
+won't start" with a config/build error), while several weak signals may still be
+a code bug. If the evidence points to the environment rather than application
+code, treat it as an environment bug (state your confidence briefly):
 > "This looks like an environment issue, not a code bug. Running doctor: to diagnose..."
 
 Invoke `vibe-doctor`. After doctor: completes:
@@ -73,12 +76,17 @@ Invoke `vibe-doctor`. After doctor: completes:
 - If doctor fixed env but code bug remains → continue to Trivial or Significant path
 - If doctor can't fix → surface doctor's "NEEDS ATTENTION" items to user
 
-**Trivial bug** — ALL of these must be true:
+**Trivial bug** — you're confident it's genuinely small. The signals below all
+point that way; treat them as a confidence judgment, not a rigid all-must-be-true
+gate (a clearly 1-line fix with mild uncertainty is still trivial):
 - Root cause obvious from description (typo, missing CSS class, obvious off-by-one)
 - Fix touches 1-2 lines in 1 file
 - No regression risk in other features
 - No architectural implication
 - NOT an environment issue (handled above)
+
+State your read briefly ("confident this is a 1-line trivial fix") and, if the
+confidence is genuinely borderline, treat it as Significant instead.
 
 → "This is a quick fix. Regression test, fix, verify — 3 tasks, no spec folder needed."
 → Jump to **Trivial path** below.

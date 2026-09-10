@@ -142,7 +142,7 @@ Run the signal check. Announce if detected.
 > 2. How do people solve this today — spreadsheet, another app, manually?
 > 3. What's wrong with the current approach?
 
-Wait for answers. If shallow — ask ONE follow-up.
+Wait for answers. If shallow — ask the follow-ups you need (batched, not one at a time).
 
 Synthesise and confirm:
 > "So the problem is: [one sentence]. People currently [cope by X]

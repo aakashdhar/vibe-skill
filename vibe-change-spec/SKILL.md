@@ -48,7 +48,8 @@ Extract:
 - Whether it's a new feature, requirement tweak, removal, rename, backlog op, or revert
 - Whether it's urgent (insert now) or deferred (backlog)
 
-If ambiguous, ask ONE clarifying question.
+If ambiguous, ask the clarifying questions you actually need — batched together,
+not one at a time.
 
 Confirm:
 > "Got it — you want to [add/remove/modify/revert] [X]. Let me check what this affects."

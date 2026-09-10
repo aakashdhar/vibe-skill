@@ -92,7 +92,8 @@ Note: `vibe/DESIGN_SYSTEM.md` is not created here — it is generated the first 
 
 **Neither exists** (starting fresh — not recommended but supported):
 - Extract: what the app does, who uses it, the core value.
-- Ask ONE clarifying question if unclear.
+- If unclear, ask the few genuinely-needed clarifying questions together (batched,
+  not one at a time) — but only what you actually need to proceed.
 - Confirm: "Got it — building [X] for [who], core value: [Y]. Starting spec."
 - Note: both BRIEF.md and ARCHITECTURE.md will be absent — minimal versions generated.
 
