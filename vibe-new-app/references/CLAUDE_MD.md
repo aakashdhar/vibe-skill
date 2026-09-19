@@ -116,8 +116,9 @@ Confirm the actual request before opening any file.
 ---
 
 ## Phase gates — ENFORCED, not advisory
-> A phase cannot advance until `review:` passes with 0 P0 findings.
-> Final phase blocks deploy until 0 P0 + 0 P1. This holds in manual mode too.
+> A phase cannot advance until `review:` passes with **0 open P0 AND 0 open P1**.
+> P1s block the gate — never deferred past their phase; only P2/P3 carry to the final
+> cleanup pass. Final phase also requires P2/P3 addressed or accepted. Holds in manual mode.
 
 - Phase 1 → run `review: phase 1`
 - Phase 2 → run `review: phase 2`

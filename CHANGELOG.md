@@ -8,7 +8,26 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
-## [2.2.0] — 2026-09-19
+## [2.3.0] — 2026-09-19
+
+Theme: **P1 blocks the phase gate, and findings must be machine-readable.** Closes a
+gate that could pass a phase with open P1s and leave them invisible/unfixable.
+
+### Changed
+- **`vibe-review` gate rule — P0 AND P1 block a phase gate** (was: P0 blocks, P1→backlog
+  before deploy). A P1 is never deferred past the phase that introduced it; only P2/P3
+  carry to the final cleanup pass. Step 10's gate-status lines updated to match
+  ("BLOCKED — N P0 + M P1"; "✅ 0 P0, 0 P1").
+- **`vibe-new-app` CLAUDE.md template** — phase-gate line now reads "0 open P0 AND 0
+  open P1" (was "0 P0 findings"), so every generated project inherits the correct bar.
+
+### Added
+- **`vibe-review`: the machine-readable ` ```json ` findings block is now MANDATORY**,
+  not optional — a prose summary or markdown table alone is rejected. Tooling (the gate,
+  the panel's findings/fix UI) parses that block; without it findings are invisible and
+  unfixable and the gate can't count them. This was a real failure: a review wrote a
+  findings table but no json block, so 3 open P1s showed no fix path and the gate read
+  "passed."
 
 Theme: **tighter CLAUDE.md rules the model can actually follow.** Adds a compact,
 forbid-style "Working rules" block to the generated project CLAUDE.md — every rule
@@ -146,6 +165,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.3.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/aakashdhar/vibe-skill/compare/v1.0.0...v2.0.0
