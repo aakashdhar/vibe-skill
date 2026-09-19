@@ -8,6 +8,32 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.2.0] — 2026-09-19
+
+Theme: **tighter CLAUDE.md rules the model can actually follow.** Adds a compact,
+forbid-style "Working rules" block to the generated project CLAUDE.md — every rule
+checkable, one line, and of the kind that changes an output (distilled from the
+"21 CLAUDE.md rules" analysis). Backward-compatible: the load-bearing per-task
+sequence and phase-gate machinery other skills parse is unchanged.
+
+### Added
+- **`vibe-new-app` + `vibe-init` CLAUDE.md templates — a "Working rules" block:**
+  - **Surgical edits** — minimum lines, no unrequested reformat/reorder/rename, match
+    existing style, remove only the imports your change made unused.
+  - **Do not rewrite tests to pass** — if a test is wrong, say so and stop; fix the code.
+  - **Do not guess unknown values** — output `MISSING: <what>` and stop rather than
+    inventing a plausible default (the highest-value rule; complements needs_pm for
+    decisions and the "never fabricate data" rule).
+  - **Ask before destructive actions** — concrete list (drop table, force-push, rewrite
+    history, delete a file you didn't create, non-local migration) instead of a vague feeling.
+  - **Do not add dependencies** without naming it + what it replaces + waiting.
+  - **Comments say why, not what.**
+  - **Re-read CLAUDE.md after any context compaction** — persistence insurance for long runs.
+
+### Changed
+- Nothing renamed or removed; the block is additive guidance layered onto the existing
+  templates, so the generated-artifact contract downstream skills rely on is unchanged.
+
 ## [2.1.0] — 2026-09-19
 
 Theme: **observe before you ship, and try to break it.** A set of cross-skill
@@ -120,6 +146,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.2.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/aakashdhar/vibe-skill/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/aakashdhar/vibe-skill/releases/tag/v1.0.0
