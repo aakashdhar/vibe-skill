@@ -190,12 +190,49 @@ Wait for approval only if 3+ components. Otherwise proceed immediately.
 
 ---
 
+## Step 3.5 — Write the reviewable preview (a click-through prototype)
+
+A contract is a document. A person cannot judge a *look and feel* by reading one —
+they judge it by seeing it. Before building any production files, render the
+direction as a single self-contained prototype the reviewer can click through:
+
+Write **`vibe/design/preview.html`** — ONE standalone file:
+- **All CSS + the design tokens inlined verbatim** from the contract (no external
+  stylesheet, no build step; a normal Google-Fonts `<link>` is fine). It opens
+  directly in a browser.
+- **Every primary screen of THIS product**, each a realistic, fully-laid-out mock
+  populated with plausible sample content — real-looking copy and data, never lorem
+  or blank boxes.
+- **Navigation between the screens** — a top nav / tab bar / clickable links wired
+  with a little inline `<script>` that shows/hides each screen — so the reviewer
+  follows the actual product FLOW end to end, not one static frame.
+- **The states that matter**: empty, loading, a populated list, a detail view, an
+  error — wherever they carry weight for this product.
+- **One compact style reference** (palette swatches, type scale, buttons, inputs,
+  and the contract's signature element) on a single screen, so the tokens are
+  visible in isolation too.
+
+This is a **preview only — never imported by app code**, and it is the one place a
+single all-in-one HTML file is correct (Step 4's "one file per page" rule governs
+production files, not this artifact). A person approves the design by clicking
+through this prototype; keep it current on every design refine. Downstream
+orchestrators may gate the build on this file — a design gate that shows only a
+Markdown contract has nothing a human can actually approve.
+
+**Present to user:**
+> "Preview written: vibe/design/preview.html — open it to click through
+> [N] screens ([list]). Approve the direction here before I build production files."
+
+---
+
 ## Step 4 — Establish file structure BEFORE writing any code
 
 **Rule: one file per page, one file per component family. Always.**
 
-Never put multiple pages in one file.
+Never put multiple pages in one production file.
 Never create a single wireframe.html or index.html with everything.
+(The sole exception is `vibe/design/preview.html` from Step 3.5 — the reviewable
+prototype, which is not production code.)
 
 If the user asks for a wireframe.html — respond:
 > "I create separate files per page for maintainability and because

@@ -194,7 +194,26 @@ Using CODEBASE.md section 9 as your map, read relevant files.
 Present findings and top 2 hypotheses to the user. Ask for additional context.
 Don't explore indefinitely — surface uncertainty early.
 
-Form a hypothesis. Point to the exact file, function, and line.
+**Don't let the first plausible cause win.** The first explanation that fits is
+often not the real one, and committing to it early is how debugging sessions burn
+an hour fixing a symptom. Before you settle:
+
+1. **Enumerate 2–3 competing hypotheses**, not one. Write them down. ("A: the guard
+   runs before state loads. B: the id is stale from cache. C: the API returns 200
+   with an empty body.")
+2. **For each, name the evidence that would confirm it AND the evidence that would
+   kill it.** A hypothesis you cannot imagine disproving is a belief, not a diagnosis.
+3. **Gather that evidence** — a log line, a value at a breakpoint, a failing
+   assertion, a git blame — and **reject** hypotheses it rules out. Prefer the
+   cheapest disproving test first.
+4. Only when one hypothesis survives and the others are actively ruled out do you
+   commit to the fix. If two survive, you don't understand it yet — get more evidence.
+
+Reproduce the failure *before* the fix and confirm the fix *removes* that exact
+reproduction — a bug you cannot reproduce is a bug you cannot prove you fixed.
+
+Land on the surviving hypothesis. Point to the exact file, function, and line, and
+state the one piece of evidence that confirmed it over the alternatives.
 
 ---
 
