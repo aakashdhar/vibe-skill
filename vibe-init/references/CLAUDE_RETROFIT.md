@@ -85,6 +85,15 @@ Confirm the task before starting.
 
 Full detail in `vibe/ARCHITECTURE.md`.
 
+## Working rules (every task — forbid-style, checkable)
+- **Surgical edits.** Change the minimum lines needed. Do not reformat, reorder, or rename anything you were not asked to change; match the file's existing style. Remove only the imports/vars YOUR change made unused — nothing else.
+- **Do not rewrite tests to pass.** Never edit an existing test to make failing code pass. If a test is wrong, say so and stop; fix the code, not the assertion.
+- **Do not guess unknown values.** If you need a fact you were not given (a name, id, path, env/config value), output `MISSING: <exactly what you need>` and stop. Never invent a plausible default and continue.
+- **Ask before destructive actions.** Stop and ask before: dropping a table, force-push, rewriting git history, deleting a file you did not create, or running a migration against anything not local.
+- **Do not add dependencies.** Use what is in the manifest. To add one: name it, name what it replaces, stop, and wait for approval.
+- **Comments say why, not what.** Do not restate the code; explain intent only where it is non-obvious.
+- **After any context compaction, re-read this file before the next edit.**
+
 ---
 
 ## Session completion checklist
