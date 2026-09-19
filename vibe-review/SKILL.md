@@ -82,10 +82,13 @@ review: full codebase before new team member
 ```
 
 **Gate rules:**
-- P0 → blocks progression, fix tasks in TASKS.md immediately
-- P1 → logged to backlog.md, must resolve before deploy
-- Final phase: P0 AND P1 both must be zero before deploy
-- No P0s → gate passes, next phase begins
+- **P0 AND P1 → block progression.** Both must be zero for a phase gate to pass; fix
+  them (rework tasks) before the next phase begins. A P1 is never deferred past the
+  phase that introduced it — "0 open P0/P1" is the bar at *every* phase gate, not only
+  the final one.
+- P2 / P3 → logged to backlog.md, carried to the final cleanup pass (do not block).
+- Final phase: 0 P0 AND 0 P1 (same bar, plus P2/P3 addressed or explicitly accepted).
+- Gate passes **only** at 0 open P0 and 0 open P1 → next phase begins.
 
 ---
 
@@ -398,26 +401,34 @@ Every P0 and P1 must have file path + line number + specific actionable recommen
 "Some components are too complex" — rejected, no file path.
 If a finding cannot be backed by evidence — it does not go in the report.
 
+**The machine-readable findings block is MANDATORY, not optional.** Every report must
+contain the ` ```json ` structured-findings block from `references/REVIEW_REPORT.md`
+(one object per finding: `id`, `severity`, `file`, `line`, `issue`, `fix`) — a prose
+summary or a markdown table alone is not enough. Tooling (the gate, the panel's
+findings/fix UI) parses that block; without it the findings are invisible and can't be
+fixed, and the gate can't count them. A human-readable table may accompany it, never
+replace it.
+
 ---
 
 ## Step 10 — Update vibe/TASKS.md
 
-**P0 issues found — insert blocking tasks:**
+**P0 or P1 issues found — insert blocking tasks:**
 ```
 🔴 Review fixes required — Phase [N] gate (0/N)
    Must complete before Phase [N+1] begins.
-   [ ] RFX-001 · [P0 fix — plain English]
+   [ ] RFX-001 · [P0/P1 fix — plain English]
                  File: [path] · Issue: [one line]
    → Full report: vibe/reviews/phase-[N]-review.md
 
 ## Phase gates
-Phase [N] → Phase [N+1]:  🔴 BLOCKED — [N] P0 issues, fix tasks above
+Phase [N] → Phase [N+1]:  🔴 BLOCKED — [N] P0 + [M] P1 open, fix tasks above
 ```
 
-**No P0 issues — update gate status:**
+**Zero P0 and P1 — update gate status:**
 ```
 ## Phase gates
-Phase [N] → Phase [N+1]:  ✅ reviewed [date] — 0 P0, [N] P1 logged to backlog
+Phase [N] → Phase [N+1]:  ✅ reviewed [date] — 0 P0, 0 P1 (P2/P3 to backlog)
 ```
 
 ---
