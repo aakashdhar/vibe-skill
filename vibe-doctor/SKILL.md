@@ -339,6 +339,14 @@ SKIP    — check not applicable to this project
 - TypeScript path alias → show which folder needs creating
 - ESLint config → show the parse error
 
+**When a symptom has more than one possible cause, list the candidates before
+remediating.** The checks above are deterministic, but a reported symptom
+("build fails", "HMR won't connect", "types don't resolve") often maps to several
+of them at once. Don't fix the first check that looks related and declare victory —
+name the 2–3 checks that could produce this symptom, confirm which one actually
+fires from its check output, and remediate that. A fix applied to the wrong cause
+leaves the real one in place and hides it.
+
 ---
 
 ## Step 3 — Auto-remediate safe fixes

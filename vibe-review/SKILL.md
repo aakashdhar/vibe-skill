@@ -33,6 +33,38 @@ Architecture drifts silently. Duplication builds. Quality degrades.
 
 ---
 
+## The reviewer's stance — falsify, don't bless
+
+A review is not a request for approval. Do not ask "is this code good?" — that
+question is answered "yes" by default and finds nothing. Ask the opposite, of
+every change under review:
+
+> **"Prove this is unsafe, incorrect, or unnecessarily complex."**
+
+You are trying to *break* the change, not confirm it. For each significant unit,
+actively attempt to construct:
+
+- **An input that makes it wrong** — an edge case, empty/null, boundary, unicode,
+  concurrency, an unexpected ordering — that produces a wrong result or a crash.
+- **A failure it does not handle** — the network call that times out, the promise
+  that rejects, the file that is missing, the permission that is denied.
+- **A simpler version that does the same job** — if you can write it in fewer
+  moving parts, the current form is unnecessarily complex (a real P2/P1).
+- **A security hole** — untrusted input reaching a sink, a secret in scope, a
+  missing authz check, an injection path.
+
+A finding is only worth reporting if you can state the concrete scenario that
+triggers it (inputs/state → wrong output/crash). "This looks fragile" is not a
+finding; "with an empty `items` array this throws at line 42" is. This falsifying
+stance is what a *second-opinion* reviewer must adopt above all — its value is in
+disagreeing with the first pass, not echoing it.
+
+If, after genuinely trying, you cannot break a unit, say so plainly and move on —
+an honest "I could not find a way to make this fail" is a real result. Do not
+manufacture findings to look thorough.
+
+---
+
 ## When this skill runs
 
 **Mandatory — phase gates:**
@@ -334,6 +366,16 @@ inside review.
 - AAA structure? (missing → P2)
 - Edge cases and error states covered for critical paths? (missing → P1)
 - Coverage estimate >70% on business logic? (below → P1)
+
+**Runtime evidence, not assertion (for UI / runnable changes).** Code review reads
+the source; it does not prove the thing runs. Where the change touches something
+observable — a screen, an endpoint, a CLI path — confirm it against the running
+software, not just the diff: boot it, exercise the primary flow, and check for
+console/stderr errors. A screen that renders blank, a route that 500s, or a
+console error is a P0/P1 with the observed symptom as its evidence — "opened
+/checkout, button click throws `undefined is not a function` in console" beats any
+amount of reading. If you cannot run it in this environment, say the check was not
+performed rather than implying the code was verified.
 
 ---
 

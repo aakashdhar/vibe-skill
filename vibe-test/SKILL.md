@@ -33,6 +33,18 @@ Direct changes are obvious. Indirect consumers are where regressions hide.
 This skill does not ask "what should I test?"
 It asks "what could this break?" — then tests all of it.
 
+**Assertions come from the intended behaviour, not from the code.** Derive what a
+unit *should* do from the spec / acceptance criteria / bug report — ideally before
+reading the implementation — and assert that. A test written by mirroring what the
+code currently does is a tautology: it passes by construction and can never catch
+the code being wrong. When there is a spec or a `done_when`, the test encodes it;
+where behaviour is genuinely unspecified, name the assumption in the test's name.
+
+**Testing is a loop, not a batch.** The value is not in generating test files — it
+is in generate → run → observe the failure → repair → run again, until the suite is
+green *for the right reason*. A green suite bought by weakening or deleting
+assertions is worse than a red one, because it lies. (See Step 8.)
+
 ---
 
 ## Entry points
@@ -436,14 +448,21 @@ After all layers are written, run the complete test suite:
 [full test command from CODEBASE.md section 2]
 ```
 
-Required outcome: **all tests green, zero failures**.
+Required outcome: **all tests green, zero failures** — green for the right reason.
 
-If failures exist:
-- Read the failure output carefully
-- Fix the test if the assertion was wrong
-- Fix the source if the test revealed a real bug
-- Do not suppress or skip failures
-- Do not move to Step 9 until suite is fully green
+Run the loop until it settles, one failure at a time:
+1. Run the suite; read the failure output carefully (message, stack, actual vs expected).
+2. **Classify the failure before touching anything:**
+   - the assertion was wrong / tested the wrong thing → fix the **test**;
+   - the test is right and the code misbehaves → fix the **source** (this is the
+     test doing its job — a real bug caught);
+   - the test is flaky (passes/fails without a code change) → stabilise it, don't
+     paper over it.
+3. Apply the smallest fix for that one failure, then re-run.
+- Never make a test pass by weakening or deleting the assertion it was written to
+  make — if it revealed a real bug, the bug gets fixed, not the test.
+- Do not suppress, `.skip`, or comment out failures to reach green.
+- Do not move to Step 9 until the suite is fully green with its assertions intact.
 
 ---
 

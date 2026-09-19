@@ -8,6 +8,44 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.1.0] — 2026-09-19
+
+Theme: **observe before you ship, and try to break it.** A set of cross-skill
+methodology additions — no renamed files, no changed artifact contracts — that push
+every skill from asserting toward verifying, and from confirming toward falsifying.
+
+### Added
+- `vibe-design`: **Step 3.5 — the reviewable click-through prototype.** The design step
+  now emits a single self-contained `vibe/design/preview.html` rendering every primary
+  screen with real sample content, inline-JS navigation between screens, and the key
+  states — so a person approves the direction by clicking through it, not by reading the
+  Markdown contract. It is the one sanctioned all-in-one HTML file; production files still
+  follow one-per-page.
+- `vibe-review`: **the falsifying stance.** The reviewer's job is to prove a change is
+  unsafe, incorrect, or unnecessarily complex — construct the breaking input, the unhandled
+  failure, the simpler equivalent, the security hole — not to bless it. A finding must carry
+  the concrete trigger scenario. Sharpens second-opinion reviews especially.
+- `vibe-review`: **runtime evidence** for UI/runnable changes — boot it, exercise the primary
+  flow, check console/stderr; a blank screen or console error is a finding with the observed
+  symptom as its evidence, not something inferable from reading the diff.
+- `vibe-test`: **assertions derived from intended behaviour** (spec / acceptance criteria,
+  not the implementation — no tautological tests), plus the explicit **generate → run →
+  observe → repair** loop with failure classification (wrong test vs real bug vs flaky).
+  Green must be green for the right reason; assertions are never weakened to reach it.
+- `vibe-fix-bug`: **multi-hypothesis diagnosis** — enumerate 2–3 competing hypotheses with
+  both confirming and disconfirming evidence, reject before committing, and reproduce the
+  failure before the fix / confirm the fix removes that reproduction. Don't let the first
+  plausible cause win.
+- `vibe-doctor`: when a reported symptom maps to several checks, list the candidate causes
+  and confirm which one actually fires before remediating.
+- `vibe-e2e`: **console/page-error capture as a first-class failure**, screenshot-as-evidence
+  at each flow's key state, and blank/error screens treated as failures even when no assertion
+  tripped — observing the page, not just probing it.
+
+### Changed
+- Nothing renamed or removed; every addition is backward-compatible methodology layered
+  onto existing steps, so downstream artifact contracts are unchanged.
+
 ## [2.0.0] — 2026-09-11
 
 A full capability re-architecture. The framework was authored for a Sonnet 4.6-era
@@ -82,5 +120,6 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.1.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/aakashdhar/vibe-skill/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/aakashdhar/vibe-skill/releases/tag/v1.0.0

@@ -544,6 +544,27 @@ After run completes, automatically run cleanup:
 cd e2e && BASE_URL=[url] npx ts-node cleanup.ts
 ```
 
+**A passing assertion is not a clean run — observe the page, don't just probe it.**
+A flow can satisfy every locator while the console throws and the screen renders
+half-broken. Verification means *observing* what the software actually does, so each
+spec must also watch the things a green checkmark hides:
+
+- **Fail the flow on uncaught page errors / console errors.** Attach a listener in
+  the shared fixture and assert it stayed empty for the flow:
+  ```ts
+  const errors: string[] = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  // …run the flow…
+  expect(errors, `console/page errors during flow:\n${errors.join('\n')}`).toEqual([]);
+  ```
+  A red console during a "passing" flow is a real defect — surface it, don't ignore it.
+- **Capture a screenshot at each flow's key state** as evidence (Playwright already
+  keeps video + trace on failure; add `await page.screenshot(...)` at the asserted
+  moment so the report shows what actually rendered, not just that a selector matched).
+- **A blank or error screen is a failure even when no assertion tripped** — if the
+  main content region is empty where content was expected, fail with that as the symptom.
+
 ---
 
 ## Step 6 — Report results
