@@ -52,7 +52,8 @@ CODEBASE.md verified or generated first — future sessions never re-read from s
 vibe/
 ├── TASKS.md                            ← human progress view — updated here
 ├── CODEBASE.md                         ← generated/updated here
-├── DECISIONS.md                        ← updated
+├── DECISIONS.md                        ← updated (spec/scope)
+├── IMPLEMENTATION_LOG.md               ← appended (implementation decisions)
 └── features/
     └── [YYYY-MM-DD]-[feature-slug]/
         ├── FEATURE_SPEC.md
@@ -295,12 +296,18 @@ Never: change behaviour of existing features · remove/rename DB fields ·
    git add -A
    git commit -m "feat([feature-slug]): [TASK-ID] — [one line plain English]"
    ```
-4. Stage and commit doc updates separately:
+4. If this task made a MEANINGFUL implementation decision (hard to reverse · picked among
+   real alternatives — library/pattern/data-model/API shape · would surprise a future
+   reader · deviates from ARCHITECTURE.md), append an entry to vibe/IMPLEMENTATION_LOG.md
+   per that file's header schema (newest last; `Touches:` = files/functions changed). This
+   promotes the task's `Decisions:` note into the durable, graph-linked project log. Skip
+   routine work — no noise.
+5. Stage and commit doc updates separately:
    ```
-   git add vibe/features/[date-slug]/FEATURE_TASKS.md vibe/TASKS.md vibe/DECISIONS.md vibe/CODEBASE.md
+   git add vibe/features/[date-slug]/FEATURE_TASKS.md vibe/TASKS.md vibe/DECISIONS.md vibe/IMPLEMENTATION_LOG.md vibe/CODEBASE.md
    git commit -m "docs(FEATURE_TASKS+TASKS): mark [TASK-ID] done — [feature]"
    ```
-5. Re-read TASKS.md silently → state next task in plain English → confirm.
+6. Re-read TASKS.md silently → state next task in plain English → confirm.
 
 Do NOT request new session unless 10+ tasks this session.
 Do NOT skip the commit step — uncommitted work is invisible to vibe-graph and vibe-review.

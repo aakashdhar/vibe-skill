@@ -34,13 +34,25 @@ supports a schema-validated output / tool call, bind this schema with
   "codebase_update": "updated Agents section with ScoutAgent constructor params",
   "blockers": [],
   "rationale_added": "WHY comment at line 12 explaining directory-first approach",
+  "decisions": [
+    { "title": "Validate ATS payloads with Zod",
+      "why": "untrusted input; Zod already a dep via tRPC; hand-written guards drift",
+      "touches": "shared/schemas/ats.ts, src/tools/tavily.py" }
+  ],
   "error": null
 }
 ```
 
 `status` is one of `DONE` | `PARTIAL` | `FAILED`. The subagent must NOT write the
-main-session-owned files itself — `codebase_update` / `rationale_added` describe
-deltas for the main session to apply after the wave.
+main-session-owned files itself — `codebase_update` / `rationale_added` / `decisions`
+describe deltas for the main session to apply after the wave.
+
+`decisions` is an array (empty when none) of **meaningful** implementation decisions made
+while building the task — hard-to-reverse choices, picks among real alternatives
+(library / pattern / data-model / API shape), or anything that would surprise a future
+reader. Routine work → `[]`. The main session promotes these into
+`vibe/IMPLEMENTATION_LOG.md` after the wave (see WAVE step below); the subagent never
+writes that file itself.
 
 ---
 
@@ -101,6 +113,7 @@ def _finalize(d, task_id):
         "codebase_update": d.get("codebase_update") or "",
         "blockers": d.get("blockers") or [],
         "rationale_added": d.get("rationale_added") or "",
+        "decisions": d.get("decisions") or [],
         "error": d.get("error"),
         "parse_error": False,
     }

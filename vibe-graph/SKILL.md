@@ -55,6 +55,7 @@ GRAPH=$(ls ~/.claude/skills/vibe-graph/scripts/graph.py \
 python3 "$GRAPH" godnodes --top 5      # compute god nodes → .graph-meta.json
 python3 "$GRAPH" query src/x.py        # blast radius (certain / probable / ambiguous + rationale)
 python3 "$GRAPH" stats                 # nodes, edges, confidence + AMBIGUOUS count
+python3 "$GRAPH" flow                  # regenerate vibe/graph/FLOW.md (execution flow)
 python3 "$GRAPH" html                  # render vibe/graph/graph.html
 ```
 
@@ -68,6 +69,16 @@ What imports what. What's tested by what. What route calls what handler.
 Every edge tagged EXTRACTED / INFERRED / AMBIGUOUS with confidence score.
 Rationale nodes stored per file — why the file works the way it does.
 Used by: bug diagnosis, blast radius tracing, test generation, parallel safety.
+
+**Two optional node fields feed the execution-flow layer (see FLOW.md below):**
+- `"entrypoint": true` — this file is where execution *starts* (server bootstrap,
+  CLI `main`, worker entry, a route-registration root). Mark these during extraction;
+  they are the roots FLOW.md walks from. Backward-compatible — a graph with none just
+  yields a FLOW.md that asks for them.
+- `"calls": [{ "from": "fnA", "to_file": "src/y.ts", "to": "fnB", "confidence": .., "source": .. }]`
+  — optional *function-level* call edges, for the "which function calls which" detail.
+  Same confidence/source tagging as imports. Omit when you didn't trace functions;
+  FLOW.md falls back to file-level reach from the import edges.
 
 ### Layer 2 — CONCEPT_GRAPH.json (concept-level)
 Maps semantic relationships between features, agents, models, components.
@@ -177,11 +188,13 @@ Write `vibe/graph/.graph-meta.json`:
 }
 ```
 
-**Step 6 — Generate initial graph.html:**
+**Step 6 — Generate initial graph.html and FLOW.md:**
 Read `references/GRAPH_HTML_TEMPLATE.md` for visual format.
 Planned nodes: lighter colour, dashed border.
 INFERRED edges: dashed lines. EXTRACTED edges: solid lines.
 No EXTRACTED edges yet — all relationships are INFERRED at init.
+Also run `python3 "$GRAPH" flow` so `vibe/graph/FLOW.md` exists from the start
+(it will say "no entry points marked yet" until code is built — that's expected).
 
 **Step 7 — Tell vibe-new-app:**
 ```
@@ -277,6 +290,8 @@ Run `collect_ambiguous()` per CODEBASE_TO_GRAPH.md.
 Write count and list to `.graph-meta.json`.
 
 **Step 8 — Write all output files.**
+Then regenerate the derived views: `python3 "$GRAPH" html` and
+`python3 "$GRAPH" flow` (writes `vibe/graph/FLOW.md` — the execution-flow map).
 
 **Step 9 — Tell vibe-init:**
 ```
@@ -345,9 +360,13 @@ For each concept affected by changed files:
 recompute by hand). God nodes change as files are added and connections grow.
 Recompute after every update that adds 3+ new edges.
 
-**Step 7 — Update graph.html:**
+**Step 7 — Update graph.html and FLOW.md:**
 Re-render subgraph of changed nodes and their neighbours.
 Transition planned→built (colour change). INFERRED→EXTRACTED (dashed→solid line).
+Then run `python3 "$GRAPH" flow` to regenerate `vibe/graph/FLOW.md` so the
+execution-flow map reflects the change. Entry points are the nodes tagged
+`"entrypoint": true`; if a change added/removed one (or a new call path), it
+shows up here. FLOW.md is fully derived — never hand-edit it.
 
 **Step 8 — Update .graph-meta.json:**
 ```json
@@ -471,7 +490,7 @@ Full rebuild from scratch. Recovery command — use when graph has drifted.
 4. Rebuild CONCEPT_GRAPH.json from feature folders + SPEC.md
 5. Recompute god nodes
 6. Collect AMBIGUOUS edges
-7. Rebuild graph.html
+7. Rebuild graph.html and regenerate FLOW.md (`python3 "$GRAPH" flow`)
 8. Update .graph-meta.json with `mode: "full-rebuild"`
 
 ---
@@ -531,6 +550,7 @@ Graph health: ⚠️ 3 AMBIGUOUS edges need review
 Files: vibe/graph/DEPENDENCY_GRAPH.json (47 nodes, 142 edges)
        vibe/graph/CONCEPT_GRAPH.json    (8 concepts)
        vibe/graph/graph.html            (interactive — solid=EXTRACTED, dashed=INFERRED)
+       vibe/graph/FLOW.md               (execution flow — entry points → reach; derived)
        vibe/graph/.graph-meta.json      (god nodes, ambiguous count, meta)
 ```
 

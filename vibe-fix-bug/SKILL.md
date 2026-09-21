@@ -360,11 +360,16 @@ If CODEBASE.md update required, do it before marking done.
 1. Update inline comments or JSDoc describing now-fixed behaviour
 2. If BUG_PLAN.md section 8 says CODEBASE.md needs updating: update and add changelog line
 3. If BUG_PLAN.md section 9 says ARCHITECTURE.md needs updating: add the pattern now
+4. If the fix made a MEANINGFUL implementation decision (changed an approach, swapped a
+   library, reshaped data, or established a pattern worth remembering), append an entry to
+   vibe/IMPLEMENTATION_LOG.md per that file's header schema (`Touches:` = files/functions
+   changed). A one-line "changed X to Y because Z" bug fix rarely qualifies — don't force it.
 
 **Acceptance criteria**:
 - [ ] Comments reflect corrected behaviour
 - [ ] CODEBASE.md updated if fix changed structure
 - [ ] ARCHITECTURE.md updated if fix revealed a pattern to document
+- [ ] IMPLEMENTATION_LOG.md appended if the fix involved a meaningful implementation decision
 
 **Decisions**: > Filled in by agent. None yet.
 ---

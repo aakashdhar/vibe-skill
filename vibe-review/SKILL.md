@@ -99,12 +99,13 @@ Read in this order. Note if any are missing.
 1. `vibe/ARCHITECTURE.md` — primary reference for drift detection
 2. `vibe/CODEBASE.md` — exact file paths as-built
 3. `vibe/SPEC.md` — acceptance criteria to verify against
-4. `vibe/DECISIONS.md` — past decisions, context for why things are as they are
-5. `vibe/PLAN.md` — phase scope, what was meant to be built
-6. `vibe/TASKS.md` — what tasks completed this phase
-7. `vibe/reviews/` — all previous review files for carryover tracking
-8. `BRIEF.md` *(if exists)* — original intent and core value
-9. `CLAUDE.md` — boundaries and conventions
+4. `vibe/DECISIONS.md` — past spec/scope decisions, context for why things are as they are
+5. `vibe/IMPLEMENTATION_LOG.md` *(if exists)* — implementation decisions (why-this-approach / why-this-library); the "why" behind the code
+6. `vibe/PLAN.md` — phase scope, what was meant to be built
+7. `vibe/TASKS.md` — what tasks completed this phase
+8. `vibe/reviews/` — all previous review files for carryover tracking
+9. `BRIEF.md` *(if exists)* — original intent and core value
+10. `CLAUDE.md` — boundaries and conventions
 
 **If vibe/ARCHITECTURE.md does not exist:**
 > Flag this as a finding in the report: "ARCHITECTURE.md not found — no explicit architecture
@@ -283,6 +284,15 @@ Check:
 - Testing — co-located files, names describe behaviour?
 
 Any violation = P0. Architecture drift that propagates is expensive.
+
+**Undocumented significant decisions (P2).** While reading the code, watch for choices that
+clearly cleared the "meaningful" bar — a new library/dependency added, a non-obvious pattern,
+a data-model or API-shape decision, or a deliberate deviation from ARCHITECTURE.md — that are
+**not** recorded in `vibe/IMPLEMENTATION_LOG.md` (nor DECISIONS.md/ARCHITECTURE.md). Flag each
+as a P2 finding: name the choice, the file, and why it warranted a log entry. This keeps the
+"why" from silently rotting out of the record. Do not flag routine implementation — only
+decisions that a future reader would need the reason for. (If IMPLEMENTATION_LOG.md is absent
+entirely on a project past Phase 1, that itself is one P2 finding, not one per decision.)
 
 ---
 

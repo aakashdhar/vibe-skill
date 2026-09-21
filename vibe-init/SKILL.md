@@ -402,6 +402,15 @@ Add provisional banner at top.
 - **Approved by**: human (triggered vibe-init)
 ```
 
+### 5E-bis — vibe/IMPLEMENTATION_LOG.md
+
+Create `vibe/IMPLEMENTATION_LOG.md` from the canonical template in
+`../vibe-new-app/references/IMPLEMENTATION_LOG_MD.md` (the **FILE TEMPLATE** block, verbatim).
+It is the append-only **implementation-decision** log (code-altitude "why this approach,
+why this library") — the companion to DECISIONS.md's spec/scope log. On a retrofit it starts
+empty (prior implementation decisions are untracked by design, like DECISIONS.md); the build
+skills append to it going forward, and `Touches:` lines link entries to vibe-graph nodes.
+
 ### 5F — vibe/TASKS.md
 
 Generate a minimal but honest TASKS.md:
@@ -509,6 +518,7 @@ GENERATED FILES
   vibe/SPEC.md                ← PROVISIONAL — [N] features inferred
   vibe/SPEC_INDEX.md
   vibe/DECISIONS.md           ← D-001 bootstrap entry
+  vibe/IMPLEMENTATION_LOG.md  ← empty; implementation decisions logged from here on
   vibe/TASKS.md
   vibe/reviews/backlog.md
 
