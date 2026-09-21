@@ -42,6 +42,7 @@ read every session so the agent never re-discovers what's been built.
 **Agent-facing — agent reads these, you never need to open them:**
 - `CLAUDE.md` · `vibe/ARCHITECTURE.md` · `vibe/CODEBASE.md`
 - `vibe/SPEC.md` · `vibe/SPEC_INDEX.md` · `vibe/PLAN.md` · `vibe/DECISIONS.md`
+- `vibe/IMPLEMENTATION_LOG.md` — agent: append-only implementation-decision log (why-this-approach / why-this-library)
 - `vibe/DESIGN_SYSTEM.md` *(created by design: — agent reads for design context)*
 - `vibe/reviews/` · `vibe/features/` · `vibe/bugs/` · `vibe/backlog/`
 
@@ -60,7 +61,8 @@ your-project/
     ├── SPEC.md                ← agent: full requirements
     ├── SPEC_INDEX.md          ← agent: compressed spec map
     ├── PLAN.md                ← agent: phases and architecture
-    ├── DECISIONS.md           ← agent: drift and change log (append-only)
+    ├── DECISIONS.md           ← agent: spec/scope drift and change log (append-only)
+    ├── IMPLEMENTATION_LOG.md  ← agent: implementation-decision log — why-this-approach (append-only)
     ├── DESIGN_SYSTEM.md       ← agent: design tokens (created by design:)
     ├── reviews/
     │   └── backlog.md
@@ -322,12 +324,17 @@ Generate CLAUDE.md at **project root** substituting all [placeholders]:
    ensure .gitignore covers .env*, node_modules, build output first):
    git add [the specific paths this task created/modified]
    git commit -m "feat([scope]): [TASK-ID] — [one line plain English description]"
-5. Commit doc updates separately:
-   git add vibe/TASKS.md vibe/DECISIONS.md vibe/CODEBASE.md
+5. If this task made a MEANINGFUL implementation decision (hard to reverse · picked
+   among real alternatives — a library/pattern/data-model/API shape · would surprise a
+   future reader · deviates from ARCHITECTURE.md), append one entry to
+   vibe/IMPLEMENTATION_LOG.md per the schema in that file's header (newest last; set
+   Touches: to the files/functions changed). Routine work needs no entry — don't add noise.
+6. Commit doc updates separately:
+   git add vibe/TASKS.md vibe/DECISIONS.md vibe/IMPLEMENTATION_LOG.md vibe/CODEBASE.md
    git commit -m "docs(TASKS): mark [TASK-ID] done — [plain English]"
-6. Update "What just happened" and "What's next" in vibe/TASKS.md
-7. Re-read vibe/TASKS.md silently
-8. State next task in plain English and confirm before starting
+7. Update "What just happened" and "What's next" in vibe/TASKS.md
+8. Re-read vibe/TASKS.md silently
+9. State next task in plain English and confirm before starting
 
 Rules:
 - NEVER skip the commit step — uncommitted work is invisible to vibe-graph and vibe-review
@@ -509,6 +516,16 @@ Generate the placeholder version. Save as `vibe/CODEBASE.md`.
 (No entries yet)
 ```
 
+### vibe/IMPLEMENTATION_LOG.md
+
+Write this file from the canonical template in
+`references/IMPLEMENTATION_LOG_MD.md` (use the **FILE TEMPLATE** block there verbatim).
+It is the append-only **implementation-decision** log — code-altitude "why this approach,
+why this library" — the companion to DECISIONS.md (which stays at spec/scope altitude).
+It starts empty; the build skills append to it as meaningful decisions are made, and
+`Touches:` lines link each decision to vibe-graph nodes. Do not duplicate the schema here —
+the file's own header carries it.
+
 ### vibe/reviews/ folder
 
 Create `vibe/reviews/backlog.md`:
@@ -613,6 +630,7 @@ flow + state only.
 > vibe/ARCHITECTURE.md ← [locked from architect: / auto-generated from plan]
 > vibe/CODEBASE.md     ← placeholder until Phase 1 done
 > vibe/SPEC.md + SPEC_INDEX.md + PLAN.md + DECISIONS.md
+> vibe/IMPLEMENTATION_LOG.md  ← implementation decisions logged as you build
 > vibe/reviews/backlog.md
 > vibe/spec-reviews/   ← spec review history
 > vibe/graph/          ← dependency graph (spec graph initialised)

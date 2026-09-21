@@ -363,8 +363,8 @@ Files you MAY read (your imports):
 ═══ COMPLETION REPORT ═══
 When your task is complete, end your turn with a single fenced ```json block
 matching this schema exactly (see references/REPORTING.md for the full spec).
-Do NOT edit vibe/CODEBASE.md, DECISIONS.md, TASKS.md, or CLAUDE.md yourself —
-describe the deltas in the report; the main session applies them.
+Do NOT edit vibe/CODEBASE.md, DECISIONS.md, IMPLEMENTATION_LOG.md, TASKS.md, or CLAUDE.md
+yourself — describe the deltas in the report; the main session applies them.
 
 {
   "task_id": "[TASK-ID]",
@@ -376,9 +376,14 @@ describe the deltas in the report; the main session applies them.
   "codebase_update": "what changed, for the main session to record | ",
   "blockers": ["anything downstream tasks must know", ...],
   "rationale_added": "WHY/DECISION comments added | ",
+  "decisions": [ { "title": "...", "why": "why this / why this lib / what was rejected",
+                   "touches": "files or functions" }, ... ],   // [] if none meaningful
   "error": "failure detail | null"
 }
 ```
+`decisions` carries only MEANINGFUL implementation choices (hard to reverse · picked among
+real alternatives · would surprise a future reader) — routine work reports `[]`. The main
+session promotes them into vibe/IMPLEMENTATION_LOG.md after the wave.
 Where the runtime supports schema-validated output/tool calls, this schema is
 bound with `strict: true` so the shape is guaranteed.
 
@@ -501,8 +506,15 @@ Collect all `FILES_MODIFIED` and `FILES_CREATED` from completion reports.
 The main session updates `vibe/CODEBASE.md` once — not during parallel execution.
 Each subagent reports what it changed; the main session writes the update.
 
+**Promote decisions to IMPLEMENTATION_LOG.md (batched — main session only):**
+Collect every non-empty `decisions` array from the completion reports and append one
+`## D-NNN` entry per decision to `vibe/IMPLEMENTATION_LOG.md`, per that file's header
+schema (newest last; map `title`→heading, `why`→Why/alternatives, `touches`→Touches, and
+set Date/cycle to the wave's task id). De-duplicate if two subagents reported the same
+choice. Skip empties — most tasks report `[]`. Subagents never write this file themselves.
+
 > Subagents must **never** write the main-session-owned files directly —
-> `vibe/CODEBASE.md`, `vibe/DECISIONS.md`, `vibe/TASKS.md`, `CLAUDE.md`. They
+> `vibe/CODEBASE.md`, `vibe/DECISIONS.md`, `vibe/IMPLEMENTATION_LOG.md`, `vibe/TASKS.md`, `CLAUDE.md`. They
 > report deltas in their completion report and the main session applies them
 > after the wave. This is why those files are skipped in write-conflict
 > detection (see `references/WAVE_BUILDER.md` → `MAIN_SESSION_OWNED_FILES`):

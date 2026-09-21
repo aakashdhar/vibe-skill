@@ -78,6 +78,7 @@ The second task (alphabetically later ID) moves to the next wave.
 MAIN_SESSION_OWNED_FILES = {
     "vibe/CODEBASE.md",
     "vibe/DECISIONS.md",
+    "vibe/IMPLEMENTATION_LOG.md",
     "vibe/TASKS.md",
     "CLAUDE.md",
 }

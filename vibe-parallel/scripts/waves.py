@@ -16,7 +16,7 @@ Input JSON (default: vibe/parallel/tasks.json):
     {"id":"TASK-001","deps":[],"writes":["src/a.py"],"reads":[],"size":"M"},
     {"id":"TASK-002","deps":["TASK-001"],"writes":["src/b.py"],"reads":["src/a.py"],"size":"S"}
   ],
-  "main_session_owned": ["vibe/CODEBASE.md","vibe/DECISIONS.md","vibe/TASKS.md","CLAUDE.md"],
+  "main_session_owned": ["vibe/CODEBASE.md","vibe/DECISIONS.md","vibe/IMPLEMENTATION_LOG.md","vibe/TASKS.md","CLAUDE.md"],
   "god_nodes": ["src/core.py"]          // optional; pairs coupled to same god node deferred
 }
 
@@ -29,7 +29,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 
 SIZE_HOURS = {"S": 1.5, "M": 3.0, "L": 5.0}
-DEFAULT_OWNED = {"vibe/CODEBASE.md", "vibe/DECISIONS.md", "vibe/TASKS.md", "CLAUDE.md"}
+DEFAULT_OWNED = {"vibe/CODEBASE.md", "vibe/DECISIONS.md", "vibe/IMPLEMENTATION_LOG.md", "vibe/TASKS.md", "CLAUDE.md"}
 
 
 def load(path):

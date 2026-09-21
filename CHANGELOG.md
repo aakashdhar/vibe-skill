@@ -8,6 +8,38 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.4.0] — 2026-09-21
+
+Theme: **The codebase records its own reasoning.** Every build now keeps an append-only
+log of *why* it was built the way it was, and vibe-graph derives a live map of *how*
+execution travels — both readable by humans (onboarding) and by future AI sessions (so a
+settled choice isn't re-derived or re-litigated).
+
+### Added
+- **`vibe/IMPLEMENTATION_LOG.md` — append-only implementation-decision log.** Code-altitude
+  "why this approach, why this library," distinct from `DECISIONS.md` (spec/scope). Always-on:
+  scaffolded by `vibe-new-app` / `vibe-init`, appended by the build skills when a choice clears
+  the "meaningful" bar (hard to reverse · picks among real alternatives · would surprise a future
+  reader · deviates from ARCHITECTURE.md). Append-only with supersede; each entry's `Touches:`
+  links to graph nodes. Canonical template + rules in
+  `vibe-new-app/references/IMPLEMENTATION_LOG_MD.md`.
+- **`vibe-graph` execution-flow layer.** New `graph.py flow` command derives
+  `vibe/graph/FLOW.md` — entry points (`"entrypoint": true` nodes) → the modules and functions
+  each reaches, confidence-marked, with import-cycle detection. Optional function-level `calls`
+  edges give the "which function calls which" detail. **Derived and regenerated on every graph
+  update — never hand-written, so it can't rot.** Entry-point nodes are highlighted in
+  `graph.html`. Wired into `vibe-graph` init/build/update/rebuild and the status output.
+
+### Changed
+- **`vibe-parallel` subagent report** gains a `decisions[]` field (title / why / touches);
+  the main session promotes non-empty ones into `IMPLEMENTATION_LOG.md` after each wave.
+  `IMPLEMENTATION_LOG.md` added to `MAIN_SESSION_OWNED_FILES` (conflict detection skips it).
+- **`vibe-review`** reads `IMPLEMENTATION_LOG.md` and flags **significant undocumented
+  decisions** as P2 findings in Step 3 (drift detection) — keeping the "why" from silently
+  rotting out of the record.
+- **`vibe-new-app` / `vibe-add-feature` / `vibe-fix-bug`** per-task/close-out sequences now
+  append meaningful decisions to `IMPLEMENTATION_LOG.md` and include it in the doc commit.
+
 ## [2.3.0] — 2026-09-19
 
 Theme: **P1 blocks the phase gate, and findings must be machine-readable.** Closes a
