@@ -197,6 +197,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.4.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.0.0...v2.1.0
