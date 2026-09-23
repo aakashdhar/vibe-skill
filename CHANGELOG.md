@@ -8,6 +8,24 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.5.2] — 2026-09-23
+
+Findings from the first end-to-end headless run (Reeve driving `vibe-mode: run` from a
+brief to a complete two-phase build with no human input). The run succeeded; these are
+the places it took a shortcut the contract doesn't allow.
+
+### Fixed
+- **vibe-review fixed a P1 inside the review** and recorded the gate as passed. Review
+  now states explicitly that it never fixes what it finds, however small: every P0/P1
+  becomes an RFX task and the gate is recorded `open`, so the fix goes through the fix
+  loop and a fresh review.
+- **Independent tasks were built inline instead of through vibe-parallel.** The
+  autonomous block now says to *always* use vibe-parallel for 2+ independent tasks —
+  it's what checks conflicts and writes `vibe/parallel/wave-N-status.md`, which
+  anyone watching the build (e.g. Reeve's panel) reads.
+- **TASKS.md "What's next" went stale** mid-build. The autonomous block now rewrites
+  "What just happened" / "What's next" after every wave and before every stop.
+
 ## [2.5.1] — 2026-09-23
 
 ### Fixed
@@ -315,6 +333,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.5.2]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.0...v2.4.1
