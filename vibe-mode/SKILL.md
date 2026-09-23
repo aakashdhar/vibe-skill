@@ -1,34 +1,53 @@
 ---
 name: vibe-mode
 description: >
-  Sets the execution mode for the vibe-* framework — manual or autonomous.
+  Sets the execution mode for the vibe-* framework — manual or autonomous — plus who
+  approves the spec and design (APPROVALS) and whether an autonomous build continues
+  past a passed phase gate (PHASES). `vibe-mode: run` resumes a build from the files
+  alone — the single entry point for driving vibe headlessly (e.g. `claude -p`).
   In manual mode: waits for "next" between tasks, waits for "review:" after phases.
   In autonomous mode: executes all tasks automatically, uses subagents for
-  independent tasks in parallel, auto-runs review after each phase, only stops
-  on P0/P1 findings at a phase gate, a task failing twice, or deploy gates.
+  independent tasks in parallel, auto-runs review after each phase and clears a failing
+  gate with up to 2 fix cycles, and stops only when a gate is still blocked, a task
+  fails twice, an approval is needed, or at deploy. Every stop is written to
+  vibe/.run_state.json.
   Triggers on "vibe-mode: autonomous", "vibe-mode: manual", "vibe-mode: status",
+  "vibe-mode: run", "vibe-mode: approvals", "vibe-mode: phases", "continue the build",
   "set autonomous mode", "set manual mode", "switch to autonomous",
   "turn on autonomous", "turn off autonomous", "what mode am I in".
   Always use when the user wants to control how much the framework
   runs automatically vs waits for human input.
-  Writes VIBE_MODE to CLAUDE.md. Execution-driving skills (vibe-new-app,
-  vibe-add-feature, vibe-fix-bug, vibe-parallel, vibe-review, vibe-cost) read it
-  on startup; skills with no mode-dependent behavior don't need to.
+  Writes the Execution mode section of CLAUDE.md. Settings are read through
+  scripts/vibe_state.py (env vars override CLAUDE.md) — see references/HEADLESS.md.
 ---
 
 # Vibe Mode Skill
 
-Sets and persists the execution mode for the entire vibe-* framework.
-One command. Affects every skill in the session.
+Sets and persists how the vibe-* framework runs, and resumes a build.
+The full contract for running without a person watching is
+[`references/HEADLESS.md`](references/HEADLESS.md).
 
 ---
 
 ## Commands
 
 ```
-vibe-mode: autonomous    ← full auto-execution, subagents, auto-review
-vibe-mode: manual        ← default, waits for next and review: at each step
-vibe-mode: status        ← shows current mode and what it means
+vibe-mode: autonomous          ← full auto-execution, subagents, auto-review
+vibe-mode: manual              ← default, waits for next and review: at each step
+vibe-mode: approvals human     ← default: you sign off the spec and the design
+vibe-mode: approvals auto      ← the agent signs them off (logged in DECISIONS.md)
+vibe-mode: phases stop         ← default: stop after each passed phase gate
+vibe-mode: phases continue     ← carry on into the next phase automatically
+vibe-mode: status              ← shows the current settings and what they mean
+vibe-mode: run                 ← resume the build from where the files say it is
+```
+
+All settings are read with one helper (env vars `VIBE_MODE`, `VIBE_APPROVALS`,
+`VIBE_PHASES` override CLAUDE.md, so a driver can set them before CLAUDE.md exists):
+
+```bash
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode
 ```
 
 ---
@@ -36,30 +55,32 @@ vibe-mode: status        ← shows current mode and what it means
 ## Step 1 — Read current CLAUDE.md
 
 ```bash
-cat CLAUDE.md 2>/dev/null | grep "VIBE_MODE" || echo "NOT SET"
+python3 "$VS" mode
 ```
 
-If `CLAUDE.md` does not exist:
+If `CLAUDE.md` does not exist and the command is anything other than `status` or `run`:
 > "No CLAUDE.md found — are you at the project root?
 > Run this from inside a vibe-* project."
 Stop.
 
 ---
 
-## Step 2 — Apply the mode
+## Step 2 — Apply the setting
 
-### Setting autonomous mode
-
-Find the `## Execution mode` section in `CLAUDE.md`.
-If it exists — update the `VIBE_MODE` line.
-If it doesn't exist — append the section.
+All three settings live in one section of `CLAUDE.md`. Find `## Execution mode`; if it
+doesn't exist, append it. Update only the line you were asked to change and keep the
+others (add any that are missing, with their defaults):
 
 ```
 ## Execution mode
-VIBE_MODE=autonomous
+VIBE_MODE=manual        # manual | autonomous
+APPROVALS=human         # human | auto — who signs off the spec and the design
+PHASES=stop             # stop | continue — after a phase gate passes
 ```
 
-Then confirm:
+### Setting autonomous mode
+
+Set `VIBE_MODE=autonomous`. Then confirm:
 
 ```
 ⚡ Autonomous mode activated.
@@ -68,9 +89,11 @@ What this means for this session:
   Tasks      — execute automatically, no "next" needed
   Parallel   — independent tasks spawn as subagents simultaneously
   Sequential — dependent tasks run in order automatically
-  Review     — runs automatically after each phase completes
-  P0/P1 found — stops at the phase gate and waits for you to resolve
-  P2/P3      — logged to backlog, build continues
+  Planning   — no questions: recommended options taken, assumptions logged to DECISIONS.md
+  Review     — runs automatically after each phase; a failing gate gets up to 2 fix cycles
+  Stops when — a gate is still blocked after that, a task fails twice,
+               or the spec / design needs your sign-off (APPROVALS=human)
+  Phases     — [stop after each passed gate | continue automatically] (PHASES)
   Deploy     — always manual, no exceptions
 
 To switch back: vibe-mode: manual
@@ -78,12 +101,7 @@ To switch back: vibe-mode: manual
 
 ### Setting manual mode
 
-```
-## Execution mode
-VIBE_MODE=manual
-```
-
-Confirm:
+Set `VIBE_MODE=manual`. Confirm:
 
 ```
 ✋ Manual mode activated.
@@ -98,35 +116,42 @@ This is the default vibe-* behaviour.
 To switch: vibe-mode: autonomous
 ```
 
+### Setting approvals or phases
+
+`vibe-mode: approvals human|auto` sets `APPROVALS=`; `vibe-mode: phases stop|continue`
+sets `PHASES=`. Confirm with one line saying what changed and what it means (see the
+comments in the section above).
+
 ### Status check
 
-Read current `VIBE_MODE` from `CLAUDE.md`. Show:
-
-```
-Current mode: [autonomous | manual | not set (defaults to manual)]
-
-[Show the relevant "what this means" block from above]
-
-Switch with:
-  vibe-mode: autonomous
-  vibe-mode: manual
-```
+Run `python3 "$VS" mode` and show each setting, where it came from (env / CLAUDE.md /
+default), any warnings, and the matching "what this means" block. If
+`vibe/.run_state.json` exists, also show its status, reason and next action.
 
 ---
 
-## How all vibe-* skills read the mode
+## Step 3 — `vibe-mode: run` (resume a build)
 
-Every skill that executes tasks reads this at startup:
+Follow [`references/HEADLESS.md`](references/HEADLESS.md) §5 exactly: work out from the
+files where the build is (no plan → `new:` · spec gate · design gate · the current
+phase · final gate) and continue from the earliest unfinished step, using
+`references/AUTONOMOUS_EXECUTION_BLOCK.md` for execution. Always end by writing
+`vibe/.run_state.json` (HEADLESS.md §4).
 
-```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
-```
+`vibe-mode: run` behaves as if `VIBE_MODE=autonomous` for this invocation even when
+CLAUDE.md says manual — asking to "continue the build" is the instruction to run it.
 
-Returns `autonomous`, `manual`, or empty (treated as `manual`).
+---
 
-The mode check happens once per skill invocation — at the very start,
-before any planning or execution. If the mode changes mid-session
-(user runs `vibe-mode:` again), the next skill invocation picks it up.
+## How all vibe-* skills read the settings
+
+Every skill that asks questions, waits for approval, or executes tasks resolves the
+settings at startup with `vibe_state.py mode` — never by grepping CLAUDE.md, because a
+driver may have set them in the environment. When `vibe_mode` is `autonomous`, the
+skill follows HEADLESS.md §2 instead of waiting.
+
+The check happens once per skill invocation — at the very start, before any planning or
+execution. If a setting changes mid-session, the next skill invocation picks it up.
 
 ---
 
@@ -135,13 +160,16 @@ before any planning or execution. If the mode changes mid-session
 **Deploy is always manual.** `VIBE_MODE=autonomous` never removes the
 deploy gate. Shipping to production always requires a human to confirm.
 
-**P0s always stop autonomous mode.** The autonomous loop pauses on any
-P0 finding from review. The build does not continue until P0s are resolved.
-This is non-negotiable — P0s exist precisely because they block progression.
+**A phase gate always holds.** No phase starts until the previous phase's review has
+0 P0 and 0 P1. Autonomous mode may fix its way to a clean review (at most 2 cycles),
+but it never skips or overrides the gate.
 
-**The mode persists until explicitly changed.** Setting `autonomous` at the
+**Every stop is recorded.** Before stopping for any reason, write
+`vibe/.run_state.json` so anyone outside the session can see why.
+
+**The settings persist until explicitly changed.** Setting `autonomous` at the
 start of a `new:` session means it stays autonomous for every subsequent
-`add-feature:`, `fix-bug:`, and `review:` in that project until you run
+`feature:`, `bug:`, and `review:` in that project until you run
 `vibe-mode: manual`.
 
 **Manual mode is always safe to switch to.** At any point during an

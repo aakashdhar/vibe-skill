@@ -21,6 +21,13 @@ Traces the full dependency graph of any change, maps every affected file,
 and writes complete coverage — component, integration, and E2E.
 No gaps. No assumptions. Everything the change could have touched gets tested.
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 **Runs in agent mode (Claude Code / Cursor). Requires filesystem access.**
 
 ---

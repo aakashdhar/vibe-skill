@@ -116,6 +116,13 @@ Store result — used in Step 3 for context slicing.
 
 Read the source task file in full.
 
+**Where the metadata lives:** in `FEATURE_TASKS.md` / `BUG_TASKS.md` it is the
+`**Size**` / `**Dependencies**` (or `**Depends on**`) / `**Touches**` fields. In
+`vibe/TASKS.md` (Phase 1 and Phase 3) it is the indented line under each task:
+`size: S|M|L · deps: [IDs or none] · touches: [files]`. When `touches` is `?` or missing,
+write `"writes": null` in `tasks.json` — the wave engine then runs that task on its own
+instead of guessing that it conflicts with nothing.
+
 Extract for each pending `[ ]` task:
 
 ```python
@@ -472,7 +479,13 @@ On retry → if still FAILED: mark `[!]`, stop wave, surface to human.
 **Stop condition:**
 Any task that fails twice stops the entire wave.
 Do not proceed to the next wave.
-Report clearly:
+First record the stop so anyone outside the session can see it (vibe-mode
+`references/HEADLESS.md` §4):
+```bash
+python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state set --status needs_human \
+  --phase [N] --reason "[TASK-ID] failed after retry: [root cause]" --next "fix, then resume"
+```
+Then report clearly:
 
 ```
 🔴 WAVE [N] PAUSED

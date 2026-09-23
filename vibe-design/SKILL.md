@@ -15,6 +15,10 @@ description: >
   "redesign this page", "the UI needs work", "can you polish",
   "do a design pass", "it looks too plain", "it looks generic",
   "it looks like a saas dashboard", "make separate pages".
+  Two review modes: "design: critique" judges the design + preview and writes
+  vibe/design/critique.md (MUST-FIX / CONSIDER / NIT) without changing anything;
+  "design: fix [must|must+consider|all]" applies those notes, regenerates the preview,
+  and re-critiques. Used at the design gate before the design is signed off.
   Always use when the goal is visual — aesthetics, layout, feel, interactions.
   Never use for logic, data, tests, or spec changes.
 ---
@@ -24,6 +28,13 @@ description: >
 Handles all visual styling for a vibe project.
 Invokes frontend-design first. Commits to a design contract.
 Re-reads that contract before every component. Creates separate files.
+
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 **The separation of concerns:**
 - **vibe agent** — spec compliance, data flow, logic, tests, docs
@@ -396,6 +407,54 @@ Signal done:
    Files: [N files created — list them]
    Contract: vibe/design/CONTRACT.md
 ```
+
+---
+
+## Mode: `design: critique` — judge the design, change nothing
+
+Run this after `design:` (and before the design is signed off at the design gate).
+
+1. Invoke the **frontend-design** skill for the lens. Read `DESIGN.md` (if any),
+   `vibe/design/CONTRACT.md`, `vibe/DESIGN_SYSTEM.md` and `vibe/design/preview.html`.
+2. Judge the design against the frontend-design principles and `references/ANTI_GENERIC.md`:
+   is it distinctive or a default dashboard; type hierarchy and pairing; palette; spacing
+   and rhythm; one real signature element; empty / loading / error states;
+   responsiveness; contrast and accessibility.
+3. Judge `preview.html` **as a click-through prototype**: does it render the product's
+   primary screens (not just one) with navigation between them and realistic sample
+   content, so the *flow* can be reviewed? A single-screen or style-tile-only preview is a
+   MUST-FIX.
+4. Write `vibe/design/critique.md` with exactly three sections, headed exactly like this so
+   tools can count them:
+   ```
+   # Design critique — [project] — [date]
+
+   ## MUST-FIX ([N])
+   - **[short title].** [specific, actionable note — cite the token/component/file:line]
+
+   ## CONSIDER ([N])
+   - ...
+
+   ## NIT ([N])
+   - ...
+   ```
+5. **Do not edit the design, the preview, or any code.** End with the three counts.
+
+## Mode: `design: fix [must|must+consider|all]` — apply the critique
+
+1. Invoke frontend-design. Read `vibe/design/critique.md` and the design files above.
+2. Apply the notes in scope (`must` = MUST-FIX only; `must+consider`; `all`) to
+   `DESIGN.md` / `vibe/design/CONTRACT.md` / `vibe/DESIGN_SYSTEM.md` — the smallest change
+   that resolves each note, following its intent. Keep the direction's tokens and
+   signature coherent; **do not invent an unrelated new look.**
+3. **Regenerate `vibe/design/preview.html`** so every change is visible in the rendered
+   preview (Step 3.5 rules).
+4. Re-run `design: critique` and rewrite `vibe/design/critique.md` with the new counts.
+5. Do not build app features or start a build. Commit: `design(critique): apply [scope] notes`.
+
+At the design gate in autonomous mode, vibe-new-app / `vibe-mode: run` run
+`design:` → `design: critique` → one `design: fix must` pass, then record the gate
+(vibe-mode `references/HEADLESS.md` §3).
 
 ---
 

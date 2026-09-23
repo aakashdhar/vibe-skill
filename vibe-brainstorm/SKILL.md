@@ -34,6 +34,13 @@ Every minute here prevents hours of rework later.
 
 **Always run in Plan Mode (Shift+Tab). No code. No project files.**
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 ---
 
 ## The O'Reilly principle this serves

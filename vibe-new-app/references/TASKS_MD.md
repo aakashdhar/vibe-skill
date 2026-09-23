@@ -19,13 +19,19 @@ dependencies visible — not slugs.
 > [2-3 plain English sentences: what this app does, who it's for, core value.]
 > One file to watch. Updated after every task.
 
+## Spec gate
+⬜ spec: — pending · approve the plan (SPEC.md + PLAN.md) before the build starts
+
 ## Phase 1 — Foundation
 > No user-facing features. Sets up everything Phase 2 depends on.
 > Phase 1 exit: run `review: phase 1` when all tasks complete.
 
 [ ] P1-001 · [Task] — [one plain English line]
+      size: [S|M|L] · deps: none · touches: [files/folders this task writes]
 [ ] P1-002 · [Task] — [one plain English line]
+      size: [S|M|L] · deps: P1-001 · touches: [files/folders]
 [ ] P1-00N · Populate CODEBASE.md — document everything built in Phase 1
+      size: S · deps: [every other P1 task] · touches: vibe/CODEBASE.md
 
 ## Phase 1 gate
 ⬜ review: phase 1 — pending
@@ -60,12 +66,18 @@ dependencies visible — not slugs.
 > Runs after Phase 2 gate passes. No new features.
 > Phase 3 exit: run `review: final` — 0 P0 + 0 P1 before deploy.
 
-⬜ Performance audit — profile and fix slow paths
-⬜ Error handling pass — all edge cases, empty states, error boundaries
-⬜ Accessibility audit — WCAG AA for all screens
-⬜ E2E tests — critical user flows automated
-⬜ Security review — auth, input validation, secrets, dependencies
-⬜ Documentation — README, API docs, deployment guide
+[ ] P3-001 · Performance audit — profile and fix slow paths
+      size: M · deps: none · touches: ?
+[ ] P3-002 · Error handling pass — all edge cases, empty states, error boundaries
+      size: M · deps: none · touches: ?
+[ ] P3-003 · Accessibility audit — WCAG AA for all screens
+      size: M · deps: none · touches: ?
+[ ] P3-004 · E2E tests — critical user flows automated
+      size: M · deps: P3-002 · touches: e2e/
+[ ] P3-005 · Security review — auth, input validation, secrets, dependencies
+      size: M · deps: none · touches: ?
+[ ] P3-006 · Documentation — README, API docs, deployment guide
+      size: S · deps: P3-001, P3-002, P3-003, P3-004, P3-005 · touches: README.md, docs/
 
 ## Final gate
 ⬜ review: final — pending
@@ -91,6 +103,15 @@ Run `review: phase 1` when all Phase 1 tasks are complete.
 ## Update rules (how TASKS.md changes over the build)
 
 - **Status markers:** `[ ]`/`⬜` pending · `[x]` done · `[~]` partial · `[!]` blocked.
+- **Task metadata line** (Phase 1 and Phase 3 tasks): the indented line under each task —
+  `size: S|M|L · deps: [task IDs or none] · touches: [files/folders it writes]` — is what
+  vibe-parallel reads to build waves. Fill `touches` from PLAN.md's folder structure; use
+  `?` only when you genuinely can't tell (vibe-parallel then runs that task on its own
+  rather than guess). Phase 2 features get their own metadata in FEATURE_TASKS.md.
+- **Spec gate / Design gate lines** are flipped by
+  `vibe-mode/scripts/vibe_state.py gate set spec|design --status …` (never by hand), which
+  also records them in `vibe/.gates.json`: `⬜ pending` · `✅ approved [date]` ·
+  `➖ skipped [date]` · `➖ n/a (non-UI project)`.
 - After every task: tick it, then rewrite **What just happened** / **What's next**.
 - When `feature:` plans a Phase 2 feature, its line stays but gains a link to
   `vibe/features/[slug]/FEATURE_TASKS.md`.

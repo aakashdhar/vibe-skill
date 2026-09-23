@@ -38,9 +38,16 @@ makes a gate *checkable* rather than remembered.
     "1": { "review": "passed", "p0": 0, "p1": 0, "date": "2026-09-10", "report": "vibe/reviews/phase-1-review.md" },
     "2": { "review": "open",   "p0": 1, "p1": 2, "date": "2026-09-12", "report": "vibe/reviews/phase-2-review.md" }
   },
-  "final":   { "review": "passed", "p0": 0, "p1": 0, "date": "...", "report": "vibe/reviews/phase-final-review.md" }
+  "final":   { "review": "passed", "p0": 0, "p1": 0, "date": "...", "report": "vibe/reviews/phase-final-review.md" },
+  "spec":    { "status": "approved", "date": "...", "by": "human", "report": "vibe/spec-reviews/..." },
+  "design":  { "status": "pending",  "date": "...", "by": "human", "report": "vibe/design/critique.md" }
 }
 ```
+
+`spec` and `design` are the two human sign-offs (`pending` | `approved` | `skipped` |
+`na`). They are written only through `vibe-mode/scripts/vibe_state.py gate set …`, which
+also flips the `## Spec gate` / `## Design gate` line in TASKS.md — see vibe-mode
+`references/HEADLESS.md` §3 for who approves (`APPROVALS=human|auto`).
 
 `review` status values: `open` (any P0 **or** P1 outstanding) | `passed` (0 P0 **and** 0 P1).
 A phase with no entry has not been reviewed yet. The bar is the same at every gate —
@@ -101,9 +108,8 @@ At the end of a review, vibe-review updates `vibe/.gates.json`:
   otherwise `open`.
 - Record `p0`, `p1`, `date`, `report` path — overwriting that phase's previous entry, so
   the counts always reflect the latest review.
-Merge into the existing file (never clobber other phases' entries). The design gate is not
-recorded here yet; it is tracked by the design artifacts and the `## Design gate` line in
-TASKS.md.
+Merge into the existing file (never clobber other phases' entries, or the `spec` /
+`design` sign-offs).
 
 ## Honest scope
 Layers 1-2 are convention the agent follows reliably because they are wired into the
