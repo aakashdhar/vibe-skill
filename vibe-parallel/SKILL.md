@@ -87,6 +87,15 @@ Same mode logic as Entry B.
 Source: `vibe/TASKS.md` Phase 1 tasks only.
 Same mode logic as Entry B.
 
+### Entry point E — Called by the phase loop for a batch of features
+Source: several `vibe/features/[date-slug]/FEATURE_TASKS.md` files — every feature the
+autonomous phase loop planned as one batch (vibe-mode AUTONOMOUS_EXECUTION_BLOCK, "Run
+the phase"). Parse all of them into **one** task pool (IDs are already unique by feature
+prefix), build the waves across the pool as usual — the conflict passes are what keep
+two features that write the same file apart — and mark each task `[x]` in its **own**
+feature's file. Name the wave file after the phase (`Wave N — Phase P: feature A,
+feature B`). Same mode logic as Entry B.
+
 ---
 
 ## Step 0 — Read project context

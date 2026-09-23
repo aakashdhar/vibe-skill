@@ -168,10 +168,21 @@ After Phase [N]'s gate passes:
 3. Write `run-state set --status running --phase [N+1]`.
 4. **Run the phase:**
    - **Concrete task lines** (`[ ] P[N+1]-001 · …`) → run this block for them.
-   - **Feature lines** (`⬜ [Feature] — …` with `Spec: run feature: …`) → in build order
-     (PLAN.md §6 — respect every `Needs:`), run `feature: [name]` for each. vibe-add-feature
-     plans it with no waits (HEADLESS.md §2) and builds it with this block; the phase's
-     review gate runs when the last feature is done.
+   - **Feature lines** (`⬜ [Feature] — …` with `Spec: run feature: …`) → work in
+     **batches** in build order (PLAN.md §6 — respect every `Needs:`). A batch is every
+     unfinished feature whose `Needs:` are all complete. The `Parallel with:` lines the
+     planner wrote say which of them share no writes.
+     - **Batch of 1** → run `feature: [name]`. vibe-add-feature plans it with no waits
+       (HEADLESS.md §2) and builds it with this block.
+     - **Batch of 2+** → the features are built **together**, not one after another:
+       1. Plan each one: `feature: [name] plan-only` (vibe-add-feature stops after its
+          spec review — nothing is built, no gate is run).
+       2. Run vibe-parallel **Entry point E** on all of the batch's `FEATURE_TASKS.md`
+          files at once. Its conflict passes keep two features that touch the same file
+          (e.g. a shared `app.js`) in different waves, so this is safe even when the
+          `Parallel with:` hint was optimistic.
+       3. Mark each feature `✅` in TASKS.md as its tasks finish, then take the next batch.
+     The phase's review gate runs once, after the last feature of the phase is done.
 5. Continue until every phase has passed.
 
 ### Final gate
