@@ -99,7 +99,7 @@ Full schema:
 | Configure hosting/CI | [Deployment, env vars] | [S/M/L] |
 | Populate CODEBASE.md | [Last task — documents everything built] | S |
 
-**Phase 1 exit gate:** `review: phase 1` — 0 P0 findings before Phase 2 begins.
+**Phase 1 exit gate:** `review: phase 1` — 0 P0 and 0 P1 before Phase 2 begins.
 
 ---
 
@@ -181,7 +181,7 @@ Feature 2    Feature 3 (parallel — no shared writes)
         Feature 5 (needs Feature 4)
 \`\`\`
 
-**Phase 2 exit gate:** `review: phase 2` — 0 P0 findings before Phase 3 begins.
+**Phase 2 exit gate:** `review: phase 2` — 0 P0 and 0 P1 before Phase 3 begins.
 
 ---
 

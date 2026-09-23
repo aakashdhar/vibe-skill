@@ -5,7 +5,7 @@ description: >
   In manual mode: waits for "next" between tasks, waits for "review:" after phases.
   In autonomous mode: executes all tasks automatically, uses subagents for
   independent tasks in parallel, auto-runs review after each phase, only stops
-  on P0 findings or deploy gates.
+  on P0/P1 findings at a phase gate, a task failing twice, or deploy gates.
   Triggers on "vibe-mode: autonomous", "vibe-mode: manual", "vibe-mode: status",
   "set autonomous mode", "set manual mode", "switch to autonomous",
   "turn on autonomous", "turn off autonomous", "what mode am I in".
@@ -69,8 +69,8 @@ What this means for this session:
   Parallel   — independent tasks spawn as subagents simultaneously
   Sequential — dependent tasks run in order automatically
   Review     — runs automatically after each phase completes
-  P0 found   — stops and waits for you to resolve
-  P1/P2      — logged to backlog, build continues
+  P0/P1 found — stops at the phase gate and waits for you to resolve
+  P2/P3      — logged to backlog, build continues
   Deploy     — always manual, no exceptions
 
 To switch back: vibe-mode: manual

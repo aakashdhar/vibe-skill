@@ -241,8 +241,13 @@ applies them.
   "codebase_update": "what changed, for the main session to record | ",
   "blockers": ["anything downstream tasks must know", ...],
   "rationale_added": "WHY/DECISION comments added | ",
+  "decisions": [ { "title": "...", "why": "...", "touches": ["path", ...] } ],
   "error": "failure detail | null"
 }
+
+`decisions` = implementation choices worth remembering (why this approach / library);
+the main session appends them to vibe/IMPLEMENTATION_LOG.md. Use [] if none.
+Do NOT edit vibe/IMPLEMENTATION_LOG.md yourself either.
 """.replace("{task_id}", task['id'])
 
     return prompt

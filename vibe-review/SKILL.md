@@ -4,8 +4,8 @@ description: >
   Evidence-based code review skill — mandatory gate after every phase completes.
   Triggers on "review:" prefix, "review the code", "code review", "audit the codebase",
   "check code quality", "review phase N", "is the code ready", "quality check".
-  Mandatory gate: Phase N cannot proceed to Phase N+1 without review passing with no P0 issues.
-  Final phase review blocks deploy until all P0 and P1 issues are resolved.
+  Mandatory gate: Phase N cannot proceed to Phase N+1 until review passes with 0 P0 and 0 P1.
+  Final phase review blocks deploy on the same bar (0 P0, 0 P1).
   Acts as Senior Engineer, Architect, and Code Quality Auditor.
   Gracefully handles missing ARCHITECTURE.md — reviews against PLAN.md patterns instead.
   Automated checks adapt to project stack (not npm-only).
@@ -18,7 +18,9 @@ Mandatory quality gate after every phase.
 Acts as **Senior Engineer, Architect, and Code Quality Auditor**.
 Evidence-based. Every finding backed by file path and line number.
 
-**Always run in Plan Mode (Shift+Tab). Never writes feature code.**
+**Never writes feature or source code.** Review is read-only on the codebase; the only
+files it writes are its own artifacts — the report in `vibe/reviews/`, `backlog.md`, the
+gate lines and RFX tasks in `vibe/TASKS.md`, and `vibe/.gates.json`.
 
 ---
 
@@ -423,23 +425,28 @@ replace it.
 
 ## Step 10 — Update vibe/TASKS.md
 
-**P0 or P1 issues found — insert blocking tasks:**
+Edit the gate line **in place** under its own heading (`## Phase [N] gate`, or
+`## Final gate` for `review: final`). Never add a second gate section. If the heading is
+missing (older or retrofit file), add it at the end of that phase's block. See the
+update rules in vibe-new-app `references/TASKS_MD.md`.
+
+**P0 or P1 issues found — mark blocked and insert fix tasks under the gate line:**
 ```
-🔴 Review fixes required — Phase [N] gate (0/N)
-   Must complete before Phase [N+1] begins.
+## Phase [N] gate
+🔴 review: phase [N] — blocked [date] · [N] P0 + [M] P1 open
    [ ] RFX-001 · [P0/P1 fix — plain English]
                  File: [path] · Issue: [one line]
    → Full report: vibe/reviews/phase-[N]-review.md
-
-## Phase gates
-Phase [N] → Phase [N+1]:  🔴 BLOCKED — [N] P0 + [M] P1 open, fix tasks above
 ```
 
-**Zero P0 and P1 — update gate status:**
+**Zero P0 and zero P1 — mark passed:**
 ```
-## Phase gates
-Phase [N] → Phase [N+1]:  ✅ reviewed [date] — 0 P0, 0 P1 (P2/P3 to backlog)
+## Phase [N] gate
+✅ review: phase [N] — passed [date] · 0 P0, 0 P1 (P2/P3 to backlog)
 ```
+
+On a re-review, replace the 🔴 line with the new result and leave completed `[x]`
+RFX tasks beneath it as history.
 
 ---
 
@@ -467,12 +474,13 @@ phase, p0, p1 = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
 p = pathlib.Path("vibe/.gates.json")
 g = json.loads(p.read_text()) if p.exists() and p.read_text().strip() else {"phases": {}}
 g.setdefault("phases", {})
-status = "passed" if p0 == 0 else "open"
+# One bar at every gate (phase and final): passed only at 0 P0 AND 0 P1.
+status = "passed" if (p0 == 0 and p1 == 0) else "open"
 entry = {"review": status, "p0": p0, "p1": p1,
          "date": datetime.date.today().isoformat(),
          "report": f"vibe/reviews/phase-{phase}-review.md"}
 if phase == "final":
-    g["final"] = {"review": "passed" if (p0 == 0 and p1 == 0) else "open", **entry}
+    g["final"] = entry
 else:
     g["phases"][phase] = entry
 p.write_text(json.dumps(g, indent=2) + "\n")
@@ -480,8 +488,8 @@ print(f"gate recorded: phase {phase} → {status} (P0={p0}, P1={p1})")
 PY
 ```
 
-If P0 > 0, the phase gate is **open** — the generated CLAUDE.md's advancement rule
-will block the next phase from starting until a re-review passes.
+If P0 > 0 **or** P1 > 0, the phase gate is **open** — the generated CLAUDE.md's
+advancement rule blocks the next phase from starting until a re-review passes.
 
 ---
 
@@ -507,7 +515,7 @@ grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
 📊 Score: [X/10] — Grade [A-F]
 🏗️  Architecture drift: [N issues / none]
 🔴 P0 issues: [N — fix tasks in TASKS.md / none]
-🔶 P1 issues: [N — logged to backlog]
+🔶 P1 issues: [N — fix tasks in TASKS.md / none]
 📋 Report: vibe/reviews/phase-[N]-review.md
 ```
 
@@ -520,21 +528,22 @@ Gate decision:
 
 **If `autonomous` — structured signal for calling skill:**
 
-On PASS (0 P0s):
+On PASS (0 P0 and 0 P1):
 ```
 REVIEW_RESULT: PASS
-P0: 0 | P1: [N] | P2: [N]
-AUTONOMOUS: Phase [N] complete — proceeding to next phase automatically.
+P0: 0 | P1: 0 | P2: [N]
+AUTONOMOUS: Phase [N] gate passed.
 ```
-Return control to the calling skill. It continues the autonomous loop.
+Return control to the calling skill. It decides what happens next (see
+vibe-mode's AUTONOMOUS_EXECUTION_BLOCK — by default the phase ends here).
 
-On FAIL (any P0s):
+On FAIL (any P0 or P1):
 ```
 REVIEW_RESULT: FAIL
 P0: [N] | P1: [N] | P2: [N]
-AUTONOMOUS: PAUSED — [N] P0 issue(s) require human resolution.
+AUTONOMOUS: PAUSED — [N] P0 + [M] P1 issue(s) block the gate.
 
-[List each P0 with file path, line, and specific fix]
+[List each P0/P1 with file path, line, and specific fix]
 
 Fix the above, then say "resume" to continue autonomous execution.
 ```

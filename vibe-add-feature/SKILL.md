@@ -85,7 +85,7 @@ Add changelog line: `> 📝 [date] · Verified during [feature-name] planning`
 If vibe/CODEBASE.md does not exist:
 - **If there is NO `vibe/` folder at all** (an existing repo never onboarded):
   recommend `vibe-init` first — it generates the full vibe/ set (ARCHITECTURE.md,
-  SPEC.md, DECISIONS.md, .gates.json, …) so this feature builds on real parity, not
+  SPEC.md, DECISIONS.md, TASKS.md, CLAUDE.md, …) so this feature builds on real parity, not
   a lone improvised CODEBASE.md. Offer: "This repo isn't set up for vibe yet — run
   `vibe-init` first (recommended), or I can generate just CODEBASE.md and proceed?"
 - If the user declines init (or only CODEBASE.md is missing): read

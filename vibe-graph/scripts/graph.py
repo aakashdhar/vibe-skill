@@ -10,7 +10,7 @@ model never has to mentally sort dictionaries or traverse a graph (a silent-erro
 Zero dependencies (stdlib only). Node schema (flat dict of path → node):
   { "src/x.py": { "state","concept","type"?,
                   "imports":[{"file","source","confidence","evidence"}|"path", ...],
-                  "imported_by":[...], "rationale":[{"kind","line","text"}]? } }
+                  "imported_by":[...], "rationale":[{"type","line","text"}]? } }
 
 Usage:
   python3 graph.py godnodes [--top N] [--graph PATH] [--meta PATH]   # compute + write .graph-meta.json
@@ -64,8 +64,19 @@ def cmd_godnodes(args):
     graph = load_graph(args.graph)
     deg = degrees(graph)
     ranked = sorted(deg.items(), key=lambda kv: kv[1], reverse=True)[:args.top]
-    god = [{"file": f, "degree": d,
-            "concept": (graph.get(f, {}) or {}).get("concept", "")} for f, d in ranked if d > 0]
+    god = []
+    for f, d in ranked:
+        if d <= 0:
+            continue
+        # `connections`/`risk`/`srp_flag` are the keys vibe-parallel and vibe-review read
+        # (SUBAGENT_CONTEXT.md, GRAPH_QUERY_PATTERNS.md); `degree` is kept for older readers.
+        entry = {"file": f, "degree": d, "connections": d,
+                 "risk": "HIGH" if d > 10 else "MEDIUM" if d > 5 else "LOW",
+                 "concept": (graph.get(f, {}) or {}).get("concept", "")}
+        if d > 10:
+            entry["srp_flag"] = True
+            entry["srp_note"] = f"{d} connections — consider splitting for SRP"
+        god.append(entry)
     meta_path = Path(args.meta)
     meta = {}
     if meta_path.exists() and meta_path.read_text().strip():
@@ -132,7 +143,8 @@ def cmd_query(args):
     if rat:
         print("\nRATIONALE (why this file is the way it is):")
         for r in rat:
-            print(f"  {r.get('kind','NOTE')} [line {r.get('line','?')}]: {r.get('text','')}")
+            # the build spec (CODEBASE_TO_GRAPH.md) writes `type`; accept legacy `kind` too
+            print(f"  {r.get('type') or r.get('kind') or 'NOTE'} [line {r.get('line','?')}]: {r.get('text','')}")
 
 
 def cmd_stats(args):

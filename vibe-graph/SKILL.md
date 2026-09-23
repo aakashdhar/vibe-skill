@@ -178,6 +178,7 @@ Write `vibe/graph/.graph-meta.json`:
   "version": 2,
   "created": "[ISO timestamp]",
   "last_updated": "[ISO timestamp]",
+  "last_commit": "[git rev-parse HEAD, or empty if no commits yet]",
   "update_count": 0,
   "mode": "spec",
   "nodes_planned": 0,
@@ -313,11 +314,23 @@ vibe-graph: build complete
 **Called by:** `vibe-add-feature` and `vibe-fix-bug` at session end.
 **Purpose:** Incremental update — only files changed this session.
 
-**Step 1 — Read git diff to find changed files:**
+**Step 1 — Find files changed since the graph was last updated:**
+
+Work is usually committed per task before this runs, so `git diff HEAD` alone would see
+nothing. Diff from the commit recorded at the last update (`last_commit` in
+`.graph-meta.json`) to now, plus anything still uncommitted:
 ```bash
-git diff --name-only HEAD
-git diff --name-only --cached
+META=vibe/graph/.graph-meta.json
+BASE=$(python3 -c "import json;print(json.load(open('$META')).get('last_commit',''))" 2>/dev/null)
+if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then
+  git diff --name-only "$BASE" HEAD        # committed since last update
+else
+  git diff --name-only HEAD~1 HEAD 2>/dev/null   # no baseline yet: last commit
+fi
+git diff --name-only HEAD                  # uncommitted working-tree changes
+git diff --name-only --cached              # staged
 ```
+Take the union, de-duplicated.
 
 **Step 2 — For each changed file:**
 
@@ -372,6 +385,7 @@ shows up here. FLOW.md is fully derived — never hand-edit it.
 ```json
 {
   "last_updated": "[ISO timestamp]",
+  "last_commit": "[output of git rev-parse HEAD — the baseline for the next update]",
   "update_count": "[N+1]",
   "files_updated_this_run": "[N]",
   "mode": "incremental",
