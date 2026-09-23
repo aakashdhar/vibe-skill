@@ -24,7 +24,8 @@ that would cause failures, confusion, or rework during the build.
 A bad spec is the most expensive bug in software.
 This skill finds it before it costs anything.
 
-**Always runs in Plan Mode. Never modifies files — read and report only.**
+**Never edits the documents it reviews unless the user says "fix [finding]".** It always
+writes its own report to `vibe/spec-reviews/` and a summary to `vibe/DECISIONS.md`.
 
 ---
 
@@ -460,7 +461,8 @@ Update `vibe/DECISIONS.md`:
 
 ## Absolute rules
 
-**Read only. Never modifies documents unless the user explicitly says "fix [finding]".**
+**Never modifies the reviewed documents unless the user explicitly says "fix [finding]".**
+Its own report and DECISIONS.md entry are always written.
 The default action is always to report and wait. Never silently modify a spec.
 
 **Every finding must be specific.**

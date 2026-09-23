@@ -134,8 +134,9 @@ deploy gate (no `deploy:` until `final.review` is `passed`).
 
 When the last task of a phase is done, run the phase review immediately
 (autonomous) or announce and run it (manual) — don't drift into the next phase.
-The hard lock is the git pre-push hook installed at setup (blocks a push while
-P0s are open; override once with `git push --no-verify`, logged in DECISIONS.md).
+The hard lock is the git pre-push hook installed at setup (blocks a push while any
+gate in `vibe/.gates.json` is open; override once with `git push --no-verify`, logged
+in DECISIONS.md).
 
 ## Active feature
 > Set when `feature:` runs. Cleared when the feature completes.

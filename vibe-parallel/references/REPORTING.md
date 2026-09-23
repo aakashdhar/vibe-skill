@@ -96,12 +96,13 @@ def _finalize(d, task_id):
     tests_ok = (passed == total) if total > 0 else True
     status = (d.get("status") or "").upper()
 
-    if status == "DONE" and not unmet and tests_ok:
+    # Same rule as determine_state() below — keep the two in lockstep.
+    if status == "FAILED" or not tests_ok:
+        state = "!"          # failing tests are a failure, whatever the criteria say
+    elif status == "DONE" and not unmet:
         state = "x"
-    elif status == "FAILED" or (total > 0 and not tests_ok and not unmet):
-        state = "!"
     else:
-        state = "~"
+        state = "~"          # PARTIAL, or DONE with unmet criteria
 
     files = lambda k: [f for f in (d.get(k) or []) if f and f != "none"]
     return {
@@ -150,8 +151,8 @@ def determine_state(report):
         return "!"
     if report["tests_total"] > 0 and report["tests_passed"] < report["tests_total"]:
         return "!"
-    if report["unmet_criteria"]:
-        return "~"
+    if report["status"] != "DONE" or report["unmet_criteria"]:
+        return "~"           # PARTIAL, or DONE with unmet criteria
     return "x"
 ```
 

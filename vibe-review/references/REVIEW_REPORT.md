@@ -30,7 +30,7 @@ Files reviewed: [count] · Phase [N] changes since [previous gate/sha].
   - Issue: [what is wrong, concretely]
   - Fix: [specific actionable recommendation]
 
-### P1 — High (must resolve before deploy; logged to backlog)
+### P1 — High (blocks this phase's gate; fix via RFX tasks)
 - **[P1-1] [Title]** — `path:LINE` — [issue] → [fix]
 
 ### P2 — Medium (should fix)

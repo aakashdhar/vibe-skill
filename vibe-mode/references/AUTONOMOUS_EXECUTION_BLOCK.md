@@ -90,11 +90,10 @@ Invoke `vibe-review` for this phase.
 
 **Review result handling:**
 
-If review returns 0 P0 findings:
+If review returns 0 P0 and 0 P1 findings (the gate bar):
 ```
-✅ Review passed — 0 P0 findings
-   [N] P1 findings logged to backlog
-   [N] P2 findings logged to backlog
+✅ Review passed — 0 P0, 0 P1
+   [N] P2/P3 findings logged to backlog
 
 [In autonomous mode: signal to calling skill that phase is complete]
 [vibe-new-app: announce Phase 1 done, Phase 2 ready to begin]
@@ -102,20 +101,20 @@ If review returns 0 P0 findings:
 [vibe-fix-bug: announce fix complete, ready for merge]
 ```
 
-If review returns any P0 findings:
+If review returns any P0 or P1 findings:
 ```
 🔴 AUTONOMOUS EXECUTION PAUSED
 
-Review found [N] P0 issue(s) that must be resolved before continuing:
+Review found [N] P0 + [M] P1 issue(s) that block the Phase [N] gate:
 
-[List each P0 with file path, line number, and specific fix required]
+[List each P0/P1 with file path, line number, and specific fix required]
 
 Fix these issues, then say "resume" to continue autonomous execution.
 ```
 
-Wait for human. Do not proceed until P0s are resolved and human says "resume".
+Wait for human. Do not proceed until the P0s and P1s are resolved and human says "resume".
 
-After "resume" → re-run review automatically → if 0 P0s → continue.
+After "resume" → re-run review automatically → if 0 P0 and 0 P1 → continue.
 
 ---
 
@@ -126,7 +125,7 @@ At the start (after kit is ready):
 ⚡ Autonomous mode active — executing all tasks automatically.
    Independent tasks run as parallel subagents.
    Review runs automatically after each phase.
-   I'll only stop if a P0 is found or a task fails twice.
+   I'll only stop if a review finds P0/P1 issues or a task fails twice.
    To switch to manual at any time: vibe-mode: manual
 ```
 

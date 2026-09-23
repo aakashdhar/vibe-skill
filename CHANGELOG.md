@@ -8,6 +8,51 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.4.1] — 2026-09-23
+
+Theme: **The rules agree with each other.** An audit of the framework as an orchestrator
+would drive it found several places where one file said one thing and another did the
+opposite. This release makes them consistent. No new behaviour.
+
+### Fixed
+- **One gate bar everywhere: 0 P0 AND 0 P1.** The written rule (v2.3.0) said P1 blocks a
+  phase gate, but the `.gates.json` writer marked a phase `passed` whenever P0 was 0, and
+  vibe-mode said P1s were "logged, build continues". The writer, `REVIEW_RESULT` signal,
+  `AUTONOMOUS_EXECUTION_BLOCK`, vibe-mode, `GATES.md`, `PLAN_MD.md` and the review report
+  template now all use the same bar, at every phase and at the final gate.
+- **One gate-line format in TASKS.md.** vibe-review used to append a separate
+  `## Phase gates` section that new-app never writes (and vibe-progress only read that
+  one). Review now edits the `## Phase N gate` line in place (`✅ passed` / `🔴 blocked`)
+  with RFX tasks beneath it; vibe-progress reads those lines and prefers `.gates.json`.
+- **The pre-push hook could never fire.** It grepped `backlog.md` for open P0s, but P0s go
+  to RFX tasks, never to the backlog. It now reads `vibe/.gates.json` and blocks while any
+  gate is `open`.
+- **vibe-graph god nodes.** `graph.py godnodes` wrote `degree`, but vibe-parallel and
+  vibe-review read `connections` / `risk` / `srp_flag`. It now writes all of them. Rationale
+  entries are read from `type` (what the build spec writes), with `kind` as a fallback.
+- **vibe-graph update saw nothing after a commit.** It diffed `HEAD`, which is empty once
+  tasks are committed. It now diffs from the `last_commit` recorded in `.graph-meta.json`,
+  plus uncommitted changes.
+- **waves.py could put a task in the same wave as a task that depends on it** when a
+  conflict deferral pushed it forward. A dependency re-layering pass now runs after every
+  deferral, until stable.
+- **Subagent report state rules disagreed.** `_finalize` and `determine_state` gave
+  different answers for failing tests with unmet criteria, and a `PARTIAL` report could be
+  marked complete. Both now follow one rule: failing tests → `[!]`, DONE + all met → `[x]`,
+  anything else → `[~]`.
+- **Doc contradictions:** spec-review said "never modifies files" while always writing its
+  report; review said "always Plan Mode" while writing its artifacts; add-feature claimed
+  vibe-init creates `.gates.json`; the vibe-init CLAUDE.md had no `## Execution mode`
+  section, so `vibe-mode` had nothing to switch.
+
+### Added
+- **waves.py size-aware fast lanes** (WAVE_BUILDER.md Pass 4, previously documented but not
+  implemented). A task that doesn't depend on or conflict with a wave's L task starts as
+  soon as that wave's S/M tasks finish. Reported under `fast_lanes` in `--json` output;
+  `waves` keeps its existing shape.
+- The subagent report template in `SUBAGENT_CONTEXT.md` now asks for the `decisions` field
+  that REPORTING.md already parses.
+
 ## [2.4.0] — 2026-09-21
 
 Theme: **The codebase records its own reasoning.** Every build now keeps an append-only
@@ -197,6 +242,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.4.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.1.0...v2.2.0

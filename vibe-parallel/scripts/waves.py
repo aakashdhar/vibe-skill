@@ -147,31 +147,118 @@ def resolve_god_nodes(waves, tasks, gods, log):
         defer(waves, losers, i)
 
 
-def estimate(waves, tasks):
-    seq = sum(SIZE_HOURS.get(tasks[t].get("size", "M"), 3.0) for t in tasks)
-    par = sum(max((SIZE_HOURS.get(tasks[t].get("size", "M"), 3.0) for t in w), default=0)
-              for w in waves)
+def enforce_deps(waves, tasks, log):
+    """Conflict deferral only ever pushes a task later, which can land it in the same
+    wave as (or after) one of its own dependents. Re-layer so every task sits strictly
+    after all of its dependencies, cascading as needed. Returns the new wave list."""
+    wave_of = {tid: i for i, w in enumerate(waves) for tid in w}
+    changed = True
+    while changed:
+        changed = False
+        for tid, t in tasks.items():
+            need = max((wave_of[d] + 1 for d in t.get("deps", []) if d in wave_of), default=0)
+            if wave_of[tid] < need:
+                log.append(f"dependency: {tid} moved from wave {wave_of[tid]+1} to wave "
+                           f"{need+1} (must follow its dependencies)")
+                wave_of[tid] = need
+                changed = True
+    out = [[] for _ in range(max(wave_of.values(), default=-1) + 1)]
+    for tid, i in wave_of.items():
+        out[i].append(tid)
+    return [sorted(w) for w in out]
+
+
+def _conflicts(a, b):
+    """True if two tasks can't run at the same time (shared write, or one reads what
+    the other writes)."""
+    wa, wb, ra, rb = _writes(a), _writes(b), _reads(a), _reads(b)
+    return bool(wa & wb or ra & wb or rb & wa)
+
+
+def fast_lanes(waves, tasks, owned, gods, log):
+    """Size-aware splitting (WAVE_BUILDER.md Pass 4). When wave N holds an L task beside
+    S/M tasks, a wave N+1 task that does not depend on (or conflict with) any L task can
+    start as soon as wave N's S/M tasks finish — it runs alongside the L task instead of
+    waiting for it. Promoted tasks move out of wave N+1 into wave N's fast lane.
+    Returns {wave_number (1-based): {"tasks": [...], "unlock_after": [...]}}."""
+    lanes = {}
+    for i in range(len(waves) - 1):
+        wave = waves[i]
+        big = [t for t in wave if tasks[t].get("size", "M") == "L"]
+        small = [t for t in wave if tasks[t].get("size", "M") in ("S", "M")]
+        if not big or not small:
+            continue
+        big_set = set(big)
+        promoted, stay = [], []
+        for tid in waves[i + 1]:
+            t = tasks[tid]
+            deps = set(t.get("deps", []))
+            files = (_writes(t) | _reads(t)) - owned
+            if (deps & big_set
+                    or any(_conflicts(t, tasks[b]) for b in big)
+                    or any(_conflicts(t, tasks[p]) for p in promoted)
+                    or (gods and files & gods)):
+                stay.append(tid)
+            else:
+                promoted.append(tid)
+        if promoted:
+            waves[i + 1] = stay
+            lanes[i + 1] = {"tasks": sorted(promoted), "unlock_after": sorted(small)}
+            log.append(f"fast lane: {', '.join(sorted(promoted))} promoted into wave {i+1} "
+                       f"(start after {', '.join(sorted(small))}; run beside {', '.join(sorted(big))})")
+    return lanes
+
+
+def schedule(tasks, owned, gods):
+    """Full deterministic plan: layer, resolve conflicts, re-layer for dependency safety
+    (repeat until stable), then size-aware fast lanes."""
+    waves, log = build_waves(tasks), []
+    for _ in range(len(tasks) + 1):
+        before = [list(w) for w in waves]
+        resolve_write_write(waves, tasks, owned, log)
+        resolve_read_write(waves, tasks, owned, log)
+        resolve_god_nodes(waves, tasks, gods, log)
+        waves = enforce_deps([w for w in waves], tasks, log)
+        if waves == before:
+            break
+    waves = [w for w in waves if w]
+    lanes = fast_lanes(waves, tasks, owned, gods, log)
+    waves = [w for w in waves if w]
+    return waves, lanes, log
+
+
+def estimate(waves, tasks, lanes=None):
+    h = lambda t: SIZE_HOURS.get(tasks[t].get("size", "M"), 3.0)
+    seq = sum(h(t) for t in tasks)
+    par = 0.0
+    for i, w in enumerate(waves, 1):
+        span = max((h(t) for t in w), default=0)
+        lane = (lanes or {}).get(i)
+        if lane:   # fast lane starts once the S/M tasks finish, runs beside the L task
+            small = max((h(t) for t in lane["unlock_after"]), default=0)
+            span = max(span, small + max((h(t) for t in lane["tasks"]), default=0))
+        par += span
     return seq, par
 
 
 def cmd_plan(args):
     tasks, owned, gods = load(args.file)
-    waves = build_waves(tasks)
-    log = []
-    resolve_write_write(waves, tasks, owned, log)
-    resolve_read_write(waves, tasks, owned, log)
-    resolve_god_nodes(waves, tasks, gods, log)
-    waves = [w for w in waves if w]     # drop any emptied wave
-    seq, par = estimate(waves, tasks)
+    waves, lanes, log = schedule(tasks, owned, gods)
+    seq, par = estimate(waves, tasks, lanes)
 
     if args.json:
-        print(json.dumps({"waves": waves, "conflicts": log,
-                          "seq_hours": seq, "par_hours": par}, indent=2))
+        print(json.dumps({"waves": waves,
+                          "fast_lanes": {str(k): v for k, v in lanes.items()},
+                          "conflicts": log, "seq_hours": seq, "par_hours": par}, indent=2))
         return
     print(f"Wave plan — {len(tasks)} tasks in {len(waves)} wave(s):\n")
     for i, w in enumerate(waves, 1):
         rows = ", ".join(f"{t}({tasks[t].get('size','M')})" for t in w)
         print(f"  Wave {i}: {rows}")
+        if i in lanes:
+            lane = lanes[i]
+            lr = ", ".join(f"{t}({tasks[t].get('size','M')})" for t in lane["tasks"])
+            print(f"    fast lane: {lr} — starts when {', '.join(lane['unlock_after'])} finish")
     print("\nConflict resolutions:" if log else "\nNo conflicts — all waves clean.")
     for line in log:
         print(f"  • {line}")

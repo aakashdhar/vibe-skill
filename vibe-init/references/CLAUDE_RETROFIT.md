@@ -14,6 +14,13 @@ Differences from greenfield: no phase gates, session startup reads existing code
 
 ---
 
+## Execution mode
+VIBE_MODE=manual
+<!-- manual: wait for "next" between tasks. autonomous: run tasks automatically,
+     subagents in parallel. Change with `vibe-mode: autonomous` / `vibe-mode: manual`. -->
+
+---
+
 ## Project overview
 
 **What it is:** [2 sentences — inferred from codebase]

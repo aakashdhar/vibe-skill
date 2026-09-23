@@ -94,6 +94,12 @@ Run `review: phase 1` when all Phase 1 tasks are complete.
 - After every task: tick it, then rewrite **What just happened** / **What's next**.
 - When `feature:` plans a Phase 2 feature, its line stays but gains a link to
   `vibe/features/[slug]/FEATURE_TASKS.md`.
-- Phase gate lines flip `⬜ pending` → `✅ passed [date]` only when `review:`
-  reports 0 P0 (0 P0 + 0 P1 for the final gate).
+- **Gate lines are the single source of gate status in TASKS.md.** Each lives under its
+  own `## Phase N gate` / `## Final gate` heading and is **edited in place** by `review:`
+  — never duplicated into a separate section:
+  - `⬜ review: phase N — pending` → `✅ review: phase N — passed [date] · 0 P0, 0 P1`
+    only when review reports **0 P0 and 0 P1** (the same bar at every gate, final included).
+  - Otherwise → `🔴 review: phase N — blocked [date] · [N] P0 + [M] P1 open`, with the
+    `RFX-NNN` fix tasks inserted directly beneath it. Re-review flips it to ✅ when clean.
+  - The machine-readable twin is `vibe/.gates.json` (see vibe-review `references/GATES.md`).
 - Never delete completed phases — they are the project's visible history.

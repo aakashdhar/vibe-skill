@@ -53,8 +53,11 @@ Reads vibe/TASKS.md and git history. Never modifies any file.
 - Overall % = (done / total) × 100, rounded to nearest 5
 
 **Phase gates:**
-Read `## Phase gates` section from TASKS.md exactly.
-Extract each gate line with its emoji status.
+Read every `## Phase N gate`, `## Design gate` and `## Final gate` heading in TASKS.md and
+the gate line directly under each (`⬜ pending` / `✅ passed` / `🔴 blocked`). If
+`vibe/.gates.json` exists, prefer its `review` + `p0`/`p1` values for phase and final
+gates — it is the machine-readable record. (Older files may still carry a single
+`## Phase gates` section; read it the same way if present.)
 
 **Backlog:**
 Count items in vibe/backlog/ folder.
@@ -171,7 +174,7 @@ Formula: filled = round(percentage / 5), empty = 20 - filled
 ✅  complete (100%)
 🔄  in progress (1-99%)
 ⬜  not started (0%)
-🔴  BLOCKED (phase gate blocked by P0 issues)
+🔴  BLOCKED (phase gate blocked by open P0/P1 issues)
 🐛  active bug fix
 ```
 
@@ -195,7 +198,7 @@ Add 🐛 ACTIVE BUG FIX section between ACTIVE NOW and COMPLETED FEATURES:
 ```
 
 **Review gate blocked:**
-Phase gates section shows 🔴 BLOCKED with the P0 count.
+The phase gate line shows 🔴 blocked with the P0 + P1 counts.
 Active section shows the RFX- fix tasks.
 
 **No backlog:**
