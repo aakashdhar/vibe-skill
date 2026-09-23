@@ -628,7 +628,8 @@ language — that is the "it skipped design" failure.
 - **Design system already exists** (user ran `design-md:`/`design:` earlier):
   design gate already passed — record `gate set design --status approved --by human` if
   it isn't recorded yet, and continue.
-- **Autonomous mode (UI project, no design system):** never skip. Run `design:`, then
+- **Autonomous mode (UI project, no design system):** never skip. Run `design:` up to its
+  Step 3.5 checkpoint (contract, tokens, preview — no production UI files before sign-off), then
   `design: critique`, then one `design: fix must` pass. Then per `APPROVALS`:
   `auto` → `gate set design --status approved --by agent-autonomous --report vibe/design/critique.md`
   and continue; `human` → `gate set design --status pending --report vibe/design/critique.md`,

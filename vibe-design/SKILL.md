@@ -236,6 +236,13 @@ Markdown contract has nothing a human can actually approve.
 
 ---
 
+
+**At a design gate, stop here.** When `design:` runs as the design gate (vibe-new-app
+Step 10C, `vibe-mode: run`, or a caller that asks for the Step 3.5 checkpoint), end after
+the contract, tokens and preview: the sign-off is on this, and the production UI files
+(Steps 4-7) are built afterwards by the build's UI tasks from the approved contract. In
+manual mode the person approves here in chat and you continue as usual.
+
 ## Step 4 — Establish file structure BEFORE writing any code
 
 **Rule: one file per page, one file per component family. Always.**

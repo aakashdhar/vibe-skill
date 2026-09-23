@@ -8,6 +8,16 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.5.1] — 2026-09-23
+
+### Fixed
+- **The autonomous design gate built the UI before anyone approved it.** At the design
+  gate (vibe-new-app Step 10C in autonomous mode, and `vibe-mode: run`), `design:` ran its
+  full pass — production pages and components — and only then asked for sign-off. It now
+  stops at vibe-design's own Step 3.5 checkpoint (contract, tokens, click-through preview);
+  the production UI is built afterwards by the build's UI tasks from the approved
+  contract. Manual mode is unchanged (you approve at 3.5 in chat, then it continues).
+
 ## [2.5.0] — 2026-09-23
 
 Theme: **vibe can run with no one watching.** Autonomous mode used to cover only the
@@ -305,6 +315,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.5.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.3.0...v2.4.0

@@ -131,8 +131,10 @@ the project is from the files alone and continues from the earliest unfinished s
    auto-approve).
 3. **Design gate** (TASKS.md has a `## Design gate` line and it is not `na`):
    if no design artifacts exist (`DESIGN.md`, `vibe/design/CONTRACT.md`,
-   `vibe/DESIGN_SYSTEM.md`), run `design:`, then `design: critique` and one
-   `design: fix must` pass. Then `gate check design` → section 3.
+   `vibe/DESIGN_SYSTEM.md`), run `design:` **up to its Step 3.5 checkpoint** (contract,
+   tokens, `vibe/design/preview.html`) — the production UI is built later by the phase's
+   UI tasks from the approved contract, never before sign-off. Then `design: critique`
+   and one `design: fix must` pass. Then `gate check design` → section 3.
 4. **Build:** the current phase is the first `## Phase N` with unfinished tasks or a gate
    that has not passed in `vibe/.gates.json` (0 P0 and 0 P1). Write `running`, then run
    `references/AUTONOMOUS_EXECUTION_BLOCK.md` for that phase.
