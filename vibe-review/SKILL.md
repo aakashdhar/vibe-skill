@@ -22,6 +22,13 @@ Evidence-based. Every finding backed by file path and line number.
 files it writes are its own artifacts — the report in `vibe/reviews/`, `backlog.md`, the
 gate lines and RFX tasks in `vibe/TASKS.md`, and `vibe/.gates.json`.
 
+**Never fix what you find — not even a one-line P1.** Every P0/P1 becomes an `RFX-NNN`
+task under the phase's gate line, and the gate is recorded with the counts you found
+(so it is `open`). The fix happens in the build's fix loop (vibe-mode
+`AUTONOMOUS_EXECUTION_BLOCK.md`), and a fresh review then decides whether the gate
+passes. Fixing inside the review and marking the gate passed skips the evidence the
+gate exists to produce: the fix is never reviewed by anyone but its author.
+
 ---
 
 ## The O'Reilly principle this enforces

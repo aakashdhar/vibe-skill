@@ -51,7 +51,11 @@ Read the task file (`FEATURE_TASKS.md` / `BUG_TASKS.md` / `TASKS.md`).
 Build dependency graph. Identify Wave 1 independent tasks.
 
 If Wave 1 has 2+ independent tasks:
-→ Invoke `vibe-parallel` (subagent dispatch, no prompt in autonomous mode)
+→ Invoke `vibe-parallel` (subagent dispatch, no prompt in autonomous mode). **Always** —
+  even when the tasks look small enough to do yourself in one go. vibe-parallel is what
+  checks file conflicts, writes `vibe/parallel/wave-N-status.md` (the record anyone
+  watching the build reads) and gives each task its own structured report. Doing several
+  tasks inline in this session skips all three.
 
 If Wave 1 has 1 task:
 → Execute it directly as a single subagent
@@ -76,6 +80,11 @@ For each wave (parallel or single):
 - Retry budget is per task; a task that converges (fewer unmet criteria on the
   retry) may warrant one more attempt — use judgment, don't hard-stop at exactly
   two if it's clearly closing in and cheap. Never loop indefinitely.
+
+**Keep the human view current.** After every wave, and before every stop, rewrite the
+`## What just happened` / `## What's next` sections at the bottom of `vibe/TASKS.md` to
+match the file's actual state — the next unticked task, or the gate that's due. A stale
+"What's next" misleads anyone reading the plan mid-build.
 
 **3. Unlock next wave**
 
