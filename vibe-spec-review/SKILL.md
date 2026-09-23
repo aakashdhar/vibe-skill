@@ -21,6 +21,13 @@ Audits every planning document before a line of code is written.
 Finds gaps, contradictions, untestable criteria, and missing boundaries
 that would cause failures, confusion, or rework during the build.
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 A bad spec is the most expensive bug in software.
 This skill finds it before it costs anything.
 
@@ -405,7 +412,25 @@ VERDICT
   Say "fix [P0-001]" to fix a specific finding now.
 ```
 
-**Wait for user response.**
+**Wait for user response** — except in autonomous mode (below).
+
+### Autonomous mode — fix, re-review, then decide
+
+When `vibe_state.py mode` reports `vibe_mode: autonomous`, don't wait:
+
+1. Apply fixes for **every P0 and P1** finding to the source documents — the smallest
+   change that resolves each one, following the finding's intent (the "fix all" path
+   below, without per-fix confirmation).
+2. Re-run this review from Step 2 over the same scope and write a fresh report.
+3. Repeat at most **2 fix rounds**.
+4. Then: **0 P0** → log the remaining P1/P2 as usual and return to the calling skill.
+   **P0s still open** → write
+   `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state set --status needs_human --reason "spec review: [N] P0 still open after 2 fix rounds" --next "see vibe/spec-reviews/[report]"`
+   and stop — a spec with critical gaps must not be built.
+
+Record the rounds in the DECISIONS.md entry (`Action: fixed autonomously — [N] rounds`).
+Spec-review never sets the spec **gate** itself — the calling skill (vibe-new-app Step
+10S) records the sign-off once the plan is final.
 
 ---
 

@@ -19,10 +19,15 @@ other vibe-* skill relies on.
 ---
 
 ## Execution mode
-VIBE_MODE=manual
-<!-- manual: wait for "next" between tasks, wait for "review:" after phases.
-     autonomous: run tasks automatically, subagents in parallel, auto-review.
-     Change with `vibe-mode: autonomous` / `vibe-mode: manual`. -->
+VIBE_MODE=[manual|autonomous — the resolved value from vibe_state.py mode]
+APPROVALS=[human|auto — resolved value]
+PHASES=[stop|continue — resolved value]
+<!-- VIBE_MODE  manual: wait for "next" between tasks, "review:" after phases.
+                autonomous: run tasks automatically, subagents in parallel, auto-review.
+     APPROVALS  human: you sign off the spec and the design. auto: the agent does (logged).
+     PHASES     stop: pause after each passed phase gate. continue: carry on.
+     Change with `vibe-mode: …`. Env vars VIBE_MODE / VIBE_APPROVALS / VIBE_PHASES
+     override these lines (vibe-mode/references/HEADLESS.md). -->
 
 ## Model guidance (per-task tiering)
 > Default build model: [claude-sonnet-5]. See vibe-cost references/PRICING.md
@@ -128,9 +133,11 @@ Confirm the actual request before opening any file.
 Before the FIRST task of Phase N+1, read `vibe/.gates.json`. If
 `phases["N"].review` is not `"passed"`, **STOP** and say:
 "Phase N's review gate is [status] — run `review: phase N` before Phase N+1."
-Do not start the next phase until it passes. Same rule for the design gate
-(no UI-feature build before `design` when no design system exists) and the
-deploy gate (no `deploy:` until `final.review` is `passed`).
+Do not start the next phase until it passes. Same rule for the two sign-offs
+recorded in the same file: no Phase 1 task before `spec.status` is cleared, and no
+UI-feature build before `design.status` is cleared (`approved`, `skipped`, or `na`) —
+check with `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py gate check spec|design`.
+And the deploy gate: no `deploy:` until `final.review` is `passed`.
 
 When the last task of a phase is done, run the phase review immediately
 (autonomous) or announce and run it (manual) — don't drift into the next phase.

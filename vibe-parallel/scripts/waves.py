@@ -80,7 +80,8 @@ def build_waves(tasks):
     return waves
 
 
-def _writes(t): return set(t.get("writes", []))
+def _unknown(t): return t.get("writes", []) is None   # touches unknown → run alone
+def _writes(t): return set(t.get("writes") or [])
 def _reads(t):  return set(t.get("reads", []))
 
 
@@ -126,6 +127,22 @@ def resolve_read_write(waves, tasks, owned, log):
                     log.append(f"read-write: {tid} deferred from wave {i+1} "
                                f"(reads {f} written by {writers[f]} same wave)")
                     break
+        defer(waves, losers, i)
+
+
+def resolve_unknown(waves, tasks, log):
+    """A task whose written files are unknown (`"writes": null`) could conflict with
+    anything, so it never shares a wave: keep it alone, defer everything else."""
+    for i in range(len(waves)):
+        if len(waves[i]) < 2:
+            continue
+        unknown = sorted(t for t in waves[i] if _unknown(tasks[t]))
+        if not unknown:
+            continue
+        keep = unknown[0]
+        losers = set(waves[i]) - {keep}
+        log.append(f"unknown-writes: {keep} runs alone in wave {i+1} "
+                   f"(its files are unknown); deferred {', '.join(sorted(losers))}")
         defer(waves, losers, i)
 
 
@@ -194,7 +211,7 @@ def fast_lanes(waves, tasks, owned, gods, log):
             t = tasks[tid]
             deps = set(t.get("deps", []))
             files = (_writes(t) | _reads(t)) - owned
-            if (deps & big_set
+            if (deps & big_set or _unknown(t) or any(_unknown(tasks[b]) for b in big)
                     or any(_conflicts(t, tasks[b]) for b in big)
                     or any(_conflicts(t, tasks[p]) for p in promoted)
                     or (gods and files & gods)):
@@ -218,6 +235,7 @@ def schedule(tasks, owned, gods):
         resolve_write_write(waves, tasks, owned, log)
         resolve_read_write(waves, tasks, owned, log)
         resolve_god_nodes(waves, tasks, gods, log)
+        resolve_unknown(waves, tasks, log)
         waves = enforce_deps([w for w in waves], tasks, log)
         if waves == before:
             break

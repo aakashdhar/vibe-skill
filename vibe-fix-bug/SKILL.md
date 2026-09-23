@@ -20,6 +20,13 @@ Diagnosis before fix. Regression test before fix code. Smallest possible change.
 
 **Use Plan Mode (Shift+Tab) for Steps 1–5. Exit before Step 6.**
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 ---
 
 ## The O'Reilly principles this enforces
@@ -119,6 +126,10 @@ Quick fix path — regression test first.
 ⬜ BUG-001 · Write a test that reproduces the bug
 Say "next" to begin.
 ```
+
+In autonomous mode (`vibe_state.py mode`), don't wait for "next": run the three BUG
+tasks through vibe-mode's `references/AUTONOMOUS_EXECUTION_BLOCK.md` (regression test
+first), then announce the fix complete.
 
 After BUG-003, collapse to: `✅ [Bug summary] — fixed [date] (3/3 ✅)`
 

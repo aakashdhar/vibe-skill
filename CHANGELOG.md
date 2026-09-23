@@ -8,6 +8,69 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.5.0] — 2026-09-23
+
+Theme: **vibe can run with no one watching.** Autonomous mode used to cover only the
+inside of one phase: every planning step still waited for a person, a failing review
+waited for "resume" in chat, every phase ended with a stop, and nothing on disk said
+why a session stopped. This release adds an opt-in headless contract so a driver (Reeve,
+CI, a `claude -p` session) can run the same skills end to end. **Manual use is
+unchanged** — every new behaviour is off by default.
+
+### Added
+- **`vibe-mode/references/HEADLESS.md`** — the contract: three settings, how every
+  "wait" behaves in autonomous mode, the two human sign-offs, run state, and resume.
+- **`vibe-mode/scripts/vibe_state.py`** — one deterministic helper for all of it:
+  `mode` (resolve settings), `run-state set|show`, `gate set|check|show spec|design`.
+  No skill hand-writes this JSON.
+- **Two new settings** alongside `VIBE_MODE` in CLAUDE.md: `APPROVALS=human|auto` (who
+  signs off the spec and design) and `PHASES=stop|continue` (carry on after a passed
+  gate). Env vars `VIBE_MODE` / `VIBE_APPROVALS` / `VIBE_PHASES` override the file, so a
+  driver can set them before CLAUDE.md exists.
+- **`vibe/.run_state.json`** — written at every stop (`running`, `phase_done`,
+  `needs_human`, `failed`, `complete`) with the reason and next action.
+- **`vibe-mode: run`** — resume a build from the files alone: no plan → `new:`, spec
+  gate, design gate, current phase, final gate. The single entry point for a driver.
+- **Spec and design sign-offs are machine-readable**: `spec` / `design` entries in
+  `vibe/.gates.json`, mirrored on new `## Spec gate` / existing `## Design gate` lines in
+  TASKS.md. vibe-new-app records both (new Step 10S for the spec).
+- **`design: critique` and `design: fix [must|must+consider|all]`** in vibe-design —
+  writes `vibe/design/critique.md` (MUST-FIX / CONSIDER / NIT), then applies notes and
+  regenerates the preview.
+- **Task metadata in TASKS.md**: Phase 1 and Phase 3 tasks carry
+  `size · deps · touches`, so vibe-parallel builds real waves; Phase 3 items are now
+  executable `P3-NNN` tasks.
+- **waves.py `unknown-writes`**: a task whose files are unknown (`"writes": null`) runs
+  alone instead of being assumed conflict-free.
+
+### Changed
+- **Autonomous planning never waits.** brainstorm, agent, architect, new-app,
+  spec-review, design, design-md, add-feature, fix-bug, change-spec, init and test follow
+  HEADLESS.md §2 in autonomous mode: take the recommended option, accept their own draft
+  after a self-check, log every choice to DECISIONS.md, and stop only when a person is
+  genuinely required.
+- **vibe-new-app writes the resolved settings** into CLAUDE.md instead of hardcoding
+  `VIBE_MODE=manual`, and in autonomous mode never skips the design gate
+  (`design:` → critique → one `fix must` pass → sign-off).
+- **A failing phase gate is cleared, not parked.** The autonomous block runs the review's
+  RFX tasks and re-reviews, up to 2 cycles, before stopping for a person. vibe-review
+  returns FAIL to the block instead of waiting in chat.
+- **spec-review in autonomous mode** fixes its own P0/P1 findings and re-reviews (up to 2
+  rounds); open P0s stop the build.
+- **Phase continuation** (`PHASES=continue`): after a passed gate the block moves to the
+  next phase, running `feature:` for each planned feature in build order, then the final
+  gate.
+- vibe-review no longer offers to edit `.claude/settings.json` in autonomous mode.
+- README vibe-mode docs updated (and a stale `mode: supervised` command removed).
+
+### Compatibility
+- Defaults (`manual` / `human` / `stop`) keep every skill's interactive behaviour.
+- Projects scaffolded before 2.5.0 have no `spec` / `design` sign-off; `vibe-mode: run`
+  backfills them when the build is already past that point (HEADLESS.md §5), so
+  in-flight builds don't stall.
+- The helper script is unit-tested; the headless behaviour of the skills themselves is
+  prompt-level and should be verified with a real end-to-end run.
+
 ## [2.4.1] — 2026-09-23
 
 Theme: **The rules agree with each other.** An audit of the framework as an orchestrator
@@ -242,6 +305,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.5.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.2.0...v2.3.0

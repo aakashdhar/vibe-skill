@@ -22,6 +22,13 @@ Produces CLAUDE.md at project root and the full vibe/ folder the AI coding agent
 
 **Always run in Plan Mode (Shift+Tab). Exit Plan Mode only before task execution.**
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 ---
 
 ## The O'Reilly principles this enforces
@@ -308,6 +315,9 @@ Generate CLAUDE.md at **project root** substituting all [placeholders]:
 - Commands from chosen stack
 - Code style and naming from ARCHITECTURE.md (if exists) or PLAN.md
 - Phase gates section — mandatory review gates baked in from day one
+- Execution mode section — the three settings **as resolved now** by
+  `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (never hardcode
+  `manual`: a driver may have set `VIBE_MODE=autonomous` in the environment)
 - Session completion checklist — the 10-step post-task sequence (full checklist from template)
 - CLAUDE.md active feature sections — cleanup rule included
 
@@ -577,6 +587,25 @@ Nodes will transition from `planned` to `built` as features are implemented.
 
 After graph init completes:
 
+## Step 10S — Record the spec sign-off
+
+The spec gate is the person's sign-off on the plan the build will follow. Record it in
+`vibe/.gates.json` (and the `## Spec gate` line in TASKS.md) with the helper — pass the
+spec-review report from Step 10 as `--report`:
+
+```bash
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # → vibe_mode, approvals
+```
+
+- **Manual mode:** the user approved the SPEC in Step 2 and has seen the spec review —
+  `python3 "$VS" gate set spec --status approved --by human --report [report]`.
+- **Autonomous, `APPROVALS=auto`:** `gate set spec --status approved --by agent-autonomous --report [report]`, and continue.
+- **Autonomous, `APPROVALS=human`:** `gate set spec --status pending --report [report]`,
+  then STOP — `python3 "$VS" run-state set --status needs_human --reason spec_approval --next "approve the spec, then run vibe-mode: run"`
+  — and end the session. Do not start the design or any task. `vibe-mode: run` resumes
+  from here once the spec is approved (HEADLESS.md §5).
+
 ## Step 10C — Design gate (UI projects)
 
 Design is a required pipeline step for UI projects, not an afterthought (see
@@ -584,17 +613,27 @@ Design is a required pipeline step for UI projects, not an afterthought (see
 language — that is the "it skipped design" failure.
 
 - **Non-UI project** (API / CLI / library / pure backend): skip this step; note
-  "design gate N/A — no UI" and continue.
+  "design gate N/A — no UI", record it with `vibe_state.py gate set design --status na`,
+  and continue.
 - **UI project, no design system yet** (`DESIGN.md` / `vibe/DESIGN_SYSTEM.md` /
   `vibe/design/CONTRACT.md` all absent): announce and hand off —
   > "This is a UI project. Before building screens, let's lock the design so they
   >  share one derived design language. Optionally run `design-md:` first to
   >  capture brand tokens, then `design:` to produce the design contract.
   >  Recommended. Reply 'skip design' to build without a design pass."
-  Invoke `design:` on a clear yes. If the user says skip, log it in
-  `vibe/DECISIONS.md` ("design gate skipped by user") so it's a visible decision.
+  Invoke `design:` on a clear yes; when the user approves the result, record
+  `gate set design --status approved --by human`. If the user says skip, log it in
+  `vibe/DECISIONS.md` ("design gate skipped by user") so it's a visible decision, and
+  record `gate set design --status skipped`.
 - **Design system already exists** (user ran `design-md:`/`design:` earlier):
-  design gate already passed — continue.
+  design gate already passed — record `gate set design --status approved --by human` if
+  it isn't recorded yet, and continue.
+- **Autonomous mode (UI project, no design system):** never skip. Run `design:`, then
+  `design: critique`, then one `design: fix must` pass. Then per `APPROVALS`:
+  `auto` → `gate set design --status approved --by agent-autonomous --report vibe/design/critique.md`
+  and continue; `human` → `gate set design --status pending --report vibe/design/critique.md`,
+  STOP with `run-state set --status needs_human --reason design_approval --next "approve the design, then run vibe-mode: run"`,
+  and end the session.
 
 The generated TASKS.md carries a matching **Design gate** line before Phase 2 so
 this is visible in the human-facing plan.
@@ -607,14 +646,15 @@ The phase/deploy gates are enforced by flow + `vibe/.gates.json` (see
 `vibe-review/references/GATES.md`), but the only true machine-level lock is a git
 hook. Offer to install it:
 
-> "Install the gate hard-lock? It blocks `git push` while any P0 review finding is
->  open — so quality gates hold even if a step is skipped. Override anytime with
->  `git push --no-verify`. (y/n)"
+> "Install the gate hard-lock? It blocks `git push` while any review gate is open
+>  (P0 or P1 outstanding) — so quality gates hold even if a step is skipped. Override
+>  anytime with `git push --no-verify`. (y/n)"
 
 If yes, write `.git/hooks/pre-push` (chmod +x) with the check from GATES.md
-(grep open P0 in `vibe/reviews/backlog.md` → exit 1). If the project uses husky,
+(reads `vibe/.gates.json`; any `open` gate → exit 1). If the project uses husky,
 add it as a husky `pre-push` instead. If declined, note it — gates then rely on
-flow + state only.
+flow + state only. In autonomous mode, install it (the recommended option) and note it
+in DECISIONS.md.
 
 ## Step 11 — Tell the user
 
@@ -640,13 +680,15 @@ flow + state only.
 >
 > **Read execution mode:**
 > ```bash
-> grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+> python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode
 > ```
 >
 > If `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
 > (resolve the vibe-mode install dir — commonly `~/.claude/skills/vibe-mode/`, or
 > `~/.claude/plugins/marketplaces/*/skills/vibe-mode/` under a plugin install)
 > and follow the autonomous execution protocol for Phase 1 tasks. Begin immediately.
+> (If Step 10S or 10C stopped for an approval, the session has already ended — this
+> step runs on the resumed session instead.)
 >
 > If `manual` or not set → tell the user:
 > ```

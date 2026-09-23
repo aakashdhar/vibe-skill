@@ -19,8 +19,9 @@ python3 "$WAVES" plan vibe/parallel/tasks.json          # human-readable plan
 python3 "$WAVES" plan --json vibe/parallel/tasks.json   # machine-readable, for dispatch
 ```
 
-It returns the waves, the conflict resolutions (write-write / read-write / god-node),
-and the sequential-vs-parallel time estimate. The Python below documents the
+It returns the waves, the conflict resolutions (write-write / read-write / god-node /
+unknown-writes), any size-aware fast lanes, and the sequential-vs-parallel time estimate.
+A task whose `writes` is `null` (touches unknown) always runs alone in its wave. The Python below documents the
 algorithm the script implements — it is reference, not something to run mentally.
 
 ---

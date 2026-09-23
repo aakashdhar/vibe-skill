@@ -70,7 +70,7 @@ Skills trigger automatically from natural language. No slash commands needed.
 - `vibe-ledger` — visual cost report
 - `vibe-graph` — dependency graph
 - `vibe-doctor` — environment health check
-- `vibe-mode` — set manual/autonomous execution mode
+- `vibe-mode` — set manual/autonomous execution mode, who approves the spec and design, whether a build continues past a passed phase gate; `vibe-mode: run` resumes a build from the files alone (headless contract: `vibe-mode/references/HEADLESS.md`)
 
 **Close**
 - `vibe-document` — generate docs
@@ -394,8 +394,10 @@ DESIGN
 
 ADVANCED
   parallel:                 Run tasks with parallel subagents
-  mode: autonomous          Run until done without prompting
-  mode: supervised          Wait for approval between tasks
+  vibe-mode: autonomous     Run until done without prompting
+  vibe-mode: manual         Wait for "next" between tasks (default)
+  vibe-mode: run            Resume a build from the files alone (headless)
+  design: critique / fix    Critique the design, then apply the notes
   perf:                     Performance audit
   doctor:                   Environment health check
 

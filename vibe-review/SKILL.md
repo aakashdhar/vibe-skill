@@ -547,15 +547,21 @@ AUTONOMOUS: PAUSED — [N] P0 + [M] P1 issue(s) block the gate.
 
 Fix the above, then say "resume" to continue autonomous execution.
 ```
-Wait for human. Do not proceed. When human says "resume" — re-run
-this review step automatically, then signal result again.
+Return this signal to the calling skill — do not wait here. The autonomous execution
+block (vibe-mode `references/AUTONOMOUS_EXECUTION_BLOCK.md`) owns what happens next: it
+runs the RFX fix tasks and re-runs this review, up to 2 cycles, and records a stop in
+`vibe/.run_state.json` if the gate still won't clear. When review is run on its own
+(not from that block), print the list above and stop; on "resume", re-run this review.
 
 ---
 
 ## Step 14 — Generate .claude/settings.json hooks (Phase 1 review only)
 
 After the very first phase review (Phase 1), check if `.claude/settings.json`
-has a PostToolUse lint hook. If not — offer to add it:
+has a PostToolUse lint hook. If not — offer to add it. (In autonomous mode, don't ask
+and don't change `.claude/settings.json`: note "lint hook not installed — offer on the
+next interactive review" in the review report and move on. Editing the agent's own
+settings is a decision for a person.)
 
 > "Phase 1 review complete. One quick setup: adding a lint+typecheck hook
 > will catch TypeScript errors and ESLint violations as soon as they're

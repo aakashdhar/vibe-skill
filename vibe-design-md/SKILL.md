@@ -27,6 +27,13 @@ Captures the visual language of any real website into a DESIGN.md file.
 vibe-design reads this file at session start to produce UI that matches
 the target product's aesthetic — exact tokens, not approximations.
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
+> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
+
 Two modes. Same output. Always `DESIGN.md` in the project root.
 
 ---
