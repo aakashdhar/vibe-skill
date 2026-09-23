@@ -8,6 +8,24 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.6.0] — 2026-09-23
+
+From the second headless proof run (a three-phase build driven by Reeve): Phase 2 was
+planned as four features, three of them marked `Parallel with` each other, yet they were
+built strictly one after another and vibe-parallel never ran.
+
+### Added
+- **Independent features build together.** The autonomous phase loop now works through
+  a phase's feature lines in batches: every unfinished feature whose `Needs:` are met.
+  A batch of 2+ is planned first (`feature: [name] plan-only`), then all of its tasks
+  run through vibe-parallel as one pool. The phase gate still runs once, after the
+  last feature.
+- **vibe-parallel Entry point E**: several `FEATURE_TASKS.md` files as one task pool.
+  The usual write-write and read-write passes keep features that share a file (e.g.
+  `app.js`) in separate waves.
+- **vibe-add-feature `plan-only`**: stop after the spec review, build nothing, skip the
+  phase-gate step (the caller runs it).
+
 ## [2.5.2] — 2026-09-23
 
 Findings from the first end-to-end headless run (Reeve driving `vibe-mode: run` from a
@@ -333,6 +351,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.6.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.4.1...v2.5.0

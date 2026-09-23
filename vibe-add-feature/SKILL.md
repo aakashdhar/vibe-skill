@@ -491,6 +491,11 @@ Tell the user:
 > **Estimated:** [N tasks — approx. [N] hours]
 > **Spec review:** [✅ clean / ⚠️ [N] warnings acknowledged / 🔴 [N] P0s fixed]
 
+**Plan-only (`feature: [name] plan-only`).** The autonomous phase loop plans a batch of
+independent features first and then builds them together through vibe-parallel (Entry
+point E). When called with `plan-only`, stop here: report the feature as planned and
+return to the caller. Do not build, and skip Step 14 — the caller runs the phase gate.
+
 **Read execution mode:**
 ```bash
 grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
