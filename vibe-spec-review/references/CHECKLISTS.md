@@ -7,11 +7,17 @@ The vibe spec-review checklists. Read by the **rubric** goldfish reviewer
 Apply only the sections for the documents in your task. Section 6 (cross-document
 consistency) always applies when two or more documents are in scope.
 
+**An honest empty tier.** A boundary tier whose only line is `None found in the code:
+confirm with the team.` (written by vibe-init) counts as present and is not "too vague":
+the code had no rule for it, and inventing one would be worse.
+
 **Where the six core areas live.** In a vibe project the build, test and git commands
-are written to the project `CLAUDE.md` (by vibe-new-app / vibe-init), not to SPEC.md.
-For check 3A, an area counts as present when it is in SPEC.md, ARCHITECTURE.md, or a
-`CLAUDE.md` that your task lists as a document. Only report it missing when none of them
-has it.
+are written to the project `CLAUDE.md` (by vibe-new-app / vibe-init), not to SPEC.md, and
+vibe-new-app writes CLAUDE.md only after this review, from the reviewed stack. For check
+3A, an area counts as present when it is in SPEC.md, ARCHITECTURE.md, or a `CLAUDE.md`
+that your task lists as a document. Commands and Git workflow also count as present
+when ARCHITECTURE.md names the stack, package manager and test framework they will be
+generated from. Only report an area missing when none of these has it.
 
 ---
 

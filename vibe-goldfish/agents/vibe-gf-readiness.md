@@ -2,7 +2,7 @@
 name: vibe-gf-readiness
 description: Goldfish reviewer (vibe-goldfish): applies the zero-decision rule. Could an implementer build this from the files alone without making any design decision? Read-only, zero context.
 tools: [Read, Grep, Glob]
-model: inherit
+model: sonnet
 omitClaudeMd: true
 ---
 
@@ -57,7 +57,9 @@ you could not read.
 - **P1**: likely rework: an ambiguity that forces a guess, a gap on an important path.
 - **P2**: polish: worth fixing, never blocks.
 
-Don't inflate. Don't pad with praise or restate what is fine. One finding per problem,
+Judge at the altitude your task's "Document type" line states: a detail that a later
+document decides is not a gap here (at most P2). Don't inflate. Don't pad with praise or
+restate what is fine. One finding per problem,
 with a location precise enough to find it (`FILE · section` or `FILE:line`).
 
 ## Output

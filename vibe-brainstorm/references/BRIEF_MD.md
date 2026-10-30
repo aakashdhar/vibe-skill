@@ -125,6 +125,7 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 **Infrastructure budget:** [Monthly cap, e.g. "$20/month" or "free tier only"]
 **Platform requirements:** [Browser targets, OS, device constraints]
 **Compliance:** [None / GDPR / other — be specific]
+**Supplied documents:** [Other docs the person brought, e.g. `tech-notes.md` → architect:, or delete this line]
 
 ---
 
@@ -169,8 +170,8 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 
 ## Open questions
 
-- [ ] [Question that must be resolved before architect:]
-- [ ] [Question that must be resolved before architect:]
+- [ ] [Question to resolve before architect:, or marked carried to architect: by the person]
+- [ ] [Question to resolve before architect:, or marked carried to architect: by the person]
 (Delete section if no open questions)
 
 ---
@@ -179,9 +180,12 @@ prompting. Weekly active rate above 70% after 4 weeks."]
 > Items left open when the user chose to build before every P0 was nailed
 > (readiness gate). Downstream skills treat these as things to confirm, NOT
 > blockers. Delete the section only if truly none.
+> Each item says who left it open: `accepted by the person at the readiness check: "[their words]"`
+> (the independent review then answers it with that acceptance instead of re-asking),
+> or `agent assumption (autonomous)`.
 
-- [ ] [Open item — e.g. pricing model undecided] — validate by [how/when]
-- [ ] [Research risk carried forward — e.g. competitor owns this wedge] — validate by [how]
+- [ ] [Open item — e.g. pricing model undecided] — validate by [how/when] · [accepted by the person at the readiness check: "[their words]" / agent assumption (autonomous)]
+- [ ] [Research risk carried forward — e.g. competitor owns this wedge] — validate by [how] · [who left it open]
 
 ---
 
@@ -381,6 +385,7 @@ If they don't align — flag explicitly and resolve before proceeding.]
 **Compliance:** [GDPR / HIPAA / Financial / Industry-specific / None]
 **IP ownership:** [Client owns all code / Agency retains license / Other]
 **Access timeline:** [When credentials and assets are available — risk if delayed]
+**Supplied documents:** [Other docs the client supplied, e.g. `tech-notes.md` → architect:, or delete this line]
 
 ---
 
@@ -433,9 +438,9 @@ If they don't align — flag explicitly and resolve before proceeding.]
 
 ## Open questions
 
-- [ ] [Question requiring client confirmation before architect:]
-- [ ] [Question requiring client confirmation before architect:]
-(Delete section if no open questions — resolve all before proceeding)
+- [ ] [Question requiring client confirmation before architect:, or marked carried to architect: by the person]
+- [ ] [Question requiring client confirmation before architect:, or marked carried to architect: by the person]
+(Delete section if no open questions. Resolve each before proceeding, or mark it carried to architect: by the person)
 
 ---
 
@@ -443,9 +448,12 @@ If they don't align — flag explicitly and resolve before proceeding.]
 > Items left open when the user chose to build before every P0 was nailed
 > (readiness gate). Downstream treats these as things to confirm, NOT blockers.
 > For client work, flag any that need client sign-off before Phase 1. Delete only if none.
+> Each item says who left it open: `accepted by the person at the readiness check: "[their words]"`
+> (the independent review then answers it with that acceptance instead of re-asking),
+> or `agent assumption (autonomous)`.
 
-- [ ] [Open item] — validate by [how/when] — [needs client sign-off? Y/N]
-- [ ] [Research risk carried forward] — validate by [how]
+- [ ] [Open item] — validate by [how/when] — [needs client sign-off? Y/N] · [accepted by the person at the readiness check: "[their words]" / agent assumption (autonomous)]
+- [ ] [Research risk carried forward] — validate by [how] · [who left it open]
 
 ---
 

@@ -30,6 +30,22 @@ goldfish.py link <target> <new-id> --churn-of <old-id>
 Churn always goes to a person (see Step 6 of the skill). Don't try to fix your way out of
 it, because that is how a review loops forever.
 
+## Fold duplicates
+
+Several reviewers often raise the same problem in one round. Answer it once: pick the
+most severe finding as the primary and mark the others as its duplicates **before**
+answering the primary.
+
+```bash
+goldfish.py resolve <target> <dup-id> --as duplicate --of <primary-id>
+```
+
+The primary's answer then covers all of them. goldfish.py refuses a primary that is less
+severe than its duplicate, and a primary with a comprehension duplicate can't be
+contested (the comprehension rule still applies). Only fold findings that are really the
+same problem at the same place. Two different problems that share a section are two
+findings.
+
 ## Then give every open finding exactly one answer
 
 | Answer | When | Command |
@@ -38,6 +54,12 @@ it, because that is how a review loops forever.
 | **contest** | The finding is wrong **and** a file the reviewer could read proves it. | `resolve <target> <id> --as contest --evidence "<file:line, quoted>"` |
 | **escalate** | You believe it is wrong, but the proof is only in your head or in this conversation (a client call, a decision nobody wrote down). A person decides. | `resolve <target> <id> --as escalate --note "<your position, one or two lines>"` |
 | **decline** | A P2 you choose not to act on. Only P2. | `resolve <target> <id> --as decline --note "<why>"` |
+
+**P2s cost a round.** Every edit means another full round, because the review converges
+only on two clean rounds of the same text. So: when the round also has P0/P1 fixes, fix
+the worthwhile P2s too (the next round runs anyway). When a round's only findings are
+P2s, decline them, which keeps them as notes in the report, unless one is a plain error
+(a wrong name, a broken example). In autonomous mode always follow this.
 
 Hard rules, enforced by `goldfish.py`:
 
@@ -55,6 +77,9 @@ Hard rules, enforced by `goldfish.py`:
 ## Writing the fixes
 
 Make each fix the smallest edit that resolves the finding, in the document itself.
+When the fixed fact is stated in more than one document under review (a feature name in
+SPEC and PLAN, a stack in SPEC and ARCHITECTURE), update every one of them in the same
+fix, so the next round doesn't find the documents disagreeing.
 Every edit, a P2 fix included, means the next round reviews new text, and the review
 can only converge on two clean rounds of the same text.
 Don't rewrite whole sections, and don't "improve" things no finding asked about: every

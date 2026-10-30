@@ -44,12 +44,13 @@ All commands run from the project root. Everything a review produces lives in
 ## Step 0 — What to review
 
 A calling skill passes a **preset** from [`references/PRESETS.md`](references/PRESETS.md)
-(`brief`, `agent-arch`, `architecture`, `spec`, `init`, `feature`, `all`), plus the
-feature folder for `feature`. The preset fixes the target slug, documents, reviewers,
+(`brief`, `agent-arch`, `architecture`, `spec`, `init`, `feature`, `feature-tasks`, `all`),
+plus the feature folder for `feature` and `feature-tasks`. The preset fixes the target slug, documents, reviewers,
 standards and related files.
 
 On demand (`goldfish: spec`, `goldfish: vibe/features/<folder>`, `goldfish: BRIEF.md`),
-map the argument to the preset whose documents match. If nothing matches, ask which
+map the argument to the preset whose documents match. A feature folder maps to two presets:
+run `feature` first and then `feature-tasks` (if FEATURE_TASKS.md exists). If nothing matches, ask which
 preset to use. In autonomous mode use `all`.
 
 Drop documents and related files that don't exist. Drop the `codebase` reviewer when
@@ -159,7 +160,8 @@ python3 "$GF" status <target>; echo $?
 - **exit 0 · converged** (two clean rounds in a row) → Step 8.
 - **exit 3 · needs a person** (escalation waiting, churn, or the round cap):
   - manual → ask one question with the reason from `status`: continue with more rounds
-    (`init <target> ... --max-rounds <n>`), accept the document as it is (recorded in
+    (`init <target> ... --max-rounds <n> --human`: only a person raises the cap, and
+    goldfish.py refuses it without `--human`), accept the document as it is (recorded in
     DECISIONS.md and the report), or stop to rework it.
   - autonomous →
     `python3 "$VS" run-state set --status needs_human --reason "goldfish <target>: <reason>" --next "see vibe/goldfish/<target>/resolution.md"`,
@@ -172,6 +174,10 @@ review ends on the **second** clean round in a row, and both must have reviewed 
 documents exactly as they are now. Any later edit (a P2 fix, the elephant-only check, a
 change the person asked for) means another round. goldfish.py checks this with a hash
 of the documents, so `status` stops saying converged the moment someone edits them.
+
+**Small projects** (BRIEF.md sized S): one clean round that raised no P0/P1 at all is
+enough. goldfish.py reads the size from BRIEF.md itself at `init`; pass `--thorough` to
+keep two rounds anyway.
 
 ## Step 8 — Report and return
 

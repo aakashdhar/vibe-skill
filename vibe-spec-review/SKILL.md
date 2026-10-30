@@ -58,8 +58,10 @@ and standards.
 | 1 | final step of `vibe-brainstorm`, after BRIEF.md | *"BRIEF.md written. Running an independent spec review before architect:..."* | `brief` |
 | 2 | final step of `vibe-agent`, after AGENT_ARCH.md | *"AGENT_ARCH.md written. Running an independent review of the agent design..."* | `agent-arch` |
 | 2.5 | final step of `vibe-architect`, after ARCHITECTURE.md | *"Architecture drafted. Running an independent review before you scaffold..."* | `architecture` |
-| 3 | final step of `vibe-new-app` / `vibe-init`, after the vibe/ folder | *"vibe/ folder created. Running an independent spec review before the first task..."* | `spec` (new-app) · `init` (vibe-init) |
-| 4 | `vibe-add-feature`, after the feature documents | *"Feature planned. Running an independent review before the feature build..."* | `feature` (with the feature folder) |
+| 3 | `vibe-new-app` Step 6, after SPEC.md, PLAN.md and vibe/ARCHITECTURE.md are drafted (before any derived file) / `vibe-init` Stage 6 | *"SPEC, PLAN and ARCHITECTURE drafted. Running an independent spec review before you sign off..."* | `spec` (new-app) · `init` (vibe-init) |
+| 4 | `vibe-add-feature`, after FEATURE_SPEC + FEATURE_PLAN | *"Feature designed. Running an independent review before the tasks are written..."* | `feature` (with the feature folder) |
+| 4T | `vibe-add-feature`, after FEATURE_TASKS | *"Tasks written. Running an independent readiness review before the build..."* | `feature-tasks` (with the feature folder) |
+| 6 | `vibe-change-spec`, after it edits reviewed documents | *"Scope changed. Re-running the independent review on the changed documents..."* | the preset of each changed document (`brief`, `architecture`, `spec`, `init`, `feature`, `feature-tasks`) |
 | 5 | the user types `spec-review:` | none needed | `all`, or the preset matching a named document |
 
 What each review catches, by trigger:
@@ -67,7 +69,9 @@ What each review catches, by trigger:
 - **2:** missing VerifierAgents, undefined HITL gates, hallucinated tools, agents with several jobs, state with several writers.
 - **2.5:** missing patterns and conventions, empty Always/Ask First/Never tiers, no "never commit secrets" rule, stack drift from the brief.
 - **3:** spec-architecture contradictions, missing acceptance criteria, an undefined stack, a provisional SPEC.md (vibe-init).
-- **4:** untestable feature criteria, missing scope boundaries, tasks without files, contradictions with SPEC.md, plans that ignore the code that exists.
+- **4:** untestable feature criteria, missing scope boundaries, contradictions with SPEC.md, plans that ignore the code that exists.
+- **4T:** tasks without files, tasks that leave a design decision to the builder, an order that breaks the build, a missing test plan.
+- **6:** whatever the change broke: a new criterion that contradicts the brief, a plan that no longer matches the spec.
 
 ---
 
@@ -75,8 +79,9 @@ What each review catches, by trigger:
 
 ```bash
 ls BRIEF.md AGENT_ARCH.md SPEC.md ARCHITECTURE.md CLAUDE.md \
-   vibe/SPEC.md vibe/ARCHITECTURE.md \
-   vibe/features/*/FEATURE_SPEC.md 2>/dev/null
+   vibe/SPEC.md vibe/ARCHITECTURE.md vibe/PLAN.md vibe/CODEBASE.md \
+   vibe/features/*/FEATURE_SPEC.md vibe/features/*/FEATURE_PLAN.md \
+   vibe/features/*/FEATURE_TASKS.md 2>/dev/null
 ```
 
 Keep only the documents that exist. Never fail because one is missing: review what's
@@ -163,7 +168,12 @@ the calling skill.
 answers. ✅/⚠️ → return to the caller. 🔴 → vibe-goldfish has written `needs_human`. Stop,
 because a spec with an open question a person must answer must not be built.
 
-This skill never sets the spec **gate** itself. The calling skill (vibe-new-app Step 10S)
+**The caller asks for approval after this review, never before.** A person approves the
+documents as the review left them, fixes included. A caller that asked for approval on
+the draft asks again on the reviewed text (manual), or records the gate per APPROVALS
+(autonomous). Files derived from the reviewed documents are generated only after that.
+
+This skill never sets the spec **gate** itself. The calling skill (vibe-new-app Step 10S, vibe-init Stage 8)
 records the sign-off once the plan is final, and an agent's sign-off is accepted only
 with `--report vibe/goldfish/spec` pointing at a converged review (vibe_state.py checks).
 

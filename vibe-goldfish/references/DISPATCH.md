@@ -22,7 +22,10 @@ One `Agent` call per reviewer, all sent **in the same message** so they run in p
 Never fork the conversation and never resume a reviewer from an earlier round: every
 round gets brand-new subagents.
 
-- `subagent_type`: `vibe-gf-<reviewer>` (e.g. `vibe-gf-comprehension`)
+- `subagent_type`: `vibe-gf-<reviewer>` (e.g. `vibe-gf-comprehension`). The agent files run
+  on Sonnet (`model: sonnet`): reviewers only read and report, so a faster model keeps
+  each round short. To change it, edit `model:` in `vibe-goldfish/agents/` and re-run
+  `scripts/sync-install.sh`.
 - `description`: `goldfish <reviewer> · <target>`
 - `prompt`: exactly the template below, with absolute paths filled in.
 
@@ -30,6 +33,8 @@ round gets brand-new subagents.
 Goldfish review. Follow your instructions.
 
 Project root: <absolute project root>
+
+Document type: <the preset's altitude line from PRESETS.md, word for word>
 
 Documents to review:
 - <absolute path>
@@ -56,7 +61,7 @@ ls "$HOME/.claude/agents/"vibe-gf-*.md 2>/dev/null
 - **Missing** (never installed, or installed in this session and Claude Code not yet
   restarted): tell the user once, in one line, that `scripts/sync-install.sh` installs
   them and a restart activates them. Then fall back for this review:
-  `subagent_type: general-purpose`, with the prompt being the full text of the role file
+  `subagent_type: general-purpose` and `model: sonnet`, with the prompt being the full text of the role file
   `$HOME/.claude/skills/vibe-goldfish/agents/vibe-gf-<reviewer>.md` (without its
   frontmatter) followed by the template. A general-purpose subagent still never sees this
   conversation, but it does load CLAUDE.md, so record

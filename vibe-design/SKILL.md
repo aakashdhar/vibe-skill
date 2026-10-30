@@ -205,6 +205,8 @@ Save as `vibe/design/CONTRACT.md`.
 > Proceeding."
 
 Wait for approval only if 3+ components. Otherwise proceed immediately.
+At a design gate (see after Step 3.5), don't ask for approval here: the person approves
+the design after its critique.
 
 ---
 
@@ -241,14 +243,19 @@ Markdown contract has nothing a human can actually approve.
 > "Preview written: vibe/design/preview.html — open it to click through
 > [N] screens ([list]). Approve the direction here before I build production files."
 
+At a design gate, say instead: "Preview written: vibe/design/preview.html ([N] screens).
+The design critique runs next; you approve the design after it."
+
 ---
 
 
 **At a design gate, stop here.** When `design:` runs as the design gate (vibe-new-app
 Step 10C, `vibe-mode: run`, or a caller that asks for the Step 3.5 checkpoint), end after
-the contract, tokens and preview: the sign-off is on this, and the production UI files
-(Steps 4-7) are built afterwards by the build's UI tasks from the approved contract. In
-manual mode the person approves here in chat and you continue as usual.
+the contract, tokens and preview, in manual and autonomous mode alike. Don't ask for
+approval and don't go on to Steps 4-7. The caller runs `design: critique` and up to 2
+`design: fix must` passes next, and only then does the person (or, in autonomous mode,
+APPROVALS) approve the design. The production UI files (Steps 4-7) are built afterwards
+by the build's UI tasks from the approved contract, never before the critique.
 
 ## Step 4 — Establish file structure BEFORE writing any code
 
@@ -429,7 +436,8 @@ Signal done:
 Run this after `design:` (and before the design is signed off at the design gate).
 
 1. Invoke the **frontend-design** skill for the lens. Read `DESIGN.md` (if any),
-   `vibe/design/CONTRACT.md`, `vibe/DESIGN_SYSTEM.md` and `vibe/design/preview.html`.
+   `vibe/design/CONTRACT.md`, `vibe/DESIGN_SYSTEM.md` and `vibe/design/preview.html`, and
+   the `## UI Specification` in `vibe/SPEC.md` (if it exists).
 2. Judge the design against the frontend-design principles and `references/ANTI_GENERIC.md`:
    is it distinctive or a default dashboard; type hierarchy and pairing; palette; spacing
    and rhythm; one real signature element; empty / loading / error states;
@@ -437,7 +445,9 @@ Run this after `design:` (and before the design is signed off at the design gate
 3. Judge `preview.html` **as a click-through prototype**: does it render the product's
    primary screens (not just one) with navigation between them and realistic sample
    content, so the *flow* can be reviewed? A single-screen or style-tile-only preview is a
-   MUST-FIX.
+   MUST-FIX. When SPEC.md has a UI Specification, its screens and navigation structure are
+   the list to check against: a missing screen or a navigation that contradicts it is a
+   MUST-FIX too.
 4. Write `vibe/design/critique.md` with exactly three sections, headed exactly like this so
    tools can count them:
    ```
@@ -460,7 +470,10 @@ Run this after `design:` (and before the design is signed off at the design gate
 2. Apply the notes in scope (`must` = MUST-FIX only; `must+consider`; `all`) to
    `DESIGN.md` / `vibe/design/CONTRACT.md` / `vibe/DESIGN_SYSTEM.md` — the smallest change
    that resolves each note, following its intent. Keep the direction's tokens and
-   signature coherent; **do not invent an unrelated new look.**
+   signature coherent; **do not invent an unrelated new look.** Never edit `vibe/SPEC.md`
+   here: it is a reviewed document. If a note can only be resolved by changing the screens,
+   navigation or design direction in its UI Specification, leave that note open and say it
+   needs `change:` (which re-runs the spec review).
 3. **Regenerate `vibe/design/preview.html`** so every change is visible in the rendered
    preview (Step 3.5 rules).
 4. Re-run `design: critique` and rewrite `vibe/design/critique.md` with the new counts.
@@ -470,10 +483,13 @@ Run this after `design:` (and before the design is signed off at the design gate
    with open items (`--by human --accept-open "[why]"`). Say so whenever N > 0.
 6. Do not build app features or start a build. Commit: `design(critique): apply [scope] notes`.
 
-At the design gate, vibe-new-app / `vibe-mode: run` run `design:` → `design: critique` →
-up to **2** `design: fix must` passes while MUST-FIX > 0, then record the gate (vibe-mode
-`references/HEADLESS.md` §3). If MUST-FIX is still > 0 after 2 passes, they do not approve:
-in autonomous mode they STOP `needs_human` (`reason: design_must_fix`).
+At the design gate, vibe-new-app / `vibe-mode: run` run `design:` (up to Step 3.5) →
+`design: critique` → up to **2** `design: fix must` passes while MUST-FIX > 0, then the
+approval, then record the gate (vibe-mode `references/HEADLESS.md` §3). The order is the
+same in manual mode: the person approves after the critique loop, on the preview as the
+fixes left it. If MUST-FIX is still > 0 after 2 passes, an agent does not approve: in
+autonomous mode they STOP `needs_human` (`reason: design_must_fix`); in manual mode the
+person sees the open items and decides.
 
 ---
 

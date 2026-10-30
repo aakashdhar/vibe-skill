@@ -1,6 +1,6 @@
 # ARCHITECTURE_MD.md Template (minimal / auto-generated)
 
-Used by vibe-new-app Step 9 **only when `architect:` was skipped** — it
+Used by vibe-new-app Step 5 **only when `architect:` was skipped** — it
 generates a minimal `vibe/ARCHITECTURE.md` from PLAN.md so that `review:` has an
 architecture to check against from Phase 1. When `architect:` was run, its own
 richer template (`vibe-architect/references/ARCHITECTURE_MD.md`) is the source
@@ -8,7 +8,9 @@ of truth and this file is not used.
 
 Fill every `[placeholder]` from PLAN.md decisions — never invent. Apply the
 **O'Reilly principles** and **Never list** sections verbatim (they are what
-`review:` enforces).
+`review:` enforces). Keep the **Boundaries** section too, labelled as framework
+defaults: the spec review (Step 6) checks this file for Always / Ask First / Never tiers
+and a "never commit secrets" rule, and CLAUDE.md copies its tiers.
 
 ---
 
@@ -40,6 +42,10 @@ Fill every `[placeholder]` from PLAN.md decisions — never invent. Apply the
 - Business logic: [route handlers / service layer]
 - Input validation: [Zod / Pydantic / …]
 
+## Error handling
+[Pattern from PLAN.md (e.g. typed errors from services, one error boundary per page); if
+unspecified, state the framework default and mark it TODO.]
+
 ## Testing philosophy
 - Runner: [from PLAN.md]
 - What must have tests before a phase gate: [critical paths, per PLAN.md]
@@ -47,6 +53,17 @@ Fill every `[placeholder]` from PLAN.md decisions — never invent. Apply the
 ## Code quality
 - Linter / formatter: [from PLAN.md]
 - TypeScript strictness: [strict / lenient]
+
+## Boundaries
+> Framework defaults, not decisions made in architect:. Adjust them in `architect:`.
+
+**Always:** run tests and lint before every commit · validate input on every user-facing
+route · follow the folder structure above.
+**Ask First:** adding a dependency · changing the data model or a public API shape ·
+dropping a table or running a migration against anything not local · deleting a file you
+did not create.
+**Never:** commit secrets or `.env` files · hardcode credentials or API keys · force-push
+or rewrite git history.
 
 ## The O'Reilly principles (enforced by review:)
 

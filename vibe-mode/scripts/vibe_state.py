@@ -225,6 +225,13 @@ def cmd_gate_set(args):
             extra["accepted_open"] = {"must_fix": n, "reason": args.accept_open}
         extra["must_fix"] = n
         args.report = report
+    if args.kind == "spec" and args.status == "approved" and args.by == "human" and args.report:
+        st = _goldfish_verdict(args.report)
+        if st is not None:
+            extra["reviewed"] = st.get("verdict") == "converged"
+            if not extra["reviewed"]:
+                print(f"note: the goldfish review at {args.report} is '{st.get('verdict')}' on the current text; "
+                      "the approval is recorded as given on unreviewed changes (reviewed: false)", file=sys.stderr)
     if args.kind == "spec" and args.status == "approved" and args.by == "agent-autonomous":
         if args.backfill:
             extra["backfill"] = True

@@ -1,7 +1,7 @@
 # AGENT_ARCH_TEMPLATE.md
 
 Used by vibe-agent Step 12 to generate AGENT_ARCH.md.
-Fill every section from confirmed decisions. No placeholders left blank.
+Fill every section from the decisions settled in Steps 1–11. No placeholders left blank.
 
 ---
 

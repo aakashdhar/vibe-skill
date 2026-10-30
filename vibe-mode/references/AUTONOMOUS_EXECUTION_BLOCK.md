@@ -109,8 +109,10 @@ When all tasks in Wave N complete successfully:
 When every task in the unit is `[x]` (a unit with any `[ ]`, `[~]` or `[!]` left is not
 complete: keep executing, or STOP as above, but never report it complete):
 - **A phase** (Phase N tasks in TASKS.md) → run the **review gate** below for Phase N.
-- **A feature** → if it was the **last unfinished feature of its phase**, run the review
-  gate for that phase; otherwise announce "feature complete" and return to the caller
+- **A feature** → first make sure vibe-add-feature has run its post-build steps for it
+  (graph update, vibe-test on the files it touched, and the reopen check for a passed
+  gate), so the review sees the finished feature. Then, if it was the **last unfinished
+  feature of its phase**, run the review gate for that phase; otherwise announce "feature complete" and return to the caller
   (the phase loop continues with the next feature).
 - **A bug fix** → announce "fix complete" and return. Bug fixes don't trigger a phase
   gate on their own, but if the fix landed after a review gate passed, vibe-fix-bug has
@@ -195,14 +197,17 @@ After Phase [N]'s gate passes:
        (HEADLESS.md §2) and builds it with this block.
      - **Batch of 2+** → the features are built **together**, not one after another:
        1. Plan each one: `feature: [name] plan-only` (vibe-add-feature stops after its
-          spec review — nothing is built, no gate is run). If any feature's review
-          stopped the run (`run-state show` says needs_human), **STOP** here: build none
-          of the batch.
+          task review, Trigger 4T, and its derived files: nothing is built, no gate is
+          run). If any feature's review stopped the run (`run-state show` says
+          needs_human), **STOP** here: build none of the batch.
        2. Run vibe-parallel **Entry point E** on all of the batch's `FEATURE_TASKS.md`
           files at once. Its conflict passes keep two features that touch the same file
           (e.g. a shared `app.js`) in different waves, so this is safe even when the
           `Parallel with:` hint was optimistic.
-       3. Mark each feature `✅` in TASKS.md as its tasks finish, then take the next batch.
+       3. For every feature in the batch, once its tasks finish: run vibe-add-feature's
+          post-build steps (graph update, vibe-test on the files its FEATURE_TASKS.md
+          `Touches` lists, the reopen check), then mark it `✅` in TASKS.md. Then take the
+          next batch.
      The phase's review gate runs once, after the last feature of the phase is done.
 5. Continue until every phase has passed.
 

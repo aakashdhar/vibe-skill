@@ -51,7 +51,7 @@ is improvised and inconsistent.
      external or dropped brief and normalizes it — this is how a Claude-desktop
      idea reaches parity).
    - `BRIEF.md` but no `ARCHITECTURE.md` → offer `architect:` (or generate the
-     minimal ARCHITECTURE.md, as new-app Step 9 already does).
+     minimal ARCHITECTURE.md, as new-app Step 5 already does).
    - No `vibe/` folder → run `new:` (greenfield) or `vibe-init:` (existing code).
 3. **Design gate (UI projects only):** if no design system exists
    (`DESIGN_SYSTEM.md` / `DESIGN.md` / `CONTRACT.md`), the project has **not**

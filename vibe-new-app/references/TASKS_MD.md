@@ -1,6 +1,6 @@
 # TASKS_MD.md Template
 
-Used by vibe-new-app Step 7 to generate `vibe/TASKS.md` — the single
+Used by vibe-new-app Step 10F to generate `vibe/TASKS.md` — the single
 human-facing file. Every phase is fully represented. Phase 2 is the complete
 ordered feature list derived from PLAN.md Section 6 (Feature Map), with
 dependencies visible — not slugs.

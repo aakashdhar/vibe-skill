@@ -14,7 +14,7 @@ can parse it reliably.
 ```markdown
 # ARCHITECTURE.md — [Project Name]
 > Created: [date] via architect: | Last updated: [date]
-> Source: BRIEF.md + architect: conversation decisions
+> Source: BRIEF.md + AGENT_ARCH.md (agentic projects) + architect: conversation decisions
 > ⚠️ This is the agent's constitution. Every code decision is measured against it.
 
 ---
@@ -168,6 +168,24 @@ Repositories → database queries only, no logic
 
 ---
 
+## Agent topology (agentic projects: delete when there is no AGENT_ARCH.md)
+
+> Source: AGENT_ARCH.md (reviewed). This section carries its decisions into the
+> code structure; it does not decide them again. Full detail stays in AGENT_ARCH.md.
+
+**Framework:** [from AGENT_ARCH.md, e.g. LangGraph (Python)]
+**Pattern:** [from AGENT_ARCH.md, e.g. Orchestrator + Sub-agents]
+
+| Agent | Responsibility | Lives in | Verifier |
+|-------|---------------|----------|----------|
+| [AgentName] | [one line, from the roster] | [path in the folder structure] | [AgentNameVerifier] |
+
+**State ownership:** [each state key and the one agent that writes it]
+**Write tools:** [each write tool, its one owning agent, and whether it is irreversible]
+**HITL checkpoints:** [where the system pauses for a person, from AGENT_ARCH.md]
+
+---
+
 ## The O'Reilly principles (enforced by review:)
 
 **Spec before code** — no task starts without acceptance criteria in FEATURE_TASKS.md.
@@ -177,18 +195,47 @@ Repositories → database queries only, no logic
 
 ---
 
-## Never list
+## Boundaries
 
-The following are P0 review findings — they block phase gates:
+Three tiers. Each item is specific enough to act on ("write good code" is not).
 
-- [ ] Using `any` type in TypeScript
-- [ ] Business logic in route handlers (belongs in services)
-- [ ] Direct database queries outside repositories
-- [ ] Hardcoded credentials or API keys in code
-- [ ] Frontend component importing directly from backend module
-- [ ] Agent calling another agent directly (bypassing orchestrator)
-- [ ] Skipping input validation on any user-facing route
-- [ ] Inline styles overriding design tokens
+### ✅ Always
+
+- [ ] Run lint, typecheck and tests before every commit
+- [ ] Pin exact dependency versions and run the dependency audit before every commit
+- [ ] Log every deviation from this document in DECISIONS.md and update this document
+- [ ] [Project-specific always, added during architect:]
+
+### ⚠️ Ask First
+
+Stop and ask a person before:
+
+- [ ] Changing the database schema
+- [ ] Adding a new external dependency
+- [ ] Modifying a public API response shape
+- [ ] Changing CI/CD or deployment configuration
+- [ ] Adding a new environment variable
+- [ ] Changing the locked stack (needs a change: command and a DECISIONS.md entry)
+- [ ] [Project-specific ask-first, added during architect:]
+
+### 🚫 Never list
+
+The following are P0 review findings — they block phase gates.
+
+**Universal (every project):**
+- [ ] Never commit secrets: no credentials, API keys, tokens or .env files in code or git
+- [ ] Skipping input validation on any user-facing route or input
+
+**When the project has that layer (delete the ones that don't apply):**
+- [ ] Using `any` type in TypeScript (TypeScript projects)
+- [ ] Business logic in route handlers, which belongs in services (backend projects)
+- [ ] Direct database queries outside repositories (projects with a database)
+- [ ] Frontend component importing directly from backend module (frontend + backend)
+- [ ] Agent calling another agent directly, bypassing the orchestrator (agentic projects
+      with an orchestrator)
+- [ ] Inline styles overriding design tokens (projects with a UI)
+
+**Project-specific:**
 - [ ] [Project-specific never — add during architect:]
 - [ ] [Project-specific never — add during architect:]
 
@@ -224,16 +271,25 @@ This is the line that prevents Next.js being scaffolded when React+Vite is speci
 **Folder structure:** Generate the actual tree, not a generic example.
 For a React+Vite project with auth and DB, it should show the actual
 src/components/, src/hooks/, src/screens/, src/lib/, src/api/ structure.
+This tree is the source for PLAN.md, which `new:` writes later. On an agentic
+project, include where AGENT_ARCH.md's boilerplate (agents/, tools/, state/, hitl/)
+lives.
 
-**Never list:** Always include at least 6 items.
-The first 6 are always included (any, business logic in routes, etc.).
-Add 2 project-specific nevers based on the conversation.
+**Agent topology:** Fill it from AGENT_ARCH.md when it exists. Don't decide the
+framework, roster, state or HITL again here. Delete the section when there is no
+AGENT_ARCH.md.
+
+**Boundaries:** Fill all three tiers. Always and Ask First keep their listed items
+that apply and gain any project-specific ones from the conversation.
+Never keeps both universal items (the literal "Never commit secrets" rule is one of
+them), every conditional item whose layer the project has, and 2 project-specific
+nevers based on the conversation.
 
 **Testing table:** Adjust based on project complexity from BRIEF.md.
 No E2E for S/M projects unless explicitly requested.
 Always include Unit and Component for frontend projects.
 
 **The template is a floor, not a ceiling.**
-Add sections for project-specific patterns (e.g. agent topology,
-real-time patterns, offline-first patterns) when relevant.
+Add sections for project-specific patterns (e.g. real-time patterns,
+offline-first patterns) when relevant.
 Delete sections that don't apply (backend for client-only projects).

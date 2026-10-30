@@ -1,6 +1,6 @@
 # CLAUDE_RETROFIT.md Template
 
-Used by vibe-init Stage 5H to generate CLAUDE.md at the project root.
+Used by vibe-init Stage 5D to generate CLAUDE.md at the project root.
 This is the agent's constitution — read at every session startup.
 Differences from greenfield: no phase gates, session startup reads existing code.
 
@@ -92,6 +92,22 @@ Confirm the task before starting.
 
 Full detail in `vibe/ARCHITECTURE.md`.
 
+## Boundaries
+
+[Copied word for word from the Boundaries section of vibe/ARCHITECTURE.md: the same
+rules, the same evidence tags, and the same "None found in the code: confirm with the
+team." line for any empty tier. Nothing is added here that ARCHITECTURE.md doesn't have.]
+
+**Always**
+- [rule] [Observed in: file]
+
+**Ask First**
+- [rule] [Observed in: file]  ← or: None found in the code: confirm with the team.
+
+**Never**
+- Never commit secrets (.env files, keys, credentials). [vibe rule: every project]
+- [rule] [Observed in: file]
+
 ## Working rules (every task — forbid-style, checkable)
 - **Surgical edits.** Change the minimum lines needed. Do not reformat, reorder, or rename anything you were not asked to change; match the file's existing style. Remove only the imports/vars YOUR change made unused — nothing else.
 - **Do not rewrite tests to pass.** Never edit an existing test to make failing code pass. If a test is wrong, say so and stop; fix the code, not the assertion.
@@ -148,7 +164,9 @@ Use `feature:` and `bug:` to track all future work through normal vibe-* workflo
 ## What's untracked
 
 All work done before [date] is untracked.
-`vibe/SPEC.md` is PROVISIONAL — verify before using `review:` as a correctness reference.
+`vibe/SPEC.md` was derived from the code. A person verified it in the spec review, unless
+it still carries the PROVISIONAL banner: then treat it as provisional when using
+`review:` as a correctness reference.
 `vibe/DECISIONS.md` starts from today — prior decisions are unknown.
 
 When you encounter something in the code that doesn't match ARCHITECTURE.md patterns,
