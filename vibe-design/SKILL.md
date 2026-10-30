@@ -29,11 +29,18 @@ Handles all visual styling for a vibe project.
 Invokes frontend-design first. Commits to a design contract.
 Re-reads that contract before every component. Creates separate files.
 
-> **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> **Autonomous / headless mode.** At startup resolve the settings once:
+> ```bash
+> VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+> python3 "$VS" mode        # JSON: vibe_mode, approvals, phases, source
+> ```
+> When the caller says this skill was entered from `vibe-mode: run`, use
+> `python3 "$VS" mode --run` instead (it forces `vibe_mode: autonomous`). Never grep
+> CLAUDE.md for the mode: every later step that branches on the mode reuses this
+> `vibe_mode` value. If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 **The separation of concerns:**
@@ -457,11 +464,16 @@ Run this after `design:` (and before the design is signed off at the design gate
 3. **Regenerate `vibe/design/preview.html`** so every change is visible in the rendered
    preview (Step 3.5 rules).
 4. Re-run `design: critique` and rewrite `vibe/design/critique.md` with the new counts.
-5. Do not build app features or start a build. Commit: `design(critique): apply [scope] notes`.
+5. **Report the remaining MUST-FIX count** (from the new `## MUST-FIX (N)` heading):
+   `MUST-FIX remaining: N`. While N > 0 the design gate cannot be approved by an agent:
+   `vibe_state.py gate set design --status approved` refuses, and only a person can approve
+   with open items (`--by human --accept-open "[why]"`). Say so whenever N > 0.
+6. Do not build app features or start a build. Commit: `design(critique): apply [scope] notes`.
 
-At the design gate in autonomous mode, vibe-new-app / `vibe-mode: run` run
-`design:` → `design: critique` → one `design: fix must` pass, then record the gate
-(vibe-mode `references/HEADLESS.md` §3).
+At the design gate, vibe-new-app / `vibe-mode: run` run `design:` → `design: critique` →
+up to **2** `design: fix must` passes while MUST-FIX > 0, then record the gate (vibe-mode
+`references/HEADLESS.md` §3). If MUST-FIX is still > 0 after 2 passes, they do not approve:
+in autonomous mode they STOP `needs_human` (`reason: design_must_fix`).
 
 ---
 

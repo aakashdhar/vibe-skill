@@ -24,6 +24,14 @@ description: >
 Identifies independent tasks, builds dependency waves, and dispatches
 each wave as parallel subagents via Claude Code.
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (use `mode --run` when
+> the caller was entered from `vibe-mode: run`). Never grep CLAUDE.md for `VIBE_MODE`. If
+> `vibe_mode` is `autonomous`, every "wait", "ask", "confirm" and approval step in this
+> skill follows vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended
+> option, never ask the user, and stop, writing `vibe/.run_state.json`, only when a
+> person is genuinely required.
+
 **What's new in v2:**
 - Read-write conflict detection (not just Touches field)
 - Size-aware wave splitting (L tasks don't hold back S task dependents)
@@ -49,8 +57,13 @@ unlocks the next wave, runs automatically until done.
 ## How it integrates with VIBE_MODE
 
 ```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # JSON: vibe_mode, approvals, phases, source
+# entered from `vibe-mode: run`? use: python3 "$VS" mode --run   (forces autonomous)
 ```
+
+Branch on `vibe_mode` (`manual` | `autonomous`). Env vars override CLAUDE.md, so never
+read the mode with grep.
 
 **VIBE_MODE=autonomous:**
 Parallel detection runs automatically after every planning skill.
@@ -62,8 +75,9 @@ If `n` — sequential execution, user drives with `next`.
 If `y` — subagents spawn.
 
 **On-demand (`parallel:` command):**
-Always shows the plan and asks — regardless of VIBE_MODE.
-The user explicitly invoked it, so confirm before launching.
+In manual mode, always shows the plan and asks before launching: the user explicitly
+invoked it, so confirm first. With `vibe_mode` autonomous, follow the header above: show
+the plan, take the recommended option and launch without asking.
 
 ---
 
@@ -72,12 +86,13 @@ The user explicitly invoked it, so confirm before launching.
 ### Entry point A — On demand
 Triggered by: `parallel:` prefix
 Read `vibe/TASKS.md` for all pending tasks.
-Always show plan + ask (y/n), regardless of VIBE_MODE.
+`vibe_mode` manual → show plan, ask (y/n).
+`vibe_mode` autonomous → show plan, then launch directly (no prompt; see the header).
 
 ### Entry point B — Called by vibe-add-feature
 Source: `vibe/features/[date-slug]/FEATURE_TASKS.md`
-VIBE_MODE=autonomous → skip prompt, launch directly.
-VIBE_MODE=manual → show plan, ask (y/n).
+`vibe_mode` autonomous (from `vibe_state.py mode`) → skip prompt, launch directly.
+`vibe_mode` manual → show plan, ask (y/n).
 
 ### Entry point C — Called by vibe-fix-bug
 Source: `vibe/bugs/[date-slug]/BUG_TASKS.md`
@@ -90,8 +105,10 @@ Same mode logic as Entry B.
 ### Entry point E — Called by the phase loop for a batch of features
 Source: several `vibe/features/[date-slug]/FEATURE_TASKS.md` files — every feature the
 autonomous phase loop planned as one batch (vibe-mode AUTONOMOUS_EXECUTION_BLOCK, "Run
-the phase"). Parse all of them into **one** task pool (IDs are already unique by feature
-prefix), build the waves across the pool as usual — the conflict passes are what keep
+the phase"). Parse all of them into **one** task pool. Feature task ids use a
+per-feature prefix (`<PREFIX>-NNN`), so they should not collide, but `waves.py` checks:
+a duplicate id in the pool is an error, never silently merged. Build the waves across
+the pool as usual — the conflict passes are what keep
 two features that write the same file apart — and mark each task `[x]` in its **own**
 feature's file. Name the wave file after the phase (`Wave N — Phase P: feature A,
 feature B`). Same mode logic as Entry B.
@@ -101,7 +118,8 @@ feature B`). Same mode logic as Entry B.
 ## Step 0 — Read project context
 
 ```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # or `mode --run` when entered from vibe-mode: run
 mkdir -p vibe/parallel
 ```
 
@@ -132,7 +150,28 @@ Read the source task file in full.
 write `"writes": null` in `tasks.json` — the wave engine then runs that task on its own
 instead of guessing that it conflicts with nothing.
 
-Extract for each pending `[ ]` task:
+**Which tasks are pending (also on resume):** every `[ ]` task, and every `[~]` or `[!]`
+task that still has attempt budget. Check each `[~]` / `[!]` task first:
+```bash
+python3 "$VS" attempt [TASK-ID] --show     # attempts used so far; budget is 2
+```
+Fewer than 2 used → it goes back in the pool (it is re-dispatched, diagnosis-first).
+2 used → do not plan anything: mark it `[!]` and STOP with
+`run-state set --status needs_human --reason "[TASK-ID] failed after retry: <root cause>"`.
+Only a person resets the budget (`vibe-mode: resume`). Never flip a `[~]` or `[!]` to `[x]`
+or `[ ]` by hand to get past it.
+
+**Ids and completed deps for `tasks.json`:** copy every id exactly (ids must be unique
+across the pool; see `references/WAVE_BUILDER.md`). List the ids of the `[x]` tasks in
+`"done"`, so a dep on finished work is told apart from a typo or an unfinished task.
+`waves.py` errors on a duplicate id or on a dep that is neither in the pool nor in `done`.
+
+**Expect red:** when a task block has a `- **Expect:** red: <test file::test name>` line
+(vibe-fix-bug's regression-test task), record the declared test id as `expect_red` on
+that task (the id itself, not a yes/no flag): a report may only list that id in
+`expected_failing`.
+
+Extract for each pending task:
 
 ```python
 tasks = []
@@ -148,7 +187,8 @@ for each task block:
         "criteria":     [],           # acceptance criteria list
         "spec_ref":     "[section]",
         "codebase_update": bool,
-        "arch_ref":     "[which patterns apply]"
+        "arch_ref":     "[which patterns apply]",
+        "expect_red":   "[test file::test name]" | None   # from `- **Expect:** red: ...`
     }
     tasks.append(task)
 ```
@@ -172,7 +212,7 @@ Read `references/WAVE_BUILDER.md` for the full algorithm.
 
 **Pass 1 — Standard dependency resolution:**
 ```
-Wave 1: tasks where dependencies = [] (or all deps already [x])
+Wave 1: tasks where dependencies = [] (or all deps are in "done", i.e. [x])
 Wave 2: tasks whose deps are all in Wave 1
 Wave N: tasks whose deps are all in Wave N-1
 ```
@@ -387,7 +427,7 @@ yourself — describe the deltas in the report; the main session applies them.
   "status": "DONE" | "PARTIAL" | "FAILED",
   "files_modified": ["path", ...],
   "files_created": ["path", ...],
-  "tests": { "passed": N, "total": N },
+  "tests": { "passed": N, "total": N, "expected_failing": ["test file::test name", ...] },
   "criteria": [ { "text": "...", "met": true|false, "note": "reason if unmet" } ],
   "codebase_update": "what changed, for the main session to record | ",
   "blockers": ["anything downstream tasks must know", ...],
@@ -403,6 +443,22 @@ session promotes them into vibe/IMPLEMENTATION_LOG.md after the wave.
 Where the runtime supports schema-validated output/tool calls, this schema is
 bound with `strict: true` so the shape is guaranteed.
 
+`tests.total` counts every test run, `tests.passed` only the green ones.
+`tests.expected_failing` stays `[]` unless the task declares `Expect: red` (then it lists
+the regression test that must fail on the unfixed code; that task never writes the fix).
+
+**Count each attempt on disk, then dispatch.** Immediately before dispatching any task
+(first try and retry alike):
+```bash
+python3 "$VS" attempt [TASK-ID]     # "attempt [TASK-ID]: 1 of 2"; exit 1 = budget spent
+```
+Exit 1 → do not dispatch that task: mark it `[!]` and STOP with
+`run-state set --status needs_human --reason "[TASK-ID] failed after retry: <root cause>"`.
+vibe-parallel counts every dispatch it makes, and it is the only one that counts the tasks
+it dispatches. A caller (vibe-mode's autonomous-execution block) must not run `attempt`
+for a task it hands to vibe-parallel, or the first try is counted twice and the retry is
+refused; the caller counts only the tasks it dispatches itself (single-task waves).
+
 **Dispatch all tasks in the wave simultaneously as subagents.**
 
 **Parse completion reports:**
@@ -412,23 +468,31 @@ Read `references/REPORTING.md` for the full parsing logic.
 For each subagent completion report:
 
 ```python
-def parse_completion(report):
-    status = extract("STATUS", report)
-    criteria = parse_criteria(report)
-    unmet = [c for c in criteria if not c["met"]]
+# Short form of REPORTING.md _finalize() / determine_state(); same rule, same test count.
+def parse_completion(report, task):
+    if report is None:                          # no parseable report
+        return "FAILED"      # mark [!]
+    status = report["status"]
+    unmet = [c for c in report["criteria"] if not c["met"]]
+    t = report["tests"]
+    ok = tests_ok(t["passed"], t["total"], t.get("expected_failing", []),
+                  task.get("expect_red"))   # declared test id(s) or None; REPORTING.md tests_ok()
 
-    if status == "DONE" and not unmet:
+    if status == "FAILED" or not ok:
+        return "FAILED"      # mark [!], diagnostic retry
+    elif status == "DONE" and not unmet:
         return "COMPLETE"    # mark [x]
-    elif status == "PARTIAL" or unmet:
-        return "PARTIAL"     # mark [~]
-    elif status == "FAILED":
-        return "FAILED"      # mark [!], trigger diagnostic retry
+    else:
+        return "PARTIAL"     # mark [~], diagnostic retry (same as a failure)
 ```
 
 **Task states:**
-- `[x]` — fully complete, all criteria met, tests passed
-- `[~]` — partially complete, some criteria unmet — downstream tasks are WARNED
-- `[!]` — failed — trigger diagnostic retry
+- `[x]`: fully complete, all criteria met, tests passed (or the only failing tests are
+  the task's declared `Expect: red` tests, listed in `expected_failing`). Only `[x]`
+  unlocks dependents.
+- `[~]`: partially complete, some criteria unmet. Treated like a failure: one
+  diagnostic retry. Dependents wait.
+- `[!]`: failed. One diagnostic retry; failed after the retry means STOP for a person.
 
 ---
 
@@ -441,19 +505,16 @@ A task is partial when:
 - Tests pass but not all criteria are verifiable automatically
 - Task completed but CODEBASE.md update was skipped
 
-**Action:**
-Log the unmet criteria in the wave progress file.
-Warn downstream tasks in their subagent prompts:
-```
-⚠️ UPSTREAM WARNING from [TASK-ID]:
-   [criterion] was not fully met: [reason]
-   Your task may need to account for this — verify before marking done.
-```
-Do NOT block downstream tasks. Propagate the warning.
+**Action:** a partial is handled like a failure.
+Log the unmet criteria in the wave progress file. Give the task one diagnostic retry
+(below), with the unmet criteria as the error. Its dependents do not run until it is
+`[x]`. If the retry ends `[~]` or `[!]` again, mark it `[!]` and STOP (stop condition
+below). Never warn-and-continue past a `[~]`.
 
 ### Hard failure [!]
 
-A task fails when: STATUS=FAILED, or tests fail, or the subagent errors out.
+A task fails when: STATUS=FAILED, or tests fail (other than its declared `Expect: red`
+tests, see REPORTING.md `tests_ok`), or the subagent errors out.
 
 **Diagnostic retry (not blind retry):**
 
@@ -467,7 +528,7 @@ def build_diagnostic_retry(task, failure_report):
     cause = diagnose(error, task)
     # Build targeted retry
     return f"""
-RETRY — [TASK-ID]
+RETRY — [TASK-ID] (attempt [n] of 2, as printed by vibe_state.py attempt)
 
 Your previous attempt failed:
   Error: {error}
@@ -482,11 +543,15 @@ Targeted approach for this retry:
 """
 ```
 
+Run `python3 "$VS" attempt [TASK-ID]` before dispatching the retry (exit 1 → do not
+dispatch, STOP as below). For an `Expect: red` task the retry never says "implement what
+the test expects": it must not write the fix (REPORTING.md).
+
 On retry → if COMPLETE: mark `[x]`, continue.
-On retry → if still FAILED: mark `[!]`, stop wave, surface to human.
+On retry → if still FAILED or PARTIAL: mark `[!]`, stop wave, surface to human.
 
 **Stop condition:**
-Any task that fails twice stops the entire wave.
+Any task that is not `[x]` after its retry stops the entire wave.
 Do not proceed to the next wave.
 First record the stop so anyone outside the session can see it (vibe-mode
 `references/HEADLESS.md` §4):
@@ -503,10 +568,11 @@ Then report clearly:
 Error: [specific error from second attempt]
 
 Completed tasks this wave: [list — marked [x] in task file]
-Partial tasks: [list — marked [~]]
+Not finished: [list of [~] / [!] tasks]
 Failed task: [TASK-ID]
 
-Fix the failure, then say "resume" to continue with Wave [N+1].
+Fix the failure, then run "vibe-mode: resume" (it resets the attempt budget).
+The resume re-runs Wave [N]'s [~] / [!] tasks first; Wave [N+1] starts only when they are [x].
 The completed tasks do not need to be re-run.
 ```
 
@@ -519,8 +585,8 @@ After all subagents in the wave complete (or fail):
 **Update FEATURE_TASKS.md / BUG_TASKS.md / TASKS.md:**
 ```
 [x] TASK-001 · [description]   ← complete
-[~] TASK-002 · [description]   ← partial — [unmet criterion]
-[!] TASK-003 · [description]   ← failed — [error summary]
+[~] TASK-002 · [description]   ← partial — [unmet criterion] (retried before the wave ends)
+[!] TASK-003 · [description]   ← failed after retry — [error summary]
 ```
 
 **Update CODEBASE.md (batched — main session only):**
@@ -602,9 +668,9 @@ If vibe-graph not installed — skip this step silently.
 For each subsequent wave:
 
 **Check if wave is unlocked:**
-All tasks in this wave have their dependencies marked `[x]`.
-Tasks depending on a `[~]` partial task — include the upstream warning in their prompt.
-If any dependency is `[!]` — that wave cannot proceed. Stop.
+All tasks in this wave have their dependencies marked `[x]`. Nothing else unlocks a wave.
+If any dependency is `[~]` or `[!]` after its retry, that wave cannot proceed. Stop
+(Step 7 stop condition). There is no "continue with the next wave" past a `[!]`.
 
 **Apply size-aware splitting to subsequent waves too.**
 
@@ -617,6 +683,9 @@ Wave with 2+ tasks → parallel subagents.
 
 ## Step 11 — All waves complete
 
+Every task in the unit must be `[x]`. If any `[~]` or `[!]` is left, the unit is not
+complete: do not emit the summary below and do not signal completion. STOP as in Step 7.
+
 **Emit cost summary:**
 
 ```
@@ -628,7 +697,6 @@ Waves:
 
 Totals:
   Tasks complete: [N]/[N]
-  Tasks partial:  [N] (see vibe/parallel/ for unmet criteria)
   Time taken:     [Xm]
   Est. sequential: ~[N]h
   Time saved:     ~[N]h ([N]% faster)
@@ -639,7 +707,7 @@ Progress log: vibe/parallel/
 ```
 
 **In autonomous mode:**
-Signal completion to the calling skill.
+Signal completion to the calling skill (only with every task `[x]`).
 Do not stop — let vibe-add-feature / vibe-fix-bug / vibe-new-app
 invoke the review gate automatically.
 
@@ -664,13 +732,17 @@ No subagent reads another subagent's in-progress work.
 They read the codebase as it existed before Wave 1 started.
 Results merged by main session after wave completes.
 
-**[~] partial tasks never block — they warn.**
-A partial task passes its unmet criteria as warnings to downstream tasks.
-Downstream tasks decide how to handle. They are not blocked.
+**[~] partial tasks are retried like failures.**
+One diagnostic retry. Still `[~]` or `[!]` after it → `[!]` and stop for a person.
+A `[~]` never unlocks its dependents, and a unit is never reported complete with a `[~]` left.
 
 **[!] failed tasks always stop the wave.**
 On second failure — stop, report clearly, wait for human.
-Never mark a task [x] if tests did not pass.
+Never mark a task [x] if tests did not pass (the declared `Expect: red` tests excepted).
+
+**The attempt budget lives on disk.**
+`vibe_state.py attempt [TASK-ID]` runs before every dispatch. Exit 1 → no dispatch, STOP.
+Only a person resets it (`vibe-mode: resume`).
 
 **CODEBASE.md updates are batched by the main session.**
 Each subagent reports changes. Main session writes CODEBASE.md once.

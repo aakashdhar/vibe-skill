@@ -102,7 +102,7 @@ Run `review: phase 1` when all Phase 1 tasks are complete.
 
 ## Update rules (how TASKS.md changes over the build)
 
-- **Status markers:** `[ ]`/`⬜` pending · `[x]` done · `[~]` partial · `[!]` blocked.
+- **Status markers:** `[ ]`/`⬜` pending · `[x]` done · `[~]` partial (some criteria unmet: retried once, never counts as done) · `[!]` failed after retry (the build stops for a person). A phase is done only when every task is `[x]`.
 - **Task metadata line** (Phase 1 and Phase 3 tasks): the indented line under each task —
   `size: S|M|L · deps: [task IDs or none] · touches: [files/folders it writes]` — is what
   vibe-parallel reads to build waves. Fill `touches` from PLAN.md's folder structure; use
@@ -122,5 +122,8 @@ Run `review: phase 1` when all Phase 1 tasks are complete.
     only when review reports **0 P0 and 0 P1** (the same bar at every gate, final included).
   - Otherwise → `🔴 review: phase N — blocked [date] · [N] P0 + [M] P1 open`, with the
     `RFX-NNN` fix tasks inserted directly beneath it. Re-review flips it to ✅ when clean.
+    RFX ids are numbered project-wide: continue from the highest `RFX-NNN` anywhere in
+    TASKS.md, never restart at `RFX-001` for a new gate, never reuse a number (task
+    attempt budgets are saved by task ID).
   - The machine-readable twin is `vibe/.gates.json` (see vibe-review `references/GATES.md`).
 - Never delete completed phases — they are the project's visible history.

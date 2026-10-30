@@ -29,6 +29,15 @@ task under the phase's gate line, and the gate is recorded with the counts you f
 passes. Fixing inside the review and marking the gate passed skips the evidence the
 gate exists to produce: the fix is never reviewed by anyone but its author.
 
+> **Autonomous / headless mode.** At startup resolve the settings with
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (add `--run` when you
+> were entered from `vibe-mode: run`). Branch on its `vibe_mode` field everywhere this
+> skill says "execution mode"; never grep CLAUDE.md for it. If `vibe_mode` is
+> `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
+> user, and stop (writing `vibe/.run_state.json`) only when a person is genuinely required.
+
 ---
 
 ## The O'Reilly principle this enforces
@@ -352,7 +361,9 @@ bundles, sequential calls that could parallelise), tag it `category: performance
 in the report's structured findings and note it. This is what `vibe-perf` Entry B
 triggers on — after review, if any `performance` P1/P2 findings exist, suggest
 running `perf:` to audit and fix them properly. Do not attempt deep perf fixes
-inside review.
+inside review. Perf fixes change source code, so they come back through review: if
+this gate had passed, vibe-perf reopens it and `review:` must run again before the
+next phase or deploy.
 
 ---
 
@@ -441,7 +452,7 @@ update rules in vibe-new-app `references/TASKS_MD.md`.
 ```
 ## Phase [N] gate
 🔴 review: phase [N] — blocked [date] · [N] P0 + [M] P1 open
-   [ ] RFX-001 · [P0/P1 fix — plain English]
+   [ ] RFX-[next free NNN] · [P0/P1 fix — plain English]
                  File: [path] · Issue: [one line]
    → Full report: vibe/reviews/phase-[N]-review.md
 ```
@@ -451,6 +462,11 @@ update rules in vibe-new-app `references/TASKS_MD.md`.
 ## Phase [N] gate
 ✅ review: phase [N] — passed [date] · 0 P0, 0 P1 (P2/P3 to backlog)
 ```
+
+**RFX ids are unique across the whole project.** Number new fix tasks from the highest
+`RFX-NNN` anywhere in `vibe/TASKS.md` (every gate, every phase, `[x]` ones included), plus
+one. Never restart at `RFX-001` for a new gate and never reuse a number: retry budgets
+are saved on disk by task id, so a reused id would inherit an earlier task's spent attempts.
 
 On a re-review, replace the 🔴 line with the new result and leave completed `[x]`
 RFX tasks beneath it as history.
@@ -493,7 +509,15 @@ else:
 p.write_text(json.dumps(g, indent=2) + "\n")
 print(f"gate recorded: phase {phase} → {status} (P0={p0}, P1={p1})")
 PY
+# When the gate passed (0 P0 and 0 P1), reset that gate's fix-cycle counter so a later
+# reopen of this gate starts with a fresh budget of 2. When it is still open, skip the
+# reset: the spent cycles must carry over.
+if [ "$P0" = 0 ] && [ "$P1" = 0 ]; then
+  python3 "$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py" counters reset --phase "$PHASE"
+fi
 ```
+Run this as one block: `PHASE`, `P0` and `P1` do not carry over between separate shell
+calls.
 
 If P0 > 0 **or** P1 > 0, the phase gate is **open** — the generated CLAUDE.md's
 advancement rule blocks the next phase from starting until a re-review passes.
@@ -510,9 +534,11 @@ If review reveals a pattern being used that isn't documented:
 
 ## Step 13 — Signal done and generate hooks
 
-**Read execution mode:**
+**Read execution mode** (never grep CLAUDE.md; env vars and `vibe-mode: run` override it):
 ```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # JSON: use its vibe_mode field (manual | autonomous)
+# entered from `vibe-mode: run`?  use: python3 "$VS" mode --run
 ```
 
 **Standard output (both modes):**

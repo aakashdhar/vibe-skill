@@ -26,10 +26,11 @@ and two topology diagrams: interactive (inline) and static (exportable).
 **Always run in Plan Mode. No code written during this session.**
 
 > **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (`mode --run` when the
+> caller says this skill was entered from `vibe-mode: run`). If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 ---
@@ -536,7 +537,12 @@ Invoke `vibe-spec-review` with:
 - Trigger source: `agent`
 - Scope: AGENT_ARCH.md + BRIEF.md (if exists)
 
-After spec-review completes:
+**If spec-review stopped the run** (`python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state show`
+says needs_human from spec review), **stop here too**: end the session, don't continue,
+don't report the step as done. In manual mode, a 🔴 verdict means follow spec-review
+Step 3 (more rounds, rework, or the person accepts). Never fix findings outside vibe-goldfish.
+
+After spec-review completes without stopping:
 
 ## Step 15 — Tell the user
 

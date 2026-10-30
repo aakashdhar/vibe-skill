@@ -1,6 +1,6 @@
 # vibe-* skills
 
-> A framework of 26 Claude Code skills that covers the complete software development lifecycle — from first idea to client sign-off.
+> A framework of 27 Claude Code skills that covers the complete software development lifecycle — from first idea to client sign-off.
 
 Built by **Aakash Dhar** at [BetaCraft](https://betacraft.in) for production AI-assisted development workflows.
 
@@ -22,15 +22,25 @@ Every skill follows the same principles:
 ## Installation
 
 ```bash
-git clone https://github.com/aakashdhar/vibe-skill.git /tmp/vibe-skill && mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ && rm -rf /tmp/vibe-skill
+git clone https://github.com/aakashdhar/vibe-skill.git ~/vibe-skill && ~/vibe-skill/scripts/sync-install.sh
 ```
 
-Restart Claude Code. All 26 skills are active immediately.
+This copies the 27 skills into `~/.claude/skills` and the goldfish reviewer agents into
+`~/.claude/agents`, without touching anything else there. Restart Claude Code so the
+new skills and agents load. To check that the reviewers really start with no context:
 
-**Update skills anytime:**
 ```bash
-cd /tmp && git clone https://github.com/aakashdhar/vibe-skill.git && mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ && rm -rf /tmp/vibe-skill
+python3 ~/.claude/skills/vibe-goldfish/scripts/isolation_check.py --live
 ```
+
+**Update anytime** (safe to re-run):
+```bash
+git -C ~/vibe-skill pull && ~/vibe-skill/scripts/sync-install.sh
+```
+
+Installed with the old `/tmp` + `mv` command (v2.6.0 or earlier)? You have no `~/vibe-skill`
+clone yet, so run the install command above once. It updates your existing skills in place
+and adds the reviewer agents. After that, the update command works.
 
 ## Usage
 
@@ -38,13 +48,14 @@ Skills trigger automatically from natural language. No slash commands needed.
 
 ---
 
-### Skills included (26)
+### Skills included (27)
 
 **Plan**
 - `vibe-brainstorm` — turn ideas into a buildable brief
 - `vibe-architect` — plan code structure before writing
 - `vibe-agent` — design multi-agent AI systems
-- `vibe-spec-review` — audit specs before coding
+- `vibe-spec-review` — independent review of specs before coding (through vibe-goldfish)
+- `vibe-goldfish` — fresh-eyes review: zero-context reviewer subagents check a document, the author answers each finding, a person decides what the files can't
 
 **Build**
 - `vibe-new-app` — build a new app from scratch
@@ -70,7 +81,7 @@ Skills trigger automatically from natural language. No slash commands needed.
 - `vibe-ledger` — visual cost report
 - `vibe-graph` — dependency graph
 - `vibe-doctor` — environment health check
-- `vibe-mode` — set manual/autonomous execution mode, who approves the spec and design, whether a build continues past a passed phase gate; `vibe-mode: run` resumes a build from the files alone (headless contract: `vibe-mode/references/HEADLESS.md`)
+- `vibe-mode` — set manual/autonomous execution mode, who approves the spec and design, whether a build continues past a passed phase gate; `vibe-mode: run` resumes a build from the files alone, `vibe-mode: resume` continues after you've dealt with a stop (headless contract: `vibe-mode/references/HEADLESS.md`)
 
 **Close**
 - `vibe-document` — generate docs
@@ -84,7 +95,7 @@ Skills trigger automatically from natural language. No slash commands needed.
 
 ```
 PLAN
-  brainstorm: → spec-review (auto) → architect: → new: / vibe-init
+  brainstorm: → spec-review (auto, goldfish) → architect: → new: / vibe-init
   (idea from elsewhere / dropped or empty file → still start at brainstorm:;
    its Step 0 ingests + normalizes it to a canonical BRIEF.md)
 
@@ -182,7 +193,7 @@ P0 — Must fix before Phase 3
   · backend/app/services/invoice.py:142
     SQL query not parameterised — injection risk
 
-P1 — Fix before deploy
+P1 — Must fix before Phase 3
   · web/components/InvoiceForm.tsx:67
     No loading state on submit — UX issue on slow connections
 
@@ -190,7 +201,7 @@ P2 — Address in backlog
   · backend/app/models/client.py:23
     Missing index on email column — will degrade at scale
 
-Phase 3 is BLOCKED until P0 resolved.
+Phase 3 is BLOCKED until P0 and P1 are resolved.
 ```
 
 ---
@@ -397,6 +408,8 @@ ADVANCED
   vibe-mode: autonomous     Run until done without prompting
   vibe-mode: manual         Wait for "next" between tasks (default)
   vibe-mode: run            Resume a build from the files alone (headless)
+  vibe-mode: resume         Continue after you've dealt with a stop (resets retry budgets)
+  goldfish: [preset|file]   Independent fresh-eyes review of a planning document
   design: critique / fix    Critique the design, then apply the notes
   perf:                     Performance audit
   doctor:                   Environment health check
@@ -480,7 +493,7 @@ L — Large    Complex features, real-time, auth, migrations  ~$0.30/task
 ### Phase gate rules
 
 ```
-Phase N cannot proceed to Phase N+1 until review: passes with zero P0 issues.
+Phase N cannot proceed to Phase N+1 until review: passes with zero P0 and zero P1 issues.
 Final phase review must pass zero P0 + zero P1 before deploy.
 vibe-review is the enforcer. No exceptions.
 ```
@@ -489,7 +502,7 @@ vibe-review is the enforcer. No exceptions.
 
 ```
 P0   Blocking — must fix before next phase or deploy
-P1   Significant — must fix before deploy
+P1   Significant — must fix before next phase or deploy
 P2   Should fix — add to backlog
 P3   Nice to fix — cosmetic or edge case
 ```
@@ -611,7 +624,10 @@ The framework produces documents that serve real audiences — developers, clien
 Every session is tracked. Every task has a cost. The ledger shows where money went. Waste patterns are flagged before they compound. summary.json bridges raw cost data and human-readable reports.
 
 **The gate is real.**
-vibe-review is not optional. Phase gates are enforced. P0 issues block progress. This is what makes the output shippable rather than just generated.
+vibe-review is not optional. Phase gates are enforced. P0 and P1 issues block progress. This is what makes the output shippable rather than just generated.
+
+**The author never grades its own work.**
+The agent that wrote a document remembers every reason behind it, so it reads what it meant rather than what it wrote. Planning documents are reviewed by goldfish: fresh subagents that see only the files, never the conversation or CLAUDE.md. The author answers each finding (fix, contest with evidence, escalate, or decline a P2), and a person decides anything the files can't settle. The idea comes from the elephant-goldfish model; vibe's implementation is its own.
 
 **Two audiences, always.**
 Client documents are plain English — no task IDs, no framework names, no file paths. Developer documents are precise and technical. The framework never conflates the two.
@@ -641,8 +657,13 @@ Two stdlib-only tools keep the framework honest (no dependencies):
 - **`python3 scripts/lint.py`** — self-linter. Flags dangling `references/*.md`,
   duplicate step headings, stale model IDs, non-compiling scripts, and a README
   skill-count mismatch. Run it after editing any skill; it exits non-zero on errors
-  so it can gate CI. This catches the classes of drift that creep into a 26-skill
-  prompt framework.
+  so it can gate CI. It also blocks reading the mode by grepping CLAUDE.md, checks that
+  every goldfish reviewer stays read-only with CLAUDE.md hidden, and warns on skill
+  descriptions over 1024 characters. This catches the classes of drift that creep into
+  a 27-skill prompt framework.
+- **`python3 vibe-goldfish/scripts/test_goldfish.py`** — self-test of the goldfish
+  review rules (convergence, re-review after edits, answer rules, churn, round cap) and
+  the spec/design gate checks. Run it after editing goldfish.py or vibe_state.py.
 - Deterministic engines (invoked by their skills, not mentally simulated):
   `vibe-graph/scripts/graph.py` (god-nodes, blast-radius, stats, html),
   `vibe-parallel/scripts/waves.py` (dependency waves, conflict detection, estimate),

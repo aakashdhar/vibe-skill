@@ -20,11 +20,18 @@ Diagnosis before fix. Regression test before fix code. Smallest possible change.
 
 **Use Plan Mode (Shift+Tab) for Steps 1–5. Exit before Step 6.**
 
-> **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> **Autonomous / headless mode.** At startup resolve the settings once:
+> ```bash
+> VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+> python3 "$VS" mode        # JSON: vibe_mode, approvals, phases, source
+> ```
+> When the caller says this skill was entered from `vibe-mode: run`, use
+> `python3 "$VS" mode --run` instead (it forces `vibe_mode: autonomous`). Never grep
+> CLAUDE.md for the mode: every later step that branches on the mode reuses this
+> `vibe_mode` value. If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 ---
@@ -106,15 +113,29 @@ confidence is genuinely borderline, treat it as Significant instead.
 
 ## Trivial path
 
+**Bug task IDs (both paths).** Every bug gets its own ID prefix, `BUG-<short-slug>-N`,
+so bug tasks never collide with another bug's tasks in TASKS.md or in a pooled
+vibe-parallel run. `<short-slug>` is 1-3 kebab-case words from the bug summary (for a
+significant bug, the folder slug without the date), e.g. `BUG-login-redirect-1`. The
+prefix must not be used anywhere yet. Check all three places for an ID starting
+`BUG-<short-slug>-`: vibe/TASKS.md, every `vibe/bugs/*/BUG_TASKS.md`, and the attempt
+keys printed by `python3 "$VS" counters show` (done bugs are collapsed in TASKS.md, but
+their attempt counters stay on disk). If any has one, add a word until it is unique.
+Number the tasks 1, 2, 3 (4 on the significant path).
+
 Insert into TASKS.md directly — no bug folder created:
 
 ```
 🐛 [Bug summary — plain English] (0/3)
-   [ ] BUG-001 · Regression test — write test that fails on current code
-   [ ] BUG-002 · Apply fix — [one line: exactly what changes]
-   [ ] BUG-003 · Verify — regression test passes, full suite green, linter clean
+   [ ] BUG-[short-slug]-1 · Regression test — write test that fails on current code
+       - **Expect:** red: [test file]::[test name]
+   [ ] BUG-[short-slug]-2 · Apply fix — [one line: exactly what changes]
+   [ ] BUG-[short-slug]-3 · Verify — regression test passes, full suite green, linter clean
    → Trivial fix — no spec folder
 ```
+
+The `Expect: red` line marks the regression test task as one that must end with its new
+test failing. That is its success condition, not a failure.
 
 Update "What just happened" and "What's next":
 ```
@@ -123,15 +144,24 @@ Update "What just happened" and "What's next":
 Quick fix path — regression test first.
 
 ## What's next
-⬜ BUG-001 · Write a test that reproduces the bug
+⬜ BUG-[short-slug]-1 · Write a test that reproduces the bug
 Say "next" to begin.
 ```
 
-In autonomous mode (`vibe_state.py mode`), don't wait for "next": run the three BUG
+If the startup `vibe_mode` is `autonomous`, don't wait for "next": run the three BUG
 tasks through vibe-mode's `references/AUTONOMOUS_EXECUTION_BLOCK.md` (regression test
-first), then announce the fix complete.
+first), then announce the fix complete. Tell the executor, and carry into the dispatched
+task block, that `BUG-[short-slug]-1` declares `- **Expect:** red: [test file]::[test name]`:
+it must end **red** (the new test fails on the unfixed code), it reports that test under
+`tests.expected_failing`, and it must not write the fix. `BUG-[short-slug]-2` is a normal
+task that turns the test green.
 
-After BUG-003, collapse to: `✅ [Bug summary] — fixed [date] (3/3 ✅)`
+After `BUG-[short-slug]-2` (the fix) is committed, run "Reopen a passed review gate"
+(below Step 9). It applies to this trivial path too.
+
+After BUG-[short-slug]-3, collapse to:
+`✅ [Bug summary] — fixed [date] (3/3 ✅) (BUG-[short-slug]-1..3)`
+Keep the ID range in that line so a later bug can see the prefix is taken.
 
 **CLAUDE.md:** No active bug section needed for trivial fixes — complexity doesn't warrant it.
 
@@ -311,13 +341,19 @@ Save updated `CLAUDE.md`.
 
 Read BUG_SPEC.md, BUG_PLAN.md, CODEBASE.md.
 
+Task IDs follow the `BUG-<short-slug>-N` scheme from the Trivial path section, e.g.
+`BUG-login-redirect-1`. Dependencies use the same full IDs.
+
 ```
 ---
-### BUG-001 · Write the regression test
+### BUG-[short-slug]-1 · Write the regression test
 - **Status**: `[ ]` | **Depends on**: None | **Touches**: [test file path]
+- **Expect:** red: [test file path]::[test name]
 
 **What to do**: Write a test that reproduces the bug exactly.
 Must FAIL on current code before the fix. Name it clearly.
+This task ends red: report the new test under `tests.expected_failing`. Do not write
+the fix to make it pass. BUG-[short-slug]-2 turns it green.
 
 **Acceptance criteria**:
 - [ ] Test exists and clearly named
@@ -328,8 +364,8 @@ Must FAIL on current code before the fix. Name it clearly.
 **Decisions**: > Filled in by agent. None yet.
 ---
 
-### BUG-002 · Implement the fix
-- **Status**: `[ ]` | **Depends on**: BUG-001 | **Touches**: [exact paths from BUG_PLAN.md]
+### BUG-[short-slug]-2 · Implement the fix
+- **Status**: `[ ]` | **Depends on**: BUG-[short-slug]-1 | **Touches**: [exact paths from BUG_PLAN.md]
 - **CODEBASE.md update**: [Yes — which sections / No — logic only]
 
 **What to do**: [Fix from BUG_PLAN.md — specific and precise]
@@ -337,6 +373,7 @@ Modify only files in BUG_PLAN.md. Follow ARCHITECTURE.md patterns.
 If CODEBASE.md update required, do it before marking done.
 
 **Acceptance criteria**:
+- [ ] Regression test from BUG-[short-slug]-1 now passes (red to green)
 - [ ] Only BUG_PLAN.md files modified
 - [ ] Matches BUG_PLAN.md approach
 - [ ] Follows existing patterns — no new patterns introduced without ARCHITECTURE.md update
@@ -347,11 +384,11 @@ If CODEBASE.md update required, do it before marking done.
 **Decisions**: > Filled in by agent. None yet.
 ---
 
-### BUG-003 · Verify fix and run full suite
-- **Status**: `[ ]` | **Depends on**: BUG-002 | **Touches**: none
+### BUG-[short-slug]-3 · Verify fix and run full suite
+- **Status**: `[ ]` | **Depends on**: BUG-[short-slug]-2 | **Touches**: none
 
 **What to do**:
-1. Run regression test from BUG-001 — must now pass
+1. Run regression test from BUG-[short-slug]-1 — must now pass
 2. Run full test suite — all pre-existing tests must still pass
 3. Run linter — no new errors
 
@@ -363,8 +400,8 @@ If CODEBASE.md update required, do it before marking done.
 **Decisions**: > Filled in by agent. None yet.
 ---
 
-### BUG-004 · Update docs
-- **Status**: `[ ]` | **Depends on**: BUG-003
+### BUG-[short-slug]-4 · Update docs
+- **Status**: `[ ]` | **Depends on**: BUG-[short-slug]-3
 - **Touches**: [files with comments about buggy behaviour, if any]
 
 **What to do**:
@@ -413,10 +450,10 @@ Save as `vibe/bugs/[date-slug]/BUG_TASKS.md`.
 **2.** Insert inline bug block above active feature:
 ```
 🐛 [Bug summary in plain English] (0/4)
-   [ ] BUG-001 · Regression test — reproduce the bug in a test
-   [ ] BUG-002 · Implement fix — smallest change that resolves root cause
-   [ ] BUG-003 · Verify and run full suite — regression passes, nothing else broke
-   [ ] BUG-004 · Update docs
+   [ ] BUG-[short-slug]-1 · Regression test — reproduce the bug in a test
+   [ ] BUG-[short-slug]-2 · Implement fix — smallest change that resolves root cause
+   [ ] BUG-[short-slug]-3 · Verify and run full suite — regression passes, nothing else broke
+   [ ] BUG-[short-slug]-4 · Update docs
    → Full specs: vibe/bugs/[date-slug]/BUG_TASKS.md (agent use)
 ```
 
@@ -427,16 +464,17 @@ Save as `vibe/bugs/[date-slug]/BUG_TASKS.md`.
 Starting fix — regression test first, then fix.
 
 ## What's next
-⬜ BUG-001 · Write a test that reproduces the bug
+⬜ BUG-[short-slug]-1 · Write a test that reproduces the bug
    Must fail before fix and pass after — proves the fix works.
 Say "next" to begin.
 ```
 
 After each task: mark [x], update count, update What just happened + What's next in plain English.
 
-When fix completes: collapse to single line, restore interrupted feature:
+When fix completes: collapse to single line, restore interrupted feature. Keep the ID
+range in the line so a later bug can see the prefix is taken:
 ```
-✅ [Bug summary] — fixed [date] (4/4 ✅)
+✅ [Bug summary] — fixed [date] (4/4 ✅) (BUG-[short-slug]-1..4)
 ```
 
 ---
@@ -466,18 +504,24 @@ Tell the user:
 >   BUG_SPEC.md · BUG_PLAN.md · BUG_TASKS.md
 > **Updated:** vibe/TASKS.md · CLAUDE.md · vibe/DECISIONS.md
 
-**Read execution mode:**
+**Execution mode:** reuse the `vibe_mode` resolved at startup (see the header). If you
+need it again, run the same command; never grep CLAUDE.md:
 ```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # add --run when entered from vibe-mode: run
 ```
 
-If `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
+If `vibe_mode` is `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
 (resolve the vibe-mode install dir — commonly `~/.claude/skills/vibe-mode/`, or
 `~/.claude/plugins/marketplaces/*/skills/vibe-mode/` under a plugin install)
 and follow the autonomous execution protocol. Begin immediately.
-Note: regression test task always runs first — it has no dependencies.
+Note: regression test task always runs first — it has no dependencies. Tell the executor
+that `BUG-[short-slug]-1` declares `Expect: red`: it must end **red** (its new test fails
+on the unfixed code, reported under `tests.expected_failing`), which makes it done, not
+failed, and it must not write the fix. `BUG-[short-slug]-2` is a normal task that turns
+the test green.
 
-If `manual` or not set → tell the user:
+If `vibe_mode` is `manual` → tell the user:
 > Tell your coding agent:
 > ```
 > Read CLAUDE.md, vibe/CODEBASE.md, vibe/ARCHITECTURE.md,
@@ -485,6 +529,31 @@ If `manual` or not set → tell the user:
 > ```
 > Regression test first. Always. Fix second.
 > Say **"next"** after each task.
+
+On both modes, after `BUG-[short-slug]-2` (the fix) is committed, run "Reopen a passed
+review gate" below.
+
+---
+
+## Reopen a passed review gate (both paths)
+
+A passed review covers the code as it was reviewed, and the fix changed it. After the fix
+task (`BUG-[short-slug]-2`) is committed, on the trivial and significant paths alike:
+```bash
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" gate show     # prints vibe/.gates.json
+```
+- If `final.review` is `passed`: reopen the final gate.
+- Else, if the current phase's review (`phases["N"].review`) is `passed`: reopen that phase.
+- Else: nothing to reopen, skip the rest of this section.
+```bash
+python3 "$VS" gate reopen <final|N> \
+  --reason "vibe-fix-bug changed source: [files]" --by vibe-fix-bug
+```
+Then tell the user: "The bug fix changed source after the [phase N | final] review
+passed. review: must run again (`review: [phase N | final]`); the next phase and deploy
+stay blocked until it passes."
+
 ---
 
 ## Step 10 — Update dependency graph
@@ -510,8 +579,8 @@ dependents — catching regressions the single reproduction test wouldn't. This 
 the auto-handoff vibe-test advertises from vibe-fix-bug.
 
 - Trivial-bug path (no BUG folder): skip — the inline regression test is enough.
-- Significant bugs, `VIBE_MODE=autonomous`: run automatically after the graph update.
-- Significant bugs, `VIBE_MODE=manual`: offer it —
+- Significant bugs, `vibe_mode` `autonomous` (from startup): run automatically after the graph update.
+- Significant bugs, `vibe_mode` `manual`: offer it —
   > "Fix verified. Extend blast-radius tests for the [N] files it touched? (y/n)"
 
 vibe-test scopes coverage from the `Touches` sections of `BUG_TASKS.md` (and the

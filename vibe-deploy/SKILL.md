@@ -84,15 +84,35 @@ ls .github/workflows/ 2>/dev/null
 
 ## Step 0.5 — Verify the review/perf gate (blocking)
 
-`vibe-review` (final phase) and `vibe-perf` both declare themselves a **mandatory
-gate before deploy**. Enforce it here — deploy is the one place it actually
-matters. Check for unresolved blockers before generating any deploy config:
+`vibe-review`'s final gate is mandatory before deploy, and `vibe-perf`'s latest result
+(`vibe/perf/baseline.json`) also blocks deploy on any P0. Enforce both here: deploy is
+the one place it actually matters. Check for unresolved blockers before generating any deploy config.
+
+**First, the pre-deploy perf check.** Run `perf:` Entry C (full audit) now when the
+project already has a perf baseline (`vibe/perf/baseline.json` exists) or the user asked
+for a perf check. Come back to this step when it finishes: it writes its result to
+`vibe/perf/baseline.json`, and if it changed source code it reopens the review gate,
+which the check below then catches. Otherwise do not run it, and say so plainly:
+> "Perf: not run (no vibe/perf/baseline.json and no perf check requested). Run `perf:`
+> before deploying if you want one."
+
+**Then read the gate state:**
 
 ```bash
 # Primary source of truth: the machine-checkable gate state written by vibe-review
 # (see vibe-review/references/GATES.md). Read final.review, not prose.
 python3 - << 'PY'
 import json, pathlib, sys
+pb = pathlib.Path("vibe/perf/baseline.json")
+if pb.exists():
+    try:
+        b = json.loads(pb.read_text() or "{}")
+    except ValueError:
+        b = {}
+    f = b.get("findings") or {}
+    print(f"PERF latest run {b.get('run_date','?')} (#{b.get('run_number','?')}): P0={f.get('p0','?')}, P1={f.get('p1','?')}")
+else:
+    print("PERF: no vibe/perf/baseline.json, perf not run")
 p = pathlib.Path("vibe/.gates.json")
 if not p.exists():
     print("GATE: no vibe/.gates.json — non-vibe project or no review run yet"); sys.exit(0)
@@ -101,22 +121,27 @@ final = (g.get("final") or {})
 phases = g.get("phases") or {}
 open_phases = [n for n, e in phases.items() if (e or {}).get("review") != "passed"]
 print(f"GATE final.review = {final.get('review','not_run')} (P0={final.get('p0','?')}, P1={final.get('p1','?')})")
+if final.get("reopened"):
+    print(f"GATE final reopened by {final['reopened'].get('by')}: {final['reopened'].get('reason')}")
 if open_phases: print(f"GATE phases not passed: {', '.join(sorted(open_phases))}")
 PY
 # Fallback if .gates.json is absent (older project): scan the backlog directly.
 cat vibe/reviews/backlog.md 2>/dev/null
 ```
 
-Decision (read `vibe/.gates.json` first; fall back to backlog.md only if it's absent):
-- **`final.review` is not `passed` (P0 > 0, or a phase gate still open), or — no
-  gates.json — open P0 in backlog.md** → **STOP**. Do not generate deploy configs.
-  Name the open P0s / unpassed gate and say `review: final` must pass first.
-- **Open P1 findings** → **warn and require explicit confirmation**:
-  > "Deploy gate: [N] P1 issues are still open in vibe/reviews/backlog.md.
-  > vibe-review marks P1 as must-fix-before-deploy. Deploy anyway? (y/n)"
-  Proceed only on an explicit yes; log the override in the Step 7 summary.
-- **A P1 the user previously accepted as 'won't fix (accepted risk)'** does not
-  block — it's already recorded.
+Decision (read `vibe/.gates.json` first; fall back to backlog.md only if it's absent).
+An open P0 **or** an open P1 always STOPs. There is no "deploy anyway" override.
+- **`final.review` is not `passed`** (P0 > 0, P1 > 0, reopened, or never run), **or a
+  phase gate is not passed** → **STOP**. Do not generate deploy configs. Name the open
+  P0s/P1s or the unpassed gate and say `review: final` must pass first.
+- **No gates.json, and backlog.md has an open P0 or P1** → **STOP** the same way.
+  A P1 can never be accepted as a risk, so a "won't fix (accepted risk)" tag does not
+  clear it. Only P2/P3 items may be accepted; they never block.
+- **`vibe/perf/baseline.json` has `findings.p0 > 0`** → **STOP**. Name the perf P0s
+  (they are in backlog.md and the latest `vibe/perf/report-*.md`) and say they must be
+  fixed and `perf:` run again before deploy. Perf P1/P2 findings (`findings.p1`/`p2` in
+  baseline.json, and the perf items vibe-perf adds to backlog.md) do not block deploy:
+  only `findings.p0` does. The "open P1 always STOPs" rule above is about review findings.
 - **No `vibe/reviews/` at all** (deploying a non-vibe project) → note that no
   review gate was found and continue.
 
@@ -142,6 +167,20 @@ Wait for answer. Then proceed with full generation.
 Patch existing source files to be production-ready.
 Do not rewrite files — surgical edits only.
 Report every file changed and what was changed.
+
+**These patches change source code after the review gate passed.** When you patch any
+source file in this step and `vibe/.gates.json` has a `final` entry (Step 0.5 needed it
+passed), reopen that gate once all patches are done:
+```bash
+python3 "$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py" gate reopen final \
+  --reason "vibe-deploy patched source files: [files]" --by vibe-deploy
+```
+Only when it prints `review gate final → open`, tell the user: "Deploy patched source
+files, so the final review no longer covers them. Run `review: final` again before you
+push or deploy; deploy is unblocked only when it passes." (The pre-push hook and
+Step 0.5 block while the gate is open.) Skip the reopen and that message when no
+source file needed a patch, or when there is no `vibe/.gates.json` or no `final` entry
+in it (a non-vibe or older project has no gate to reopen).
 
 ### 2a — Port binding
 
@@ -508,6 +547,7 @@ Source files patched:
   ✅ [file] — [what was changed]
 
 ⚠️ Action required before deploying:
+  [· Run `review: final` again: source files were patched, so the final gate was reopened (only if Step 2 reopened it)]
   · Run ENV_SETUP.md commands to set secrets
   · [any platform-specific manual steps]
   [· CREDENTIALS.md — fill values if handoff package also present]

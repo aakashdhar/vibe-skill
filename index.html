@@ -1210,7 +1210,7 @@
   <section class="hero">
     <div class="hero-eyebrow">Claude Code Skills Framework — Built at BetaCraft</div>
     <div class="hero-title">vibe-<span class="accent">*</span></div>
-    <div class="hero-subtitle">26 skills. One install. The complete development lifecycle — plan, build, review, test,
+    <div class="hero-subtitle">27 skills. One install. The complete development lifecycle — plan, build, review, test,
       deploy, hand off.</div>
     <div class="terminal-block">
       <div class="terminal-bar">
@@ -1223,11 +1223,13 @@
         <div class="terminal-line"><span class="prompt">$ </span><span class="cmd" id="typed-cmd"></span><span
             class="terminal-cursor" id="cursor"></span></div>
         <div class="terminal-line" id="term-out1" style="display:none"><span class="out">Cloning into
-            '/tmp/vibe-skill'...</span></div>
-        <div class="terminal-line" id="term-out2" style="display:none"><span class="out">Moving 26 skills to
-            ~/.claude/skills/</span></div>
-        <div class="terminal-line" id="term-out3" style="display:none"><span class="success">✓ All 26 vibe-* skills
-            installed. Restart Claude Code.</span></div>
+            '~/vibe-skill'...</span></div>
+        <div class="terminal-line" id="term-out2" style="display:none"><span class="success">✓ synced 27 vibe-* skills
+            → ~/.claude/skills (v2.7.0 @ b18633c)</span></div>
+        <div class="terminal-line" id="term-out3" style="display:none"><span class="success">✓ installed 6 goldfish
+            reviewer agents → ~/.claude/agents</span></div>
+        <div class="terminal-line" id="term-out4" style="display:none"><span class="out">  restart Claude Code to
+            pick up any changes (new agents load at startup).</span></div>
       </div>
       <button class="copy-btn" id="copy-btn" onclick="copyInstall()">COPY</button>
     </div>
@@ -1241,12 +1243,12 @@
       <span class="tag">handoff:</span>
       <span class="tag">cost:</span>
     </div>
-    <div class="hero-deco">26</div>
+    <div class="hero-deco">27</div>
   </section>
 
   <!-- STATS -->
   <div class="stats-bar">
-    <div class="stat-item"><span class="stat-num">26</span><span class="stat-label">Total skills</span></div>
+    <div class="stat-item"><span class="stat-num">27</span><span class="stat-label">Total skills</span></div>
     <div class="stat-item"><span class="stat-num w">1</span><span class="stat-label">Install command</span></div>
     <div class="stat-item"><span class="stat-num">7</span><span class="stat-label">Deploy platforms</span></div>
     <div class="stat-item"><span class="stat-num w">∞</span><span class="stat-label">Projects shipped</span></div>
@@ -1293,7 +1295,7 @@
       </div>
     </div>
     <div class="filter-tabs">
-      <button class="filter-tab active" onclick="filterSkills('all',this)">All (26)</button>
+      <button class="filter-tab active" onclick="filterSkills('all',this)">All (27)</button>
       <button class="filter-tab" onclick="filterSkills('plan',this)">Plan</button>
       <button class="filter-tab" onclick="filterSkills('build',this)">Build</button>
       <button class="filter-tab" onclick="filterSkills('design',this)">Design</button>
@@ -1301,7 +1303,7 @@
       <button class="filter-tab" onclick="filterSkills('visibility',this)">Visibility</button>
       <button class="filter-tab" onclick="filterSkills('close',this)">Close</button>
     </div>
-    <div class="skills-count" id="skills-count">Showing 26 skills — click any card for details</div>
+    <div class="skills-count" id="skills-count">Showing 27 skills — click any card for details</div>
     <div class="skills-grid" id="skills-grid">
       <div class="skill-card" data-cat="plan" data-name="vibe-brainstorm" data-trigger="brainstorm:"
         data-desc="Comprehensive brainstorming workflow for turning any idea into a clear, validated, buildable brief. Two paths: personal project (8 steps) and client/business project (13 steps). Produces BRIEF.md."
@@ -1331,13 +1333,22 @@
         <div class="sk-desc">Design complete multi-agent AI systems from scratch.</div>
       </div>
       <div class="skill-card" data-cat="plan" data-name="vibe-spec-review" data-trigger="spec-review:"
-        data-desc="Spec quality gate — audits planning documents before any code is written. P0 findings are critical gaps that will cause build failures. Triggered automatically by vibe-brainstorm and vibe-new-app."
+        data-desc="Spec quality gate: an independent review of planning documents before any code is written, run through vibe-goldfish so the author never grades its own spec. P0 and P1 findings block. Triggered automatically by vibe-brainstorm, vibe-architect, vibe-agent, vibe-new-app, vibe-init and vibe-add-feature."
         data-examples="spec-review: check the brief|spec-review: is the spec ready to build|review the spec"
         onclick="openDrawer(this)">
         <div class="sk-cat">Plan</div>
         <div class="sk-name">vibe-spec-review</div>
         <div class="sk-trigger">spec-review:</div>
-        <div class="sk-desc">Audit specs before building. P0 findings block the build.</div>
+        <div class="sk-desc">Independent spec review before building. P0 and P1 block the build.</div>
+      </div>
+      <div class="skill-card" data-cat="plan" data-name="vibe-goldfish" data-trigger="goldfish:"
+        data-desc="Fresh-eyes review on the elephant-goldfish model. Zero-context reviewer subagents (no conversation, no CLAUDE.md, read-only) check a document for rubric gaps, comprehension, scope, design, readiness and fit with the code. The author answers every finding with a fix, evidence or an escalation, and a person decides what the files can't. Ends after two clean rounds in a row."
+        data-examples="goldfish: spec|goldfish: vibe/features/2026-10-30-csv-export|fresh-eyes review of BRIEF.md"
+        onclick="openDrawer(this)">
+        <div class="sk-cat">Plan</div>
+        <div class="sk-name">vibe-goldfish</div>
+        <div class="sk-trigger">goldfish:</div>
+        <div class="sk-desc">Reviewers who never saw the conversation check your docs cold.</div>
       </div>
       <div class="skill-card" data-cat="build" data-name="vibe-new-app" data-trigger="new:"
         data-desc="Full spec-driven setup workflow for building a brand new app from scratch. Generates CLAUDE.md and the complete vibe/ folder. Reads BRIEF.md and ARCHITECTURE.md if they exist."
@@ -1540,6 +1551,7 @@
         <div class="lc-pill">vibe-architect</div>
         <div class="lc-pill">vibe-agent</div>
         <div class="lc-pill">vibe-spec-review</div>
+        <div class="lc-pill">vibe-goldfish</div>
       </div>
       <div class="lc-phase" onclick="showLC(1,this)">
         <div class="lc-num">02</div>
@@ -1585,7 +1597,7 @@
       <div class="lc-detail-title" id="lc-title">PLAN</div>
       <div class="lc-detail-desc" id="lc-desc">Every project starts here. brainstorm: turns a rough idea into a
         validated brief. architect: establishes code structure before a single line is written. agent: designs
-        multi-agent systems. spec-review: gates the plan — P0 findings block everything downstream.</div>
+        multi-agent systems. spec-review: gates the plan with an independent goldfish review, and P0/P1 findings block everything downstream.</div>
     </div>
   </section>
 
@@ -1596,8 +1608,8 @@
       <div class="step reveal">
         <div class="step-num">01</div>
         <div class="step-title">Install</div>
-        <div class="step-desc">One git clone command. All 26 skills land directly in ~/.claude/skills/. Restart Claude
-          Code and you're ready.</div>
+        <div class="step-desc">One command: clone the repo and run its install script. All 27 skills land in
+          ~/.claude/skills/ and the reviewer agents in ~/.claude/agents/. Restart Claude Code and you're ready.</div>
       </div>
       <div class="step reveal">
         <div class="step-num">02</div>
@@ -1625,7 +1637,7 @@
   <section class="about-section" id="about">
     <div class="reveal">
       <div class="about-title">BUILT AT BETA<span>CRAFT</span></div>
-      <div class="about-body">vibe-* is a framework of 26 Claude Code skills covering the complete software development
+      <div class="about-body">vibe-* is a framework of 27 Claude Code skills covering the complete software development
         lifecycle — from first idea to client sign-off. Every skill is grounded in real files, produces complete output
         from a single trigger, and enforces quality gates between phases.</div>
       <div class="about-body">Built for production AI-assisted development workflows. Used daily at BetaCraft across
@@ -1635,10 +1647,9 @@
     </div>
     <div class="about-right reveal">
       <div class="about-right-label">~/vibe-skill — install &amp; usage</div>
-      <div class="readme-line"><span class="comment"># clone all 26 skills</span></div>
-      <div class="readme-line"><span class="cmd">git clone</span> github.com/aakashdhar/vibe-skill.git /tmp/vs</div>
-      <div class="readme-line"><span class="cmd">mv</span> /tmp/vs/vibe-* ~/.claude/skills/</div>
-      <div class="readme-line"><span class="cmd">rm -rf</span> /tmp/vs</div>
+      <div class="readme-line"><span class="comment"># install all 27 skills</span></div>
+      <div class="readme-line"><span class="cmd">git clone</span> github.com/aakashdhar/vibe-skill.git ~/vibe-skill</div>
+      <div class="readme-line"><span class="cmd">~/vibe-skill/scripts/sync-install.sh</span></div>
       <div class="readme-line">&nbsp;</div>
       <div class="readme-line"><span class="comment"># natural language triggers</span></div>
       <div class="readme-line"><span class="flag">feature:</span> add dark mode toggle</div>
@@ -1671,13 +1682,13 @@
       <div class="drawer-example" id="d-examples"></div>
       <div class="drawer-section-title">Install all skills</div>
       <div class="drawer-example">
-        <code>git clone https://github.com/aakashdhar/vibe-skill.git /tmp/vibe-skill &amp;&amp; mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ &amp;&amp; rm -rf /tmp/vibe-skill</code>
+        <code>git clone https://github.com/aakashdhar/vibe-skill.git ~/vibe-skill &amp;&amp; ~/vibe-skill/scripts/sync-install.sh</code>
       </div>
     </div>
   </div>
 
   <script>
-    const INSTALL_CMD = 'git clone https://github.com/aakashdhar/vibe-skill.git /tmp/vibe-skill && mv /tmp/vibe-skill/vibe-* ~/.claude/skills/ && rm -rf /tmp/vibe-skill';
+    const INSTALL_CMD = 'git clone https://github.com/aakashdhar/vibe-skill.git ~/vibe-skill && ~/vibe-skill/scripts/sync-install.sh';
 
     const TRIGGERS = [
       { triggers: ['feature:', 'feature', 'add feature', 'new feature'], skill: 'vibe-add-feature', cat: 'Build', desc: 'Spec-driven feature workflow. Produces FEATURE_SPEC.md, FEATURE_PLAN.md, and FEATURE_TASKS.md before any code is written.', phase: 'Build phase' },
@@ -1700,19 +1711,20 @@
       { triggers: ['changelog:', 'changelog'], skill: 'vibe-changelog', cat: 'Close', desc: 'Two changelogs from git tags — developer-facing and plain-English client version.', phase: 'Close phase' },
       { triggers: ['change:', 'change', 'modify spec', 'add to scope'], skill: 'vibe-change-spec', cat: 'Build', desc: 'Impact assessed before touching any file. Updates all affected docs in the correct order.', phase: 'Build phase' },
       { triggers: ['parallel:', 'parallel', 'subagent', 'simultaneous'], skill: 'vibe-parallel', cat: 'Ship', desc: 'Dependency wave builder. Spawns tasks as parallel subagents with conflict detection.', phase: 'Ship phase' },
-      { triggers: ['spec-review:', 'spec-review', 'review spec', 'check brief'], skill: 'vibe-spec-review', cat: 'Plan', desc: 'Spec quality gate. P0 findings block the build. Triggered automatically after brainstorm.', phase: 'Plan phase' },
+      { triggers: ['spec-review:', 'spec-review', 'review spec', 'check brief'], skill: 'vibe-spec-review', cat: 'Plan', desc: 'Independent spec quality gate. P0 and P1 findings block the build. Triggered automatically after brainstorm.', phase: 'Plan phase' },
+      { triggers: ['goldfish:', 'goldfish review', 'fresh-eyes review', 'independent review'], skill: 'vibe-goldfish', cat: 'Plan', desc: 'Zero-context reviewer subagents check a document cold; the author answers every finding.', phase: 'Plan phase' },
       { triggers: ['design-md:', 'design-md', 'extract design', 'design system'], skill: 'vibe-design-md', cat: 'Design', desc: 'Captures complete design system from any URL. 55+ pre-built catalogs.', phase: 'Design phase' },
-      { triggers: ['vibe-mode:', 'vibe-mode', 'autonomous', 'manual mode'], skill: 'vibe-mode', cat: 'Visibility', desc: 'Sets manual or autonomous execution mode. Writes VIBE_MODE to CLAUDE.md.', phase: 'Visibility' },
+      { triggers: ['vibe-mode:', 'vibe-mode', 'autonomous', 'manual mode'], skill: 'vibe-mode', cat: 'Visibility', desc: 'Sets manual or autonomous execution mode. run continues a build from the files; resume continues after a stop.', phase: 'Visibility' },
       { triggers: ['vibe-graph:', 'vibe-graph', 'dependency graph'], skill: 'vibe-graph', cat: 'Visibility', desc: 'Dual-layer dependency graph. File-level relationships + semantic concept map.', phase: 'Visibility' },
       { triggers: ['new:', 'new app', 'new project', 'starting a new'], skill: 'vibe-new-app', cat: 'Build', desc: 'Full spec-driven setup for a brand new app. Generates CLAUDE.md and complete vibe/ folder.', phase: 'Build phase' },
       { triggers: ['vibe-init', 'onboard', 'init the vibe', 'legacy project'], skill: 'vibe-init', cat: 'Close', desc: 'Onboards any existing codebase into the vibe-* framework. Single session, reads everything.', phase: 'Close phase' },
     ];
 
     const LC_DATA = [
-      { title: 'PLAN', desc: 'Every project starts here. brainstorm: turns a rough idea into a validated brief. architect: establishes code structure. agent: designs multi-agent systems. spec-review: gates the plan — P0 findings block everything downstream.' },
+      { title: 'PLAN', desc: 'Every project starts here. brainstorm: turns a rough idea into a validated brief. architect: establishes code structure. agent: designs multi-agent systems. spec-review: gates the plan with an independent goldfish review, and P0/P1 findings block everything downstream.' },
       { title: 'BUILD', desc: 'The core development loop. new-app: sets up the full vibe/ folder. add-feature: spec → plan → tasks → code. fix-bug: three-way triage before any changes. review: mandatory phase gate. test: blast-radius-aware coverage.' },
       { title: 'DESIGN', desc: 'design-md: captures the exact design system from any URL. design: applies it to produce non-generic, editorial-quality UI. Reads brand tokens, enforces anti-generic rules, creates separate files per page and component.' },
-      { title: 'SHIP', desc: 'e2e: full Playwright tests against live URL. perf: full-stack performance audit — mandatory before deploy. deploy: 7 platforms, stack detected, config generated. parallel: subagent-based parallel execution with dependency waves.' },
+      { title: 'SHIP', desc: 'e2e: full Playwright tests against live URL. perf: full-stack performance audit; a perf P0 blocks deploy. deploy: 7 platforms, stack detected, config generated. parallel: subagent-based parallel execution with dependency waves.' },
       { title: 'VISIBILITY', desc: 'progress: ASCII dashboard from TASKS.md and git log. cost + ledger: token and dollar tracking at every level. doctor: environment health check and auto-remediation. mode: switch between manual and autonomous execution.' },
       { title: 'CLOSE', desc: 'document: complete docs in one session. changelog: two versions — developer-facing and plain-English client. handoff: 5 modes producing markdown + self-contained HTML portal. init: onboard any legacy codebase into the framework.' },
     ];
@@ -1837,7 +1849,10 @@
           document.getElementById('term-out1').style.display = 'block';
           setTimeout(() => {
             document.getElementById('term-out2').style.display = 'block';
-            setTimeout(() => { document.getElementById('term-out3').style.display = 'block'; }, 700);
+            setTimeout(() => {
+              document.getElementById('term-out3').style.display = 'block';
+              setTimeout(() => { document.getElementById('term-out4').style.display = 'block'; }, 400);
+            }, 700);
           }, 500);
         }, 350);
       }

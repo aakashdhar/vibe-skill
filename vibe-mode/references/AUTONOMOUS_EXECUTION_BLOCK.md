@@ -17,6 +17,9 @@
 VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
 python3 "$VS" mode        # → vibe_mode, approvals, phases
 ```
+Entered from `vibe-mode: run` (directly, or through a skill that `run` invoked)? Use
+`python3 "$VS" mode --run` instead. It forces `vibe_mode: autonomous`, because asking to
+continue the build is the instruction to run it.
 
 If `vibe_mode` is `manual` → use standard sequential execution.
 Tell the user: "Say **next** after each task."
@@ -63,23 +66,32 @@ If Wave 1 has 1 task:
 **2. Execute each wave**
 
 For each wave (parallel or single):
+- **Count every dispatch you make yourself:** `python3 "$VS" attempt [TASK-ID]` right
+  before it. The budget is 2 (the first try and one retry) and it is saved in
+  `vibe/.run_state.json`, so a new session can't start over. A wave handed to
+  vibe-parallel is counted by vibe-parallel, so don't count those tasks here: counting
+  twice would spend the retry on the first try. Exit 1 means it is spent: don't dispatch, **STOP** with
+  `run-state set --status needs_human --phase [N] --reason "[TASK-ID] failed after retry: [root cause]" --next "[what a person must decide or fix]"`.
 - Dispatch subagent(s) with scoped task prompts. Each subagent returns the
   **structured JSON completion report** (see vibe-parallel/references/REPORTING.md) —
   consume that, don't scrape prose.
 - Wait for completion; read `status` + `criteria` from each report.
-- On `DONE` with all criteria met and tests passing: mark `[x]`, update TASKS.md.
-- On failure or `PARTIAL`, retry with a **diagnosis-first** pass rather than a
-  blind re-run:
+- On `DONE` with all criteria met and tests passing: mark `[x]`, update TASKS.md. The one
+  allowed failing test is a declared expected-red regression test: a task with
+  `Expect: red` whose report lists it in `tests.expected_failing`
+  (vibe-parallel `references/REPORTING.md`). That task must not write the fix.
+- On `FAILED` or `PARTIAL` (`[~]`), retry with a **diagnosis-first** pass rather than a
+  blind re-run. PARTIAL is treated exactly like a failure: a task with unmet criteria
+  never counts as done and never unlocks its dependents.
   1. Re-dispatch the task at higher reasoning effort (e.g. `effort: high`/`xhigh`
      with adaptive thinking), giving the subagent the failing report + error and
      asking it to state the root cause before fixing.
   2. Before declaring success, **self-verify**: re-check the task's acceptance
      criteria against the actual result — don't trust the report's own claim.
-  3. If the second attempt still fails, **STOP** with
+  3. If the second attempt is still FAILED or PARTIAL, mark it `[!]` and **STOP** with
      `run-state set --status needs_human --phase [N] --reason "[TASK-ID] failed after retry: [root cause]" --next "[what a person must decide or fix]"`.
-- Retry budget is per task; a task that converges (fewer unmet criteria on the
-  retry) may warrant one more attempt — use judgment, don't hard-stop at exactly
-  two if it's clearly closing in and cheap. Never loop indefinitely.
+- The budget is exactly two dispatches per task (`attempt` enforces it). Only a person
+  gives a task more: `vibe-mode: resume` resets the counters.
 
 **Keep the human view current.** After every wave, and before every stop, rewrite the
 `## What just happened` / `## What's next` sections at the bottom of `vibe/TASKS.md` to
@@ -94,13 +106,16 @@ When all tasks in Wave N complete successfully:
 
 **4. Unit complete — when is the gate run?**
 
-When every task in the unit is `[x]`:
+When every task in the unit is `[x]` (a unit with any `[ ]`, `[~]` or `[!]` left is not
+complete: keep executing, or STOP as above, but never report it complete):
 - **A phase** (Phase N tasks in TASKS.md) → run the **review gate** below for Phase N.
 - **A feature** → if it was the **last unfinished feature of its phase**, run the review
   gate for that phase; otherwise announce "feature complete" and return to the caller
   (the phase loop continues with the next feature).
 - **A bug fix** → announce "fix complete" and return. Bug fixes don't trigger a phase
-  gate on their own.
+  gate on their own, but if the fix landed after a review gate passed, vibe-fix-bug has
+  reopened that gate (`gate reopen`), so the phase loop runs that review again before
+  moving on.
 - **RFX fix tasks** → re-run the review gate for the same phase (see the fix loop).
 
 Never start the next phase from here — that only happens through the review gate.
@@ -134,10 +149,13 @@ A failing gate is cleared the way a person would clear it: fix exactly what the 
 found, then review again. **Only the RFX tasks review wrote under the phase's gate line
 are in scope** — never add features or unrelated work.
 
-1. Treat the open `RFX-NNN` tasks under `## Phase [N] gate` as the unit of work and run
+1. **Count the cycle:** `python3 "$VS" cycle [N]` (`final` for the final gate). Exit 1
+   means 2 cycles are already spent, possibly by an earlier session: go to step 4.
+2. Treat the open `RFX-NNN` tasks under `## Phase [N] gate` as the unit of work and run
    them through the phase execution loop above (waves, retries, `[x]` marks).
-2. Re-run the review gate for Phase [N].
-3. Repeat **at most 2 fix cycles.** If the gate still fails after the second cycle,
+3. Re-run the review gate for Phase [N]. When it passes, vibe-review resets the cycle
+   counter (`counters reset --phase [N]`).
+4. **At most 2 fix cycles.** If the gate still fails after the second cycle,
    **STOP** with
    `run-state set --status needs_human --phase [N] --reason "Phase [N] gate blocked: [X] P0 + [Y] P1 after 2 fix cycles" --next "see vibe/reviews/phase-[N]-review.md"`
    and print:
@@ -163,8 +181,9 @@ After Phase [N]'s gate passes:
    **Final gate**.
 2. **Design gate first, if needed.** If the next phase contains UI work and the project
    has a `## Design gate` line, run `vibe_state.py gate check design`. If it is not
-   cleared, follow HEADLESS.md §5 step 3 (build the design, critique, fix once, then
-   approve or stop for a person per `APPROVALS`).
+   cleared, follow HEADLESS.md §5 step 3 (build the design, critique, up to 2
+   `design: fix must` passes while MUST-FIX > 0, then approve or stop for a person per
+   `APPROVALS`; an agent can never approve with MUST-FIX items open).
 3. Write `run-state set --status running --phase [N+1]`.
 4. **Run the phase:**
    - **Concrete task lines** (`[ ] P[N+1]-001 · …`) → run this block for them.
@@ -176,7 +195,9 @@ After Phase [N]'s gate passes:
        (HEADLESS.md §2) and builds it with this block.
      - **Batch of 2+** → the features are built **together**, not one after another:
        1. Plan each one: `feature: [name] plan-only` (vibe-add-feature stops after its
-          spec review — nothing is built, no gate is run).
+          spec review — nothing is built, no gate is run). If any feature's review
+          stopped the run (`run-state show` says needs_human), **STOP** here: build none
+          of the batch.
        2. Run vibe-parallel **Entry point E** on all of the batch's `FEATURE_TASKS.md`
           files at once. Its conflict passes keep two features that touch the same file
           (e.g. a shared `app.js`) in different waves, so this is safe even when the

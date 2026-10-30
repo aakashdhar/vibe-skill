@@ -186,7 +186,9 @@ def build_subagent_prompt(task, context_block, other_wave_files, scope_warnings)
     task:             task dict
     context_block:    rendered context from render_context_block()
     other_wave_files: all Touches fields from other tasks in this wave
-    scope_warnings:   upstream [~] partial warnings to include
+    scope_warnings:   `blockers` reported by this task's [x] dependencies. A [~] or [!]
+                      dependency never lets this task run (REPORTING.md), so there
+                      are no upstream partial warnings.
     """
 
     prompt = f"""You are executing {task['id']} as part of a parallel build.
@@ -204,6 +206,7 @@ Acceptance criteria:
 {chr(10).join(f'- [ ] {c}' for c in task['criteria'])}
 
 Test requirement: {task.get('test_requirement', 'Run existing tests, add tests if the task creates new logic')}
+{expect_red_block(task)}
 
 Architecture compliance: {task.get('arch_ref', 'Follow ARCHITECTURE.md patterns')}
 
@@ -219,8 +222,8 @@ Files you must NOT write (assigned to other parallel tasks):
 
     if scope_warnings:
         prompt += f"""
-═══ UPSTREAM WARNINGS ═══
-The following tasks completed partially — account for these:
+═══ UPSTREAM BLOCKERS ═══
+Your dependencies reported these blockers. Account for them:
 {chr(10).join(f'  ⚠️ {w}' for w in scope_warnings)}
 """
 
@@ -236,7 +239,7 @@ applies them.
   "status": "DONE" | "PARTIAL" | "FAILED",
   "files_modified": ["path", ...],
   "files_created": ["path", ...],
-  "tests": { "passed": N, "total": N },
+  "tests": { "passed": N, "total": N, "expected_failing": ["test file::test name", ...] },
   "criteria": [ { "text": "...", "met": true|false, "note": "reason if unmet" } ],
   "codebase_update": "what changed, for the main session to record | ",
   "blockers": ["anything downstream tasks must know", ...],
@@ -245,12 +248,26 @@ applies them.
   "error": "failure detail | null"
 }
 
+`tests.total` counts every test you ran, `tests.passed` only the green ones.
+`tests.expected_failing` is [] unless your task block declares `- **Expect:** red: ...`.
+
 `decisions` = implementation choices worth remembering (why this approach / library);
 the main session appends them to vibe/IMPLEMENTATION_LOG.md. Use [] if none.
 Do NOT edit vibe/IMPLEMENTATION_LOG.md yourself either.
 """.replace("{task_id}", task['id'])
 
     return prompt
+
+
+def expect_red_block(task):
+    """The task block's `- **Expect:** red: <test file::test name>` line (vibe-fix-bug's
+    regression-test task), parsed into task["expect_red"] (the test id, or None)."""
+    if not task.get("expect_red"):
+        return ""
+    return (f"Expect: red. The regression test {task['expect_red']} must FAIL on the "
+            "unfixed code. Do not write the fix and do not touch non-test files. Count it "
+            f"in tests.total (not tests.passed) and list exactly {task['expect_red']} in "
+            "tests.expected_failing (that id as written, nothing else). Every other test must pass.")
 ```
 
 Where the runtime supports schema-validated output/tool calls, bind this schema with

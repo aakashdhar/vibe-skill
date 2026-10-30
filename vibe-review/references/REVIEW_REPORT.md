@@ -80,5 +80,7 @@ Files reviewed: [count] · Phase [N] changes since [previous gate/sha].
 ## Escalation rules (applied when logging to backlog)
 - A P1 unresolved across **2+** phase reviews → escalate to P0.
 - A P2 unresolved across **3+** phase reviews → escalate to P1.
-- Exception: an item the user has explicitly accepted as "won't fix (accepted
-  risk)" is tagged as such and does **not** auto-escalate — record the reason.
+- Exception: a **P2 or P3** item the user has explicitly accepted as "won't fix
+  (accepted risk)" is tagged as such and does **not** auto-escalate — record the reason.
+  A P1 can never be accepted as a risk: it is fixed before the gate passes, and an open
+  P1 always blocks the next phase and deploy.

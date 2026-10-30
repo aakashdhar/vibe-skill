@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 #
-# sync-install.sh — install the vibe-* skills from this repo into ~/.claude/skills
-# and stamp the install with the current version.
+# sync-install.sh — install the vibe-* skills from this repo into ~/.claude/skills,
+# install the goldfish reviewer agents into ~/.claude/agents, and stamp the install
+# with the current version.
 #
 # Usage:
 #   scripts/sync-install.sh              # sync HEAD of the current working tree
 #   scripts/sync-install.sh v2.0.0       # sync a specific tag (checked out, then restored)
 #   SKILLS_DIR=/path scripts/sync-install.sh   # override install target
+#   AGENTS_DIR=/path scripts/sync-install.sh   # override the agents target
 #
 # Safe to re-run. Each vibe-* folder is mirrored with rsync --delete, scoped to that
-# folder only — other skills in the target directory are never touched.
+# folder only — other skills in the target directory are never touched. Agents: only
+# files named vibe-gf-*.md are written or removed; other agents are never touched.
 
 set -euo pipefail
 
@@ -17,6 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_DIR="${SKILLS_DIR:-$HOME/.claude/skills}"
+AGENTS_DIR="${AGENTS_DIR:-$HOME/.claude/agents}"
 REF="${1:-}"
 
 command -v rsync >/dev/null 2>&1 || { echo "error: rsync is required" >&2; exit 1; }
@@ -48,6 +52,21 @@ for d in "$REPO_ROOT"/vibe-*/; do
   count=$((count + 1))
 done
 
+# Goldfish reviewer agents (vibe-goldfish). Claude Code loads subagent types from
+# ~/.claude/agents, so they must live there, not only inside the skill folder.
+mkdir -p "$AGENTS_DIR"
+agents=0
+for f in "$REPO_ROOT"/vibe-goldfish/agents/vibe-gf-*.md; do
+  [[ -f "$f" ]] || continue
+  cp "$f" "$AGENTS_DIR/"
+  agents=$((agents + 1))
+done
+# remove goldfish agents this version no longer ships
+for f in "$AGENTS_DIR"/vibe-gf-*.md; do
+  [[ -f "$f" ]] || continue
+  [[ -f "$REPO_ROOT/vibe-goldfish/agents/$(basename "$f")" ]] || rm -f "$f"
+done
+
 # Write the version stamp so the install advertises what it is.
 cat > "$SKILLS_DIR/.vibe-skill-version.json" <<EOF
 {
@@ -62,4 +81,6 @@ cat > "$SKILLS_DIR/.vibe-skill-version.json" <<EOF
 EOF
 
 echo "✓ synced $count vibe-* skills → $SKILLS_DIR (v$VERSION @ ${COMMIT:0:7})"
-echo "  restart Claude Code to pick up any changes."
+echo "✓ installed $agents goldfish reviewer agents → $AGENTS_DIR"
+echo "  restart Claude Code to pick up any changes (new agents load at startup)."
+echo "  check reviewer isolation: python3 $SKILLS_DIR/vibe-goldfish/scripts/isolation_check.py --live"

@@ -22,11 +22,18 @@ Produces CLAUDE.md at project root and the full vibe/ folder the AI coding agent
 
 **Always run in Plan Mode (Shift+Tab). Exit Plan Mode only before task execution.**
 
-> **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> **Autonomous / headless mode.** At startup resolve the settings once:
+> ```bash
+> VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+> python3 "$VS" mode        # JSON: vibe_mode, approvals, phases, source
+> ```
+> When the caller says this skill was entered from `vibe-mode: run`, use
+> `python3 "$VS" mode --run` instead (it forces `vibe_mode: autonomous`). Never grep
+> CLAUDE.md for the mode: every later step that branches on the mode reuses this
+> `vibe_mode` value. If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 ---
@@ -37,7 +44,7 @@ Produces CLAUDE.md at project root and the full vibe/ folder the AI coding agent
 **Context preservation** — CLAUDE.md, CODEBASE.md, ARCHITECTURE.md, SPEC_INDEX.md, TASKS.md
 read every session so the agent never re-discovers what's been built.
 **Incremental verifiable progress** — TASKS.md breaks the build into single verifiable tasks.
-**Drift prevention** — DECISIONS.md created ready to log from the first task forward.
+**Drift prevention** — DECISIONS.md created or preserved (never overwritten), ready to log from the first task forward.
 
 ---
 
@@ -94,6 +101,13 @@ upstream step. In particular:
   BRIEF.md. This is what brings an externally-produced idea to parity. Don't
   scaffold from a hollow or non-canonical brief.
 - Note whether this is a **UI project** — it determines the design gate in Step 10C.
+
+**Check for an existing `vibe/` folder.** Upstream skills may have created it already:
+spec-review writes to `vibe/DECISIONS.md` and `vibe/spec-reviews/` after `brainstorm:`,
+`architect:` and `agent:`, and in autonomous mode every skill logs its choices to
+`vibe/DECISIONS.md`. If `vibe/DECISIONS.md` exists, read it and note its entries and the
+highest `D-NNN` ID: Step 9 keeps every one of them. Never treat an existing `vibe/` folder
+as empty, and never delete what is in it.
 
 **Then check for BRIEF.md and ARCHITECTURE.md at project root.**
 
@@ -349,7 +363,9 @@ Generate CLAUDE.md at **project root** substituting all [placeholders]:
 Rules:
 - NEVER skip the commit step — uncommitted work is invisible to vibe-graph and vibe-review
 - Code commit and doc commit are ALWAYS separate — never mix feat and docs in one commit
-- If tests fail — fix before committing, do not commit broken code
+- If tests fail — fix before committing, do not commit broken code. The one exception is a
+  bug's declared expected-red regression test (`Expect: red`): it is committed failing, and
+  the very next task makes it pass
 - If lint fails — fix before committing, do not commit with lint errors
 ```
 
@@ -505,6 +521,15 @@ Generate the placeholder version. Save as `vibe/CODEBASE.md`.
 
 ### vibe/DECISIONS.md
 
+DECISIONS.md is append-only. Never write it from this template when it already exists
+(Step 1 checked):
+- **Absent:** create it with the template below.
+- **Exists:** keep every existing entry exactly as it is, including entries other skills
+  wrote in other formats (for example `## [date] — Spec review`). If the header (the title
+  through the `## Format` block) is missing, add it above the existing entries. Do not add
+  the `(No entries yet)` line. New entries continue the `D-NNN` numbering from the highest
+  existing ID.
+
 ```
 # DECISIONS — [Project Name]
 > Append-only. Every drift, scope change, tech choice — logged with full context.
@@ -575,7 +600,14 @@ Invoke `vibe-spec-review` with:
 - Trigger source: `new-app`
 - Scope: SPEC.md + ARCHITECTURE.md + BRIEF.md + AGENT_ARCH.md (all that exist)
 
-After spec-review completes:
+**If spec-review stopped the run** (`python3 "$VS" run-state show` says needs_human from
+spec review), **stop here too**: end the session, don't continue, don't report the step as
+done. That means: do not run Step 10B, do not record the spec gate in Step 10S, and start
+nothing after it. `vibe-mode: run` resumes once a person has resolved it.
+In manual mode, a 🔴 verdict means follow spec-review Step 3 (more rounds, rework, or the
+person accepts). Never fix findings outside vibe-goldfish.
+
+After spec-review completes without stopping:
 
 ## Step 10B — Initialise dependency graph
 
@@ -591,17 +623,22 @@ After graph init completes:
 
 The spec gate is the person's sign-off on the plan the build will follow. Record it in
 `vibe/.gates.json` (and the `## Spec gate` line in TASKS.md) with the helper — pass the
-spec-review report from Step 10 as `--report`:
+goldfish review that spec-review ran in Step 10, `vibe/goldfish/spec`, as `--report`:
 
 ```bash
 VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
-python3 "$VS" mode        # → vibe_mode, approvals
+python3 "$VS" mode        # → vibe_mode, approvals (add --run when entered from vibe-mode: run)
 ```
 
 - **Manual mode:** the user approved the SPEC in Step 2 and has seen the spec review —
-  `python3 "$VS" gate set spec --status approved --by human --report [report]`.
-- **Autonomous, `APPROVALS=auto`:** `gate set spec --status approved --by agent-autonomous --report [report]`, and continue.
-- **Autonomous, `APPROVALS=human`:** `gate set spec --status pending --report [report]`,
+  `python3 "$VS" gate set spec --status approved --by human --report vibe/goldfish/spec`.
+- **Autonomous, `APPROVALS=auto`:** `gate set spec --status approved --by agent-autonomous --report vibe/goldfish/spec`,
+  and continue. Never run this when spec-review stopped with `needs_human` (Step 10). The
+  helper refuses unless that goldfish review converged. If it refuses, do not retry with
+  other flags (`--backfill` is only for HEADLESS.md §5 projects that predate the gate):
+  STOP with `run-state set --status needs_human --reason "spec gate: [the helper's error]" --next "see vibe/goldfish/spec"`
+  and end the session.
+- **Autonomous, `APPROVALS=human`:** `gate set spec --status pending --report vibe/goldfish/spec`,
   then STOP — `python3 "$VS" run-state set --status needs_human --reason spec_approval --next "approve the spec, then run vibe-mode: run"`
   — and end the session. Do not start the design or any task. `vibe-mode: run` resumes
   from here once the spec is approved (HEADLESS.md §5).
@@ -621,20 +658,33 @@ language — that is the "it skipped design" failure.
   >  share one derived design language. Optionally run `design-md:` first to
   >  capture brand tokens, then `design:` to produce the design contract.
   >  Recommended. Reply 'skip design' to build without a design pass."
-  Invoke `design:` on a clear yes; when the user approves the result, record
-  `gate set design --status approved --by human`. If the user says skip, log it in
+  Invoke `design:` on a clear yes, then run the **critique loop** below. When the user
+  approves the result, record
+  `gate set design --status approved --by human --report vibe/design/critique.md`.
+  The helper refuses while MUST-FIX > 0: show the user the open items; they can ask for
+  more fixes, or approve anyway with
+  `--by human --accept-open "[their reason]"`. If the user says skip, log it in
   `vibe/DECISIONS.md` ("design gate skipped by user") so it's a visible decision, and
   record `gate set design --status skipped`.
-- **Design system already exists** (user ran `design-md:`/`design:` earlier):
-  design gate already passed — record `gate set design --status approved --by human` if
-  it isn't recorded yet, and continue.
+- **Design system already exists** (user ran `design-md:`/`design:` earlier): if
+  `gate check design` already passes, continue. Otherwise do not record approval yet: run
+  the **critique loop** below on the existing design first, then record the gate as the
+  manual or autonomous branch says (manual: the user approves; autonomous: per `APPROVALS`).
 - **Autonomous mode (UI project, no design system):** never skip. Run `design:` up to its
-  Step 3.5 checkpoint (contract, tokens, preview — no production UI files before sign-off), then
-  `design: critique`, then one `design: fix must` pass. Then per `APPROVALS`:
+  Step 3.5 checkpoint (contract, tokens, preview — no production UI files before sign-off),
+  then the **critique loop** below. Only when MUST-FIX = 0, record per `APPROVALS`:
   `auto` → `gate set design --status approved --by agent-autonomous --report vibe/design/critique.md`
   and continue; `human` → `gate set design --status pending --report vibe/design/critique.md`,
   STOP with `run-state set --status needs_human --reason design_approval --next "approve the design, then run vibe-mode: run"`,
   and end the session.
+
+**Critique loop** (every branch that approves a design): run `design: critique`, then read
+the count from the `## MUST-FIX (N)` heading in `vibe/design/critique.md`. While N > 0,
+run `design: fix must` (it re-critiques and rewrites the count), **at most 2 passes**. If
+MUST-FIX is still > 0 after 2 passes, an agent cannot approve the gate (the helper refuses).
+In autonomous mode STOP with
+`run-state set --status needs_human --reason design_must_fix --next "resolve the open MUST-FIX items in vibe/design/critique.md, then run vibe-mode: run"`
+and end the session. In manual mode, show the open items and let the user decide.
 
 The generated TASKS.md carries a matching **Design gate** line before Phase 2 so
 this is visible in the human-facing plan.
@@ -676,12 +726,12 @@ in DECISIONS.md.
 > vibe/spec-reviews/   ← spec review history
 > vibe/graph/          ← dependency graph (spec graph initialised)
 > ```
-> **Spec review:** [✅ clean / ⚠️ [N] warnings acknowledged / 🔴 [N] P0s fixed]
+> **Spec review:** [✅ SPEC READY / ⚠️ SPEC READY WITH ACCEPTED RISKS ([N]) / ⚠️ SPEC NOT REVIEWED]
 > **Graph:** [N] planned nodes · [N] concepts mapped · updates automatically
 >
 > **Read execution mode:**
 > ```bash
-> python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode
+> python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode   # add --run when entered from vibe-mode: run
 > ```
 >
 > If `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
