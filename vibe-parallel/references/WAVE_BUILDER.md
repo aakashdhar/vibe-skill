@@ -10,7 +10,21 @@ god-node deferral, and the time estimate.
 Do **not** hand-simulate this algorithm (silent scheduling errors are a real risk).
 The LLM's job is EXTRACTION: read the task file and write `vibe/parallel/tasks.json`
 (each task's `id`, `deps`, `writes`, `reads`, `size`, plus optional `god_nodes` from
-the graph). Then run the deterministic engine:
+the graph). Two rules for the extraction:
+
+- **`tasks`** holds the pending work: every `[ ]` task, plus each `[~]` / `[!]` task that
+  `vibe_state.py attempt <ID> --show` says still has budget (fewer than 2 attempts used).
+  Every id must be unique across the pool. When several files are pooled, their ids
+  already differ by scheme (feature `<PREFIX>-NNN`, bug `BUG-<slug>-N`, phase `P<N>-NNN`,
+  gate fix `RFX-NNN`, unique project-wide because vibe-review numbers them from the
+  highest RFX id in TASKS.md). Copy ids exactly; never renumber.
+- **`done`** lists the ids of every `[x]` task the pool's deps may point at (all `[x]`
+  ids in the source files is fine). Never put a `[~]` or `[!]` id in `done`.
+
+The script exits non-zero when two pool tasks share an id, or when a dep is neither in
+the pool nor in `done` (a typo, a missing task, or a `[~]`/`[!]` task that is out of
+budget). Do not edit the input to get past that error: fix the task file, or STOP for a
+person when the dep is a task that cannot run. Then run the deterministic engine:
 
 ```bash
 WAVES=$(ls ~/.claude/skills/vibe-parallel/scripts/waves.py \
@@ -29,13 +43,18 @@ algorithm the script implements — it is reference, not something to run mental
 ## Pass 1 — Standard dependency resolution
 
 ```python
-def build_waves(tasks):
+def build_waves(tasks, done):
     """
     tasks: list of task dicts with id, dependencies, touches, reads, size
+    done:  ids of completed [x] tasks (tasks.json "done")
     Returns: list of waves, each wave a list of task IDs
     """
-    completed = set()   # tasks already [x] in task file
-    pending = {t["id"]: t for t in tasks if t["status"] == "[ ]"}
+    completed = set(done)   # the "done" list: tasks already [x] in the task files
+    pending = {t["id"]: t for t in tasks}   # [ ], plus [~]/[!] re-queued within budget
+    for t in tasks:          # waves.py load(): unknown deps are an error, not "satisfied"
+        for d in t.get("dependencies", []):
+            if d not in pending and d not in completed:
+                raise ValueError(f"{t['id']} depends on unknown task {d}")
     waves = []
 
     while pending:

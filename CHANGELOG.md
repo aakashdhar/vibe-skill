@@ -8,6 +8,126 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.7.0] — 2026-10-30
+
+Theme: **the author never grades its own work.** Until now every review in vibe ran in
+the conversation that wrote the thing being reviewed: spec-review audited specs in the
+author's own context and, in autonomous mode, fixed and re-passed its own findings. This
+release adds an independent review layer on the elephant-goldfish model, and fixes the
+pipeline defects that a verified audit found in how runs are counted, gated and resumed.
+
+### Added
+- **vibe-goldfish** (new skill, the 27th). The agent that wrote a document (the
+  elephant) never reviews it. Fresh read-only subagents that never saw the conversation
+  or CLAUDE.md (the goldfish) read it cold, each with one job: rubric, comprehension,
+  zoom-out, design critic, implementation readiness, codebase fit. The elephant answers
+  every finding as fix, contest (with evidence the reviewer could read), escalate (a
+  person decides) or decline (P2 only). The review ends after two clean rounds in a row,
+  is capped at 5 rounds, and stops for a person on churn or an escalation.
+  - A review runs again when the reviewed documents change: the two clean rounds must
+    be on the same text, so a converged review of an older version no longer counts.
+  - In autonomous mode an escalated P0 or P1 stops the run, unless the agent writes the
+    missing fact into the document (the next round then checks it). Only a P2
+    escalation may be accepted as a risk by the agent.
+  - `scripts/goldfish.py` keeps the ledger and enforces the rules: stable finding IDs,
+    a reviewer that didn't run is never "no findings", settled findings stay settled, a
+    fixed one that comes back reopens, comprehension findings can't be contested,
+    severities can't be changed.
+  - Six reviewer agents (`agents/vibe-gf-*.md`): tools `Read, Grep, Glob` only,
+    `omitClaudeMd: true`. A live probe confirmed they see neither the project CLAUDE.md
+    nor the parent conversation.
+  - `scripts/isolation_check.py` checks that (static, and `--live` through the CLI).
+  - `scripts/test_goldfish.py` is a self-test of the review rules and the goldfish gate
+    checks in vibe_state.py (10 scenarios, stdlib only).
+  - Presets per document type (`references/PRESETS.md`), the dispatch rules
+    (`references/DISPATCH.md`: reviewers get file paths, never explanations) and the
+    answer rules (`references/RESOLVE.md`).
+- **`vibe-mode: resume`**: a person's answer to a stop. It resets the saved budgets, then
+  runs. Drivers keep using `run`, which never resets them.
+- **vibe_state.py**: `mode --run`, `attempt`, `cycle`, `counters`, `gate reopen`, and
+  checks inside `gate set` (below).
+- **lint.py** checks: no `grep VIBE_MODE CLAUDE.md`, goldfish reviewers stay read-only
+  with CLAUDE.md hidden, every preset reviewer has an agent file, and a warning for skill
+  descriptions over 1024 characters.
+
+### Changed
+- **vibe-spec-review runs through vibe-goldfish.** It no longer audits documents in the
+  author's context or re-passes its own fixes. Its checklists moved to
+  `references/CHECKLISTS.md` (unchanged except a note that check 3A also counts
+  commands written to CLAUDE.md), which the rubric reviewer applies. Trigger 4 now reviews
+  FEATURE_SPEC, FEATURE_PLAN and FEATURE_TASKS together. The report in
+  `vibe/spec-reviews/` is a one-page summary that links to the full goldfish record.
+- **An agent can't sign off the spec or the design on its own judgment.** `gate set spec
+  --by agent-autonomous` needs `--report vibe/goldfish/spec` pointing at a converged
+  review (`--backfill` for projects that predate the gate). `gate set design --status
+  approved` refuses while the critique has MUST-FIX > 0. Approving with items open needs
+  `--by human --accept-open "why"`, which the skills reserve for a person (the helper
+  can't verify who runs it).
+- **Every spec-review caller stops when the review needs a person.** vibe-new-app,
+  vibe-init, vibe-add-feature, vibe-architect, vibe-agent and vibe-brainstorm check
+  `run-state show` right after spec-review returns and end the session on `needs_human`
+  instead of carrying on. In manual mode a 🔴 SPEC NOT READY verdict goes back through
+  spec-review's own rounds; findings are never fixed outside vibe-goldfish.
+- **Deploy: an open P1 always stops.** The "Deploy anyway?" override is gone, and a P1
+  tagged "won't fix (accepted risk)" no longer clears the gate (P2/P3 still can be
+  accepted). Deploy Step 0.5 runs `perf:` Entry C when `vibe/perf/baseline.json` exists or
+  you ask for it (otherwise it says perf was not run), and stops while the latest result
+  has `findings.p0 > 0`.
+- **vibe-perf** writes open P0s (not only P1/P2) to `backlog.md` and every result to
+  `vibe/perf/baseline.json`. It no longer claims deploy triggers it automatically.
+- **A passed review gate is reopened when source changes after it.** `gate reopen` sets
+  the gate back to `open`, so `review:` must run again before the next phase or deploy.
+  vibe-perf (after its fixes) and vibe-fix-bug (after the fix task) reopen the final gate
+  if it passed, else the current phase. vibe-deploy reopens the final gate when Step 2
+  patches source files. vibe-add-feature reopens it when a feature is built after the
+  final review passed.
+- **vibe-add-feature runs the full design gate** for new UI work: `design: critique`, up
+  to 2 `design: fix must` passes while MUST-FIX > 0, then `gate set design` per
+  APPROVALS, or a `needs_human` stop (`design_must_fix`). When a design system already
+  exists (here and in vibe-new-app) and the gate was never recorded, the critique still
+  runs before approval.
+- **HEADLESS.md §2.2** no longer tells the agent to accept its own drafts. Documents that
+  spec-review covers are accepted when their goldfish review converges. The rest
+  (wireframe, PLAN.md feature map, BUG_SPEC/PLAN, design contract) are not yet covered,
+  and the DECISIONS entry says so.
+- `sync-install.sh` also installs the reviewer agents into `~/.claude/agents`, and the
+  README install uses it (the old `mv` one-liner failed when run a second time).
+- vibe-mode's description is under 1024 characters.
+
+### Fixed
+- **`vibe-mode: run` didn't force autonomous mode.** The execution block re-read the mode
+  and stopped on `manual`. It now reads `mode --run`.
+- **Retry and fix-cycle budgets lived only in the conversation**, so every new session
+  started with a fresh budget. They are saved in `vibe/.run_state.json` (2 dispatches per
+  task, 2 fix cycles per gate). The "use judgment, maybe one more try" softness is gone.
+- **PARTIAL tasks stalled builds.** `[~]` is now retried once like a failure, then `[!]`
+  and a stop. It never unlocks dependents, and a unit with `[~]`/`[!]` left is never
+  reported complete. On resume, `[~]`/`[!]` count as unfinished.
+- **The autonomous design gate approved after one fix pass** without checking MUST-FIX.
+  It now runs up to 2 passes, and stops for a person if items are still open.
+- HEADLESS.md tells drivers to stop on `needs_human` instead of relaunching.
+- **Task IDs collided when vibe-parallel pooled several files.** Feature tasks are now
+  `<PREFIX>-NNN`, with a short prefix unique in the project (e.g. `CSVX-001`), and bug
+  tasks `BUG-<short-slug>-N` on both the trivial and significant paths. waves.py takes
+  `"done": [...]` (completed task IDs a pooled task may depend on) and exits with an error
+  on duplicate task IDs or on a dep that is neither in the pool nor in `done`.
+- **RFX fix-task IDs restarted at RFX-001 for every gate**, so a later gate's fix task
+  inherited an earlier one's saved retry budget. They are now numbered project-wide from
+  the highest RFX id in TASKS.md and never reused.
+- **A bug's regression test is meant to fail.** The BUG test task declares
+  `- **Expect:** red: <test>`, and the subagent report lists that test under
+  `tests.expected_failing`. The task can be `[x]` with only those tests failing; a task
+  without `Expect: red` can never use that list.
+- **DECISIONS.md was rewritten from the template** when it already existed. It is
+  append-only now (vibe-new-app, vibe-init, vibe-spec-review, HEADLESS.md): existing
+  entries are kept and `D-NNN` numbering continues from the highest ID.
+- **vibe-init overwrote an existing vibe/ folder.** It now regenerates files one by one,
+  deletes nothing in `vibe/`, and appends its onboarding entry to DECISIONS.md.
+- **Skills read the mode by grepping CLAUDE.md**, which ignored `VIBE_*` env overrides and
+  broke on the inline comment vibe-mode writes. vibe-fix-bug, vibe-add-feature,
+  vibe-review, vibe-new-app and vibe-parallel now read it with `vibe_state.py mode`
+  (`mode --run` when entered from `vibe-mode: run`).
+
 ## [2.6.0] — 2026-09-23
 
 From the second headless proof run (a three-phase build driven by Reeve): Phase 2 was
@@ -351,6 +471,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.7.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.1...v2.5.2
 [2.5.1]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.0...v2.5.1

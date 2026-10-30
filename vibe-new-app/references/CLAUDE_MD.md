@@ -102,7 +102,9 @@ PHASES=[stop|continue — resolved value]
 Rules:
 - NEVER skip the commit step — uncommitted work is invisible to vibe-graph and vibe-review
 - Code commit and doc commit are ALWAYS separate — never mix feat and docs in one commit
-- If tests fail — fix before committing, do not commit broken code
+- If tests fail — fix before committing, do not commit broken code. The one exception is a
+  bug's declared expected-red regression test (`Expect: red`): it is committed failing, and
+  the very next task makes it pass
 - If lint fails — fix before committing, do not commit with lint errors
 
 ## Investigation discipline

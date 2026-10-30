@@ -23,10 +23,11 @@ Reads actual source files. Infers everything from code. Documents only what is o
 Produces a complete vibe/ folder that immediately unblocks all vibe-* skills.
 
 > **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (`mode --run` when the
+> caller says this skill was entered from `vibe-mode: run`). If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 **Run in agent mode (Claude Code / Cursor). Requires filesystem access.**
@@ -40,7 +41,7 @@ Produces a complete vibe/ folder that immediately unblocks all vibe-* skills.
 it was observed in the codebase. If it's in CODEBASE.md, the file exists.
 
 **The past is untracked. The future is fully tracked.**
-DECISIONS.md starts with one bootstrap entry dated today.
+DECISIONS.md starts with one bootstrap entry dated today (added after any entries already there, never replacing them).
 Every decision made through vibe-* skills from this point forward gets logged.
 Prior decisions are acknowledged as unknown — not fabricated.
 
@@ -69,9 +70,12 @@ ls -d vibe/ 2>/dev/null && echo "EXISTS" || echo "NOT FOUND"
 ```
 
 If vibe/ already exists:
-> "A vibe/ folder already exists in this project. Running vibe-init will overwrite it.
-> Do you want to continue and regenerate from the current codebase state?"
-Wait for explicit confirmation before proceeding.
+> "A vibe/ folder already exists in this project. Running vibe-init will regenerate its
+> files from the current codebase state. vibe/DECISIONS.md is kept and the onboarding entry
+> is appended to it (5E). Nothing in vibe/ is deleted. Continue?"
+Wait for explicit confirmation before proceeding. Confirmation means regenerate file by file
+as the steps below say. It never means clearing or deleting vibe/ first, and DECISIONS.md is
+always handled by the append-only rule in 5E.
 
 ---
 
@@ -375,6 +379,15 @@ Add provisional banner at top.
 
 ### 5E — vibe/DECISIONS.md
 
+DECISIONS.md is append-only. Never write it from this template when it already exists
+(an earlier spec-review, or this run's own autonomous logging, may have created it):
+- **Absent:** create it with the template below.
+- **Exists:** keep every existing entry exactly as it is, including entries other skills
+  wrote in other formats (for example `## [date] — Spec review`). If the header (the title
+  through the `## Format` block) is missing, add it above the existing entries. Add the
+  onboarding entry below them, numbered from the highest existing `D-NNN` ID (so it is
+  `D-001` only when no entry exists yet).
+
 ```markdown
 # DECISIONS — [Project Name]
 > Append-only. Every drift, scope change, tech choice — logged with full context.
@@ -507,7 +520,14 @@ Invoke `vibe-spec-review`:
 - Scope: SPEC.md + ARCHITECTURE.md + BRIEF.md (all that exist)
 
 It will flag the PROVISIONAL SPEC.md as a P1 to verify — expected for a retrofit, not
-a failure. Present findings, then continue to the report.
+a failure. Present the verdict.
+
+**If spec-review stopped the run** (`python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state show`
+says needs_human from spec review), **stop here too**: end the session, don't continue,
+don't report the step as done. In manual mode, a 🔴 verdict means follow spec-review
+Step 3 (more rounds, rework, or the person accepts). Never fix findings outside vibe-goldfish.
+
+Otherwise continue to the report.
 
 ---
 
@@ -524,7 +544,7 @@ GENERATED FILES
   vibe/CODEBASE.md            ← [N] files mapped, [N] routes, [N] models
   vibe/SPEC.md                ← PROVISIONAL — [N] features inferred
   vibe/SPEC_INDEX.md
-  vibe/DECISIONS.md           ← D-001 bootstrap entry
+  vibe/DECISIONS.md           ← bootstrap entry added (existing entries kept)
   vibe/IMPLEMENTATION_LOG.md  ← empty; implementation decisions logged from here on
   vibe/TASKS.md
   vibe/reviews/backlog.md

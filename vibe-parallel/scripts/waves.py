@@ -16,9 +16,15 @@ Input JSON (default: vibe/parallel/tasks.json):
     {"id":"TASK-001","deps":[],"writes":["src/a.py"],"reads":[],"size":"M"},
     {"id":"TASK-002","deps":["TASK-001"],"writes":["src/b.py"],"reads":["src/a.py"],"size":"S"}
   ],
+  "done": ["TASK-000"],                 // ids of completed [x] tasks that pool tasks may depend on
   "main_session_owned": ["vibe/CODEBASE.md","vibe/DECISIONS.md","vibe/IMPLEMENTATION_LOG.md","vibe/TASKS.md","CLAUDE.md"],
   "god_nodes": ["src/core.py"]          // optional; pairs coupled to same god node deferred
 }
+
+Validation (exit non-zero, nothing is scheduled):
+  - two tasks in the pool share an id (name the duplicates);
+  - a dep is neither a task in the pool nor listed in "done" (name the task and the dep).
+    A [~] or [!] task is never in "done": unless it is back in the pool, its dependents wait.
 
 Usage:
   python3 waves.py plan [tasks.json]     # prints the wave plan + conflicts + estimate
@@ -40,9 +46,22 @@ def load(path):
         data = json.loads(p.read_text())
     except json.JSONDecodeError as e:
         sys.exit(f"ERROR: {path} invalid JSON: {e}")
-    tasks = {t["id"]: t for t in data.get("tasks", [])}
+    raw = data.get("tasks", [])
+    ids = [t["id"] for t in raw]
+    dups = sorted({i for i in ids if ids.count(i) > 1})
+    if dups:
+        sys.exit(f"ERROR: duplicate task id(s) in {path}: {', '.join(dups)}. Every pooled task "
+                 "needs a unique id (feature tasks <PREFIX>-NNN, bug tasks BUG-<slug>-N).")
+    tasks = {t["id"]: t for t in raw}
     if not tasks:
         sys.exit("ERROR: no tasks in file.")
+    done = set(data.get("done", []))
+    unknown = [f"{tid} -> {d}" for tid, t in tasks.items()
+               for d in t.get("deps", []) if d not in tasks and d not in done]
+    if unknown:
+        sys.exit(f"ERROR: unknown dependency in {path}: {'; '.join(unknown)}. A dep must be a task "
+                 "in the pool or a completed [x] task listed in \"done\". If it is complete, add its "
+                 "id to \"done\"; if it is a typo, or a [~]/[!] task that is not in the pool, its dependents cannot be scheduled yet.")
     owned = set(data.get("main_session_owned", DEFAULT_OWNED))
     gods = set(data.get("god_nodes", []))
     return tasks, owned, gods
@@ -54,7 +73,7 @@ def build_waves(tasks):
     children = defaultdict(list)
     for tid, t in tasks.items():
         for d in t.get("deps", []):
-            if d in tasks:
+            if d in tasks:          # any other dep was checked in load(): it is in "done"
                 indeg[tid] += 1
                 children[d].append(tid)
     # detect cycles up front

@@ -1,24 +1,18 @@
 ---
 name: vibe-mode
 description: >
-  Sets the execution mode for the vibe-* framework — manual or autonomous — plus who
-  approves the spec and design (APPROVALS) and whether an autonomous build continues
-  past a passed phase gate (PHASES). `vibe-mode: run` resumes a build from the files
-  alone — the single entry point for driving vibe headlessly (e.g. `claude -p`).
-  In manual mode: waits for "next" between tasks, waits for "review:" after phases.
-  In autonomous mode: executes all tasks automatically, uses subagents for
-  independent tasks in parallel, auto-runs review after each phase and clears a failing
-  gate with up to 2 fix cycles, and stops only when a gate is still blocked, a task
-  fails twice, an approval is needed, or at deploy. Every stop is written to
-  vibe/.run_state.json.
-  Triggers on "vibe-mode: autonomous", "vibe-mode: manual", "vibe-mode: status",
-  "vibe-mode: run", "vibe-mode: approvals", "vibe-mode: phases", "continue the build",
-  "set autonomous mode", "set manual mode", "switch to autonomous",
-  "turn on autonomous", "turn off autonomous", "what mode am I in".
-  Always use when the user wants to control how much the framework
-  runs automatically vs waits for human input.
-  Writes the Execution mode section of CLAUDE.md. Settings are read through
-  scripts/vibe_state.py (env vars override CLAUDE.md) — see references/HEADLESS.md.
+  Sets how the vibe-* framework runs: VIBE_MODE manual or autonomous, APPROVALS (who
+  signs off the spec and design: human or auto) and PHASES (stop or continue after a
+  passed phase gate). `vibe-mode: run` resumes a build from the files alone, the single
+  entry point for driving vibe headlessly (e.g. `claude -p`); `vibe-mode: resume` is a
+  person's answer to a stop and resets the saved retry budgets first. Autonomous mode runs
+  tasks automatically with parallel subagents, auto-runs review after each phase with up
+  to 2 fix cycles, and stops when a gate stays blocked, a task fails twice, a goldfish
+  review or approval needs a person, or at deploy. Every stop is written to
+  vibe/.run_state.json. Triggers on "vibe-mode: autonomous|manual|status|run|resume|
+  approvals|phases", "continue the build", "resume the build", "set autonomous mode",
+  "switch to manual", "what mode am I in". Settings are read through
+  scripts/vibe_state.py (env vars override CLAUDE.md); see references/HEADLESS.md.
 ---
 
 # Vibe Mode Skill
@@ -39,7 +33,8 @@ vibe-mode: approvals auto      ← the agent signs them off (logged in DECISIONS
 vibe-mode: phases stop         ← default: stop after each passed phase gate
 vibe-mode: phases continue     ← carry on into the next phase automatically
 vibe-mode: status              ← shows the current settings and what they mean
-vibe-mode: run                 ← resume the build from where the files say it is
+vibe-mode: run                 ← continue the build from where the files say it is
+vibe-mode: resume              ← you have dealt with a stop: reset the saved budgets, then run
 ```
 
 All settings are read with one helper (env vars `VIBE_MODE`, `VIBE_APPROVALS`,
@@ -58,7 +53,7 @@ python3 "$VS" mode
 python3 "$VS" mode
 ```
 
-If `CLAUDE.md` does not exist and the command is anything other than `status` or `run`:
+If `CLAUDE.md` does not exist and the command is anything other than `status`, `run` or `resume`:
 > "No CLAUDE.md found — are you at the project root?
 > Run this from inside a vibe-* project."
 Stop.
@@ -140,6 +135,21 @@ phase · final gate) and continue from the earliest unfinished step, using
 
 `vibe-mode: run` behaves as if `VIBE_MODE=autonomous` for this invocation even when
 CLAUDE.md says manual — asking to "continue the build" is the instruction to run it.
+Carry that through explicitly: read the settings with `python3 "$VS" mode --run`, and tell
+every skill you invoke from here that it was entered from `vibe-mode: run`, so it reads
+them the same way. `run` never resets the saved retry and fix-cycle budgets.
+
+## Step 4 — `vibe-mode: resume` (after a stop)
+
+`resume` is what a person says after dealing with the reason the build stopped (see
+`python3 "$VS" run-state show`). Show that reason in one line, then:
+
+```bash
+python3 "$VS" counters reset --all     # the person has given the stuck work a new budget
+```
+
+and continue exactly as `vibe-mode: run` (Step 3). Only a person says `resume`. A driver
+or an autonomous session never does, because that would undo the budgets.
 
 ---
 
@@ -161,8 +171,12 @@ execution. If a setting changes mid-session, the next skill invocation picks it 
 deploy gate. Shipping to production always requires a human to confirm.
 
 **A phase gate always holds.** No phase starts until the previous phase's review has
-0 P0 and 0 P1. Autonomous mode may fix its way to a clean review (at most 2 cycles),
-but it never skips or overrides the gate.
+0 P0 and 0 P1. Autonomous mode may fix its way to a clean review (at most 2 cycles,
+counted on disk), but it never skips or overrides the gate.
+
+**An agent never signs off its own work.** Under `APPROVALS=auto` the spec is approved only
+after its independent goldfish review converges, and the design only with 0 MUST-FIX
+items. `vibe_state.py` refuses anything else.
 
 **Every stop is recorded.** Before stopping for any reason, write
 `vibe/.run_state.json` so anyone outside the session can see why.

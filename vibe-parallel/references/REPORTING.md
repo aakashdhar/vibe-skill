@@ -25,7 +25,7 @@ supports a schema-validated output / tool call, bind this schema with
   "status": "DONE",
   "files_modified": ["src/agents/scout_agent.py", "src/tools/tavily.py"],
   "files_created": [],
-  "tests": { "passed": 4, "total": 4 },
+  "tests": { "passed": 4, "total": 4, "expected_failing": [] },
   "criteria": [
     { "text": "ScoutAgent returns top 5 competitors", "met": true, "note": "" },
     { "text": "Error handling for Tavily timeout", "met": false,
@@ -43,7 +43,17 @@ supports a schema-validated output / tool call, bind this schema with
 }
 ```
 
-`status` is one of `DONE` | `PARTIAL` | `FAILED`. The subagent must NOT write the
+`status` is one of `DONE` | `PARTIAL` | `FAILED`.
+
+`tests` counts every test the subagent ran: `total` includes all of them, `passed` only
+the green ones. `expected_failing` lists the ids (`<test file::test name>`) of tests that
+fail **on purpose**. Only a task whose block declares `- **Expect:** red: <test file::test name>`
+(vibe-fix-bug's regression-test task) may use it: the new regression test must fail on the
+unfixed code, so it is counted in `total`, not in `passed`, and listed here by exactly
+the id declared on that line. Any other id here counts as an ordinary failing test. Every
+other task reports `"expected_failing": []`.
+
+The subagent must NOT write the
 main-session-owned files itself — `codebase_update` / `rationale_added` / `decisions`
 describe deltas for the main session to apply after the wave.
 
@@ -65,14 +75,16 @@ auto-FAILED` failure class entirely.
 ```python
 import json, re
 
-def parse_completion_report(raw_output, task_id):
+def parse_completion_report(raw_output, task_id, expect_red=None):
+    # expect_red: the declared test id(s) from the task block's `- **Expect:** red: ...`
+    # line (task["expect_red"]), or None when the task has no such line.
     data = _extract_json_report(raw_output, task_id)
     if data is None:
         data = _parse_legacy_text_report(raw_output, task_id)   # fallback
     if data is None:
         return {"task_id": task_id, "status": "FAILED", "parse_error": True,
                 "raw": raw_output[-2000:], "state": "!"}
-    return _finalize(data, task_id)
+    return _finalize(data, task_id, expect_red)
 
 def _extract_json_report(raw_output, task_id):
     # Prefer a fenced ```json block; else the last {...} object in the output.
@@ -88,17 +100,47 @@ def _extract_json_report(raw_output, task_id):
             return d
     return None
 
-def _finalize(d, task_id):
+def _declared_red(expect_red):
+    """The test id(s) declared on the task's `Expect: red:` line, as a list."""
+    if not expect_red:
+        return []
+    return [expect_red] if isinstance(expect_red, str) else list(expect_red)
+
+def tests_ok(passed, total, expected_failing, expect_red):
+    """Failing tests are a failure UNLESS every failing test is listed in
+    expected_failing AND each listed id is a test declared on the task's
+    `Expect: red:` line. expect_red is that declared id (or a list of ids), or None.
+    A task that does not declare `Expect: red` can never use expected_failing. An
+    `Expect: red` task must actually have its declared tests failing (all green =
+    bug not reproduced). Shared by _finalize(), determine_state() and SKILL.md
+    parse_completion(): one rule, one count."""
+    declared = _declared_red(expect_red)
+    if expected_failing and not declared:
+        return False
+    failing = max(total - passed, 0)
+    if declared:
+        # The declared regression test MUST fail on the unfixed code. A report where
+        # nothing failed means the bug was not reproduced: not done. A listed id that
+        # is not the declared test is an ordinary failing test. Ids are counted once:
+        # listing the declared id twice cannot hide an unrelated failing test.
+        listed = set(expected_failing)
+        return (failing >= 1 and len(listed) == len(expected_failing)
+                and failing == len(listed) and listed <= set(declared))
+    return failing == 0
+
+def _finalize(d, task_id, expect_red=None):
     tests = d.get("tests") or {}
     passed, total = int(tests.get("passed", 0)), int(tests.get("total", 0))
+    expected = list(tests.get("expected_failing") or [])
     criteria = d.get("criteria", []) or []
     unmet = [c for c in criteria if not c.get("met", False)]
-    tests_ok = (passed == total) if total > 0 else True
+    ok = tests_ok(passed, total, expected, expect_red)
     status = (d.get("status") or "").upper()
 
     # Same rule as determine_state() below — keep the two in lockstep.
-    if status == "FAILED" or not tests_ok:
+    if status == "FAILED" or not ok:
         state = "!"          # failing tests are a failure, whatever the criteria say
+                             # (except the declared expected-red tests, see tests_ok)
     elif status == "DONE" and not unmet:
         state = "x"
     else:
@@ -110,6 +152,7 @@ def _finalize(d, task_id):
         "files_modified": files("files_modified"),
         "files_created":  files("files_created"),
         "tests_passed": passed, "tests_total": total,
+        "expected_failing": expected, "expect_red": expect_red,
         "criteria": criteria, "unmet_criteria": unmet,
         "codebase_update": d.get("codebase_update") or "",
         "blockers": d.get("blockers") or [],
@@ -133,23 +176,28 @@ def determine_state(report):
     """
     [x] COMPLETE:
         STATUS=DONE AND all criteria met AND all tests pass
+        (or the only failing tests are the task's declared expected-red tests:
+         the task has `Expect: red: <id>` and lists exactly that id in
+         tests.expected_failing)
 
-    [~] PARTIAL (passes warnings downstream, does not block):
+    [~] PARTIAL (treated like a failure for retry; never unlocks dependents):
         STATUS=PARTIAL
         OR: STATUS=DONE but some criteria not met
         OR: tests pass but criteria have unverifiable items
+        → diagnostic retry once (attempt 2). Still [~] or [!] after it → [!], STOP.
 
-    [!] FAILED (stops the wave after diagnostic retry):
+    [!] FAILED (diagnostic retry once, then STOP for a person):
         STATUS=FAILED
-        OR: tests failed (tests_passed < tests_total, total > 0)
+        OR: tests failed (see tests_ok: expected-red tests excepted)
         OR: parse error (report not found in output)
-        OR: second retry also fails
+        OR: the retry (attempt 2) ends [~] or [!] again
     """
     if report["parse_error"]:
         return "!"
     if report["status"] == "FAILED":
         return "!"
-    if report["tests_total"] > 0 and report["tests_passed"] < report["tests_total"]:
+    if not tests_ok(report["tests_passed"], report["tests_total"],
+                    report["expected_failing"], report["expect_red"]):
         return "!"
     if report["status"] != "DONE" or report["unmet_criteria"]:
         return "~"           # PARTIAL, or DONE with unmet criteria
@@ -160,11 +208,13 @@ def determine_state(report):
 
 ## Partial task warning format
 
-When a task completes as [~], downstream tasks receive this warning:
+A `[~]` task never unlocks its dependents: they wait for it to become `[x]`. This
+warning is used only inside the task's own retry prompt (what the first attempt left
+unmet) and in the stop report when the retry also ends `[~]`:
 
 ```python
 def format_partial_warning(report):
-    lines = [f"⚠️ UPSTREAM WARNING from {report['task_id']}:"]
+    lines = [f"⚠️ PARTIAL RESULT from {report['task_id']}:"]
     for c in report["unmet_criteria"]:
         lines.append(f"   Criterion not met: {c['text']}")
         if c["note"]:
@@ -172,8 +222,8 @@ def format_partial_warning(report):
     if report["blockers"] and report["blockers"] != "none":
         lines.append(f"   Blocker: {report['blockers']}")
     lines.append(
-        f"   Action: verify this does not affect your task "
-        f"before marking yourself done."
+        f"   Action: meet these criteria in the retry, "
+        f"without undoing what already works."
     )
     return "\n".join(lines)
 ```
@@ -182,8 +232,18 @@ def format_partial_warning(report):
 
 ## Diagnostic retry
 
-On first [!] failure, build a targeted retry prompt rather than
-resending the same prompt verbatim.
+On a first `[!]` or `[~]` result, build a targeted retry prompt rather than
+resending the same prompt verbatim. Before dispatching it, count the attempt on disk:
+
+```bash
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" attempt [TASK-ID]     # prints "attempt [TASK-ID]: 2 of 2"; exit 1 = budget spent
+```
+
+Exit 1 means the budget (2) is already spent: do not dispatch. Mark the task `[!]` and
+STOP (`run-state set --status needs_human --reason "[TASK-ID] failed after retry: <root cause>"`).
+The `attempt` number in the prompt header is the one that command printed, never a
+number kept in memory.
 
 ```python
 COMMON_ERROR_PATTERNS = [
@@ -209,6 +269,7 @@ COMMON_ERROR_PATTERNS = [
         "cause":     "Test assertion failed — implementation doesn't match expected behaviour",
         "approach":  "Read the test carefully. Implement exactly what the test expects, "
                      "not what you think it should do."
+        # Never used for an `Expect: red` task: see build_diagnostic_retry().
     },
     {
         "pattern":   r"SyntaxError|unexpected token|ParseError",
@@ -223,8 +284,11 @@ COMMON_ERROR_PATTERNS = [
     },
 ]
 
-def build_diagnostic_retry(task, failure_report, original_prompt):
+def build_diagnostic_retry(task, failure_report, original_prompt, attempt, budget=2):
+    # attempt / budget: from the line `vibe_state.py attempt [TASK-ID]` printed.
     error = failure_report.get("error", "") or failure_report.get("raw", "")
+    if not error and failure_report.get("state") == "~":
+        error = format_partial_warning(failure_report)   # PARTIAL: the unmet criteria
 
     # Find matching error pattern
     cause = "Unknown failure — review the error output carefully"
@@ -236,7 +300,16 @@ def build_diagnostic_retry(task, failure_report, original_prompt):
             approach = pattern_def["approach"]
             break
 
-    retry_prompt = f"""RETRY — {task['id']} (attempt 2 of 2)
+    if task.get("expect_red"):
+        # The regression test must stay red: this task never writes the fix.
+        cause = cause if "assertion" not in cause.lower() else \
+            "The regression test failed for the wrong reason, or a test outside expected_failing failed"
+        approach = ("This task writes a test that must FAIL on the unfixed code. Do not touch "
+                    "non-test files and do not write the fix. Make sure the test fails for the "
+                    "bug's reason, every other test passes, and the red test is listed in "
+                    "tests.expected_failing.")
+
+    retry_prompt = f"""RETRY — {task['id']} (attempt {attempt} of {budget})
 
 Your previous attempt failed:
   Error: {error[:500] if error else 'No error captured — check output'}

@@ -10,6 +10,12 @@ Checks, per vibe-*/ skill:
   3. Stale model IDs — claude-*-4-6 / sonnet-4-6 etc. outside an explicit
      "older/legacy/pinned" line.
   4. Python under scripts/ must byte-compile.
+  6. Settings read by grepping CLAUDE.md (`grep "VIBE_MODE" CLAUDE.md`) — must use
+     vibe_state.py mode, which honours env overrides.
+  7. SKILL.md description longer than 1024 characters (warning).
+Goldfish (vibe-goldfish):
+  8. every reviewer agent is read-only (Read/Grep/Glob) with omitClaudeMd: true, and its
+     name matches its file; every reviewer named in PRESETS.md has an agent file.
 Repo-level:
   5. README skill count matches the number of vibe-*/ directories.
 
@@ -63,12 +69,66 @@ for sd in skill_dirs:
             if STALE.search(line) and not STALE_OK.search(line):
                 add("WARN", f"{rel}:{i}", f"possible stale model id: {line.strip()[:80]}")
 
+    # 6. CLAUDE.md mode grep
+    for md in sd.rglob("*.md"):
+        for i, line in enumerate(md.read_text(errors="ignore").splitlines(), 1):
+            if re.search(r"grep\s+[\"']?VIBE_MODE", line) and "CLAUDE.md" in line:
+                add("ERROR", f"{md.relative_to(ROOT)}:{i}", "reads VIBE_MODE by grepping CLAUDE.md — use vibe_state.py mode")
+
+    # 7. description length (folded YAML: the indented lines after `description:`)
+    sk = sd / "SKILL.md"
+    if sk.exists():
+        fm = re.match(r"---\n(.*?)\n---", sk.read_text(), re.S)
+        out, on = [], False
+        for l in (fm.group(1).splitlines() if fm else []):
+            if l.startswith("description:"):
+                on, rest = True, l.split(":", 1)[1].strip()
+                if rest not in (">", ">-", "|", "|-", ""):
+                    out.append(rest)
+            elif on and l[:1] in (" ", "\t"):
+                out.append(l.strip())
+            elif on:
+                break
+        desc = " ".join(out)
+        if len(desc) > 1024:
+            add("WARN", sk.relative_to(ROOT), f"description is {len(desc)} chars (limit 1024)")
+
     # 4. scripts compile
     for py in sd.rglob("*.py"):
         try:
             py_compile.compile(str(py), doraise=True)
         except py_compile.PyCompileError as e:
             add("ERROR", py.relative_to(ROOT), f"does not compile: {e.msg.splitlines()[-1][:80]}")
+
+# 8. goldfish reviewer agents
+gf = ROOT / "vibe-goldfish"
+if gf.exists():
+    agents = {f.stem: f for f in (gf / "agents").glob("vibe-gf-*.md")}
+    for name, f in agents.items():
+        fm = re.match(r"---\n(.*?)\n---", f.read_text(), re.S)
+        rel = f.relative_to(ROOT)
+        if not fm:
+            add("ERROR", rel, "agent has no frontmatter"); continue
+        head = fm.group(1)
+        if not re.search(r"^name:\s*" + re.escape(name) + r"\s*$", head, re.M):
+            add("ERROR", rel, "agent name does not match its file name")
+        if not re.search(r"^omitClaudeMd:\s*true\s*$", head, re.M):
+            add("ERROR", rel, "reviewer must set omitClaudeMd: true (zero context)")
+        t = re.search(r"^tools:\s*\[?(.*?)\]?\s*$", head, re.M)
+        tools = {x.strip() for x in (t.group(1).split(",") if t else []) if x.strip()}
+        if not tools or tools - {"Read", "Grep", "Glob"}:
+            add("ERROR", rel, f"reviewer tools must be only Read, Grep, Glob (got {sorted(tools) or 'none'})")
+    presets = gf / "references" / "PRESETS.md"
+    if presets.exists():
+        for row in presets.read_text().splitlines():
+            if not row.startswith("| `"):
+                continue
+            cells = [c.strip() for c in row.split("|")]
+            if len(cells) > 4:
+                for r in re.split(r"\s*·\s*", cells[4]):
+                    r = re.sub(r"[¹²³]", "", r).strip()
+                    if r and f"vibe-gf-{r}" not in agents:
+                        add("ERROR", "vibe-goldfish/references/PRESETS.md", f"reviewer '{r}' has no agent file vibe-gf-{r}.md")
 
 # also lint repo-level scripts/
 for py in (ROOT / "scripts").glob("*.py"):

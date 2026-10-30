@@ -22,11 +22,18 @@ CODEBASE.md verified or generated first — future sessions never re-read from s
 
 **Always run in Plan Mode (Shift+Tab). Exit before executing tasks.**
 
-> **Autonomous / headless mode.** At startup resolve the settings with
-> `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode`. If `vibe_mode` is
+> **Autonomous / headless mode.** At startup resolve the settings once:
+> ```bash
+> VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+> python3 "$VS" mode        # JSON: vibe_mode, approvals, phases, source
+> ```
+> When the caller says this skill was entered from `vibe-mode: run`, use
+> `python3 "$VS" mode --run` instead (it forces `vibe_mode: autonomous`). Never grep
+> CLAUDE.md for the mode: every later step that branches on the mode reuses this
+> `vibe_mode` value. If `vibe_mode` is
 > `autonomous`, every "wait", "ask", "confirm" and approval step in this skill follows
-> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept your
-> own draft after one self-check, log each choice to `vibe/DECISIONS.md`, never ask the
+> vibe-mode's `references/HEADLESS.md` §2 instead: take the recommended option, accept a draft
+> only as §2.2 allows (after its independent goldfish review where one runs), log each choice to `vibe/DECISIONS.md`, never ask the
 > user, and stop — writing `vibe/.run_state.json` — only when a person is genuinely required.
 
 ---
@@ -208,8 +215,35 @@ Offer to establish it before building:
 > "No design language exists yet. Run `design:` first (optionally `design-md:` to
 >  lock brand tokens) so this and future screens are consistent? Recommended.
 >  Reply 'skip design' to build this feature's UI ad hoc."
-Invoke `design:` on yes; log the skip in DECISIONS.md if declined. Then continue
-to Step 5. If a design system already exists, go straight to Step 5.
+In autonomous mode take the recommended option (run the design pass). On yes, run the
+design gate flow (`VS` as in the startup header):
+1. `design:` up to its Step 3.5 checkpoint (contract, tokens, preview; no production UI
+   files before sign-off).
+2. `design: critique` → writes `vibe/design/critique.md`.
+3. While its `## MUST-FIX (N)` count is above 0, run `design: fix must` (it re-critiques
+   and rewrites the counts). At most **2** passes.
+4. MUST-FIX still above 0 after 2 passes → do not approve.
+   - Autonomous: STOP with
+     `python3 "$VS" run-state set --status needs_human --reason design_must_fix --next "resolve the open MUST-FIX items in vibe/design/critique.md, then run vibe-mode: run"`
+     and end the session.
+   - Manual: show the open MUST-FIX items. The user decides: more fixes, or approve
+     anyway, recorded as `python3 "$VS" gate set design --status approved --by human --accept-open "<their reason>" --report vibe/design/critique.md`.
+5. MUST-FIX is 0 → record the gate:
+   - Manual: when the user approves in chat,
+     `python3 "$VS" gate set design --status approved --by human --report vibe/design/critique.md`.
+   - Autonomous, `approvals: auto`:
+     `python3 "$VS" gate set design --status approved --by agent-autonomous --report vibe/design/critique.md`, then continue.
+   - Autonomous, `approvals: human`:
+     `python3 "$VS" gate set design --status pending --report vibe/design/critique.md`, then STOP with
+     `python3 "$VS" run-state set --status needs_human --reason design_approval --next "approve the design, then run vibe-mode: run"`
+     and end the session.
+
+If declined: log the skip in DECISIONS.md and record `python3 "$VS" gate set design --status skipped`.
+Then continue to Step 5.
+
+If a design system already exists: run `python3 "$VS" gate check design`. Exit 0 → go
+straight to Step 5. Otherwise the gate was never recorded: run steps 2 to 5 above
+(critique first, never approve without one), then go to Step 5.
 
 ---
 
@@ -301,7 +335,7 @@ Never: change behaviour of existing features · remove/rename DB fields ·
 3. Stage and commit code changes:
    ```
    git add -A
-   git commit -m "feat([feature-slug]): [TASK-ID] — [one line plain English]"
+   git commit -m "feat([feature-slug]): [PREFIX]-[NNN] — [one line plain English]"
    ```
 4. If this task made a MEANINGFUL implementation decision (hard to reverse · picked among
    real alternatives — library/pattern/data-model/API shape · would surprise a future
@@ -312,7 +346,7 @@ Never: change behaviour of existing features · remove/rename DB fields ·
 5. Stage and commit doc updates separately:
    ```
    git add vibe/features/[date-slug]/FEATURE_TASKS.md vibe/TASKS.md vibe/DECISIONS.md vibe/IMPLEMENTATION_LOG.md vibe/CODEBASE.md
-   git commit -m "docs(FEATURE_TASKS+TASKS): mark [TASK-ID] done — [feature]"
+   git commit -m "docs(FEATURE_TASKS+TASKS): mark [PREFIX]-[NNN] done — [feature]"
    ```
 6. Re-read TASKS.md silently → state next task in plain English → confirm.
 
@@ -342,15 +376,23 @@ Add effort estimate at the top:
 > **Estimated effort:** [N tasks — S: X (<2hrs), M: Y (2-4hrs), L: Z (4+hrs) — approx. [N] hours total]
 ```
 
+**Task IDs.** Pick a task-ID prefix for this feature: a short uppercase tag (3-5
+letters) derived from the feature slug, e.g. `csv-export` → `CSVX`, `reading-sessions`
+→ `RDSN`. Check `vibe/TASKS.md` (and any other `vibe/features/*/FEATURE_TASKS.md`): no
+other feature may use it, and it must not clash with the reserved schemes `P<N>`, `RFX`
+or `BUG`. If it is taken, change a letter. Number the tasks `<PREFIX>-001`,
+`<PREFIX>-002`, and so on. Dependencies use the same full IDs. Unique IDs let
+vibe-parallel pool several features' task files without one task overwriting another.
+
 Every task uses this structure:
 
 ```
 ---
-### [TASK-ID] · [Task title]
+### [PREFIX]-[NNN] · [Task title]
 - **Status**: `[ ]`
 - **Size**: [S / M / L]
 - **Spec ref**: FEATURE_SPEC.md#[section]
-- **Dependencies**: [task IDs or "None"]
+- **Dependencies**: [full task IDs, e.g. CSVX-001, or "None"]
 - **Touches**: [exact file paths from CODEBASE.md section 9]
 
 **What to do**: [Specific instructions — precise enough for fresh context to execute]
@@ -402,8 +444,8 @@ Replace flat slug line `⬜ [Feature Name] — [description]` with:
 ```
 🔄 [Feature Name] — [what this lets users do] (0/N)
    Estimated: approx. [N] hours (S: X, M: Y, L: Z)
-   [ ] [TASK-ID] · [task name] — [one plain English line]
-   [ ] [TASK-ID] · [task name] — [one plain English line]
+   [ ] [PREFIX]-[NNN] · [task name] — [one plain English line]
+   [ ] [PREFIX]-[NNN] · [task name] — [one plain English line]
    ...
    → Full specs: vibe/features/[date-slug]/FEATURE_TASKS.md (agent use)
 ```
@@ -411,12 +453,12 @@ Replace flat slug line `⬜ [Feature Name] — [description]` with:
 **2. Update "What just happened" and "What's next" after each task:**
 ```
 ## What just happened
-✅ [TASK-ID] · [Task name in plain English] — complete
+✅ [PREFIX]-[NNN] · [Task name in plain English] — complete
    Est. cost: ~$[X.XX] · Session running total: ~$[X.XX]
-   Committed: feat([feature-slug]): [TASK-ID] — [description]
+   Committed: feat([feature-slug]): [PREFIX]-[NNN] — [description]
 
 ## What's next
-⬜ [TASK-ID] · [Plain English next task]
+⬜ [PREFIX]-[NNN] · [Plain English next task]
    [One sentence: what the user will see when done]
 Say "next" to begin.
 ```
@@ -444,7 +486,7 @@ Feature complete: collapse to `✅ [Feature Name] — [summary] (N/N ✅)`
 ## — Feature Start: [Feature Name] — [date]
 > Folder: vibe/features/[date-slug]/
 > [One line description]
-> Tasks: [list all IDs] | Estimated: [N hours]
+> Tasks: [list all IDs, e.g. CSVX-001 to CSVX-006] | Estimated: [N hours]
 > Drift logged below.
 ---
 ```
@@ -472,13 +514,24 @@ vs what's been built, across all phases.
 ## Step 11 — Spec review gate
 
 Announce to the user:
-> "FEATURE_SPEC.md written. Running spec-review before feature build..."
+> "Feature planned. Running an independent review before the feature build..."
 
 Invoke `vibe-spec-review` with:
 - Trigger source: `add-feature`
-- Scope: FEATURE_SPEC.md + vibe/SPEC.md (contradiction check)
+- Preset: `feature`
+- Feature folder: `vibe/features/[date-slug]/` (FEATURE_SPEC.md, FEATURE_PLAN.md and
+  FEATURE_TASKS.md are reviewed together, checked against vibe/SPEC.md)
 
-After spec-review completes:
+**If spec-review stopped the run** (`python3 "$VS" run-state show` says needs_human from
+spec review), **stop here too**: end the session, don't continue, don't report the step as
+done. Do not report the feature as planned (not even under plan-only), do not show "Feature
+kit ready", and do not build. `vibe-mode: run` resumes once a person has resolved it.
+
+Manual mode: a 🔴 SPEC NOT READY verdict means follow spec-review's Step 3 (more rounds,
+rework, or the person accepts the risks). Never fix findings outside vibe-goldfish. Go on
+only once the verdict is ✅, ⚠️ READY WITH ACCEPTED RISKS, or ⚠️ NOT REVIEWED.
+
+After spec-review completes without stopping:
 
 Tell the user:
 
@@ -489,24 +542,26 @@ Tell the user:
 >   FEATURE_SPEC.md · FEATURE_PLAN.md · FEATURE_TASKS.md
 > **Updated:** vibe/TASKS.md · CLAUDE.md · vibe/CODEBASE.md · vibe/DECISIONS.md
 > **Estimated:** [N tasks — approx. [N] hours]
-> **Spec review:** [✅ clean / ⚠️ [N] warnings acknowledged / 🔴 [N] P0s fixed]
+> **Spec review:** [✅ SPEC READY / ⚠️ SPEC READY WITH ACCEPTED RISKS ([N]) / ⚠️ SPEC NOT REVIEWED (no subagent tool, you chose to continue)]
 
 **Plan-only (`feature: [name] plan-only`).** The autonomous phase loop plans a batch of
 independent features first and then builds them together through vibe-parallel (Entry
 point E). When called with `plan-only`, stop here: report the feature as planned and
 return to the caller. Do not build, and skip Step 14 — the caller runs the phase gate.
 
-**Read execution mode:**
+**Execution mode:** reuse the `vibe_mode` resolved at startup (see the header). If you
+need it again, run the same command; never grep CLAUDE.md:
 ```bash
-grep "VIBE_MODE" CLAUDE.md 2>/dev/null | cut -d= -f2 | tr -d ' '
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" mode        # add --run when entered from vibe-mode: run
 ```
 
-If `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
+If `vibe_mode` is `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
 (resolve the vibe-mode install dir — commonly `~/.claude/skills/vibe-mode/`, or
 `~/.claude/plugins/marketplaces/*/skills/vibe-mode/` under a plugin install)
 and follow the autonomous execution protocol. Begin immediately.
 
-If `manual` or not set → tell the user:
+If `vibe_mode` is `manual` → tell the user:
 > Tell your coding agent:
 > ```
 > Read CLAUDE.md, vibe/CODEBASE.md, vibe/ARCHITECTURE.md,
@@ -538,8 +593,8 @@ inline `npm test` in Step 7 only *runs* the existing suite — this step
 files plus their dependents / contract consumers), which is what vibe-test
 advertises as its auto-handoff from vibe-add-feature.
 
-- In `VIBE_MODE=autonomous`: run it automatically after the graph update.
-- In `VIBE_MODE=manual`: offer it —
+- `vibe_mode` `autonomous` (from startup): run it automatically after the graph update.
+- `vibe_mode` `manual`: offer it —
   > "Feature built. Generate blast-radius tests for the [N] files it touched? (y/n)"
 
 vibe-test reads the `Touches` sections of this feature's `FEATURE_TASKS.md`
@@ -548,6 +603,17 @@ vibe-test reads the `Touches` sections of this feature's `FEATURE_TASKS.md`
 ---
 
 ## Step 14 — Phase gate check
+
+**Built after the final review passed? Reopen it.** A passed review covers the code as it
+was reviewed, and this feature changed it. After the feature's tasks are committed:
+```bash
+python3 "$VS" gate show     # final.review passed?
+```
+If `final.review` is `passed`, run
+`python3 "$VS" gate reopen final --reason "vibe-add-feature built [feature]: [files]" --by vibe-add-feature`
+and tell the user: "This feature changed source after the final review passed. review:
+must run again (`review: final`); deploy stays blocked until it passes." Otherwise skip
+this paragraph.
 
 If this feature was the **last task of a phase**, the phase review gate runs now —
 run `review: phase N` (autonomous: automatically; manual: announce and run). Do not

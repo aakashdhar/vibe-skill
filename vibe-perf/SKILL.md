@@ -8,12 +8,13 @@ description: >
   "optimize performance", "Lighthouse score", "bundle size",
   "slow queries", "LLM latency", "token usage", "memory leak",
   "CPU usage", "cold start", "perf regression".
-  Runs automatically after vibe-review flags performance as P1/P2,
-  and as a recommended pre-deploy check — any perf **P0** it writes to
-  vibe/reviews/backlog.md is then enforced by vibe-deploy's Step 0.5 gate
-  (which blocks on open P0s), so a perf-critical finding does block deploy.
+  Runs after vibe-review flags performance as P1/P2, and before deploy when
+  vibe-deploy Step 0.5 runs it (perf baseline exists, or the user asks).
+  Open P0s go to backlog.md, each result to vibe/perf/baseline.json; deploy
+  STOPs while findings.p0 > 0.
   Always use when performance is in question — even without the exact prefix.
   Shows fix plan by category, waits for human approval, then writes all fixes.
+  Fixes after a passed review gate reopen it, so review: runs again.
   Tracks scores over time and compares against previous perf: runs.
 ---
 
@@ -22,6 +23,8 @@ description: >
 Full-stack performance audit grounded in actual measurements.
 Measures every layer. Scores it. Compares to last run. Flags regressions.
 Shows fix plan by category. Writes all approved fixes automatically.
+Fixes change source code, so a review gate that had passed is reopened (Step 6) and
+`review:` must run again before the next phase or deploy.
 
 **Runs in agent mode (Claude Code / Cursor). Requires filesystem access.**
 
@@ -55,9 +58,12 @@ Read the review report. Scope to flagged files and layers only.
 Go to **Step 0**.
 
 ### Entry point C — Pre-deploy gate
-Triggered automatically before `vibe-deploy` runs.
+Run by `vibe-deploy` Step 0.5 when the project already has a perf baseline
+(`vibe/perf/baseline.json`) or the user asked for a perf check. Otherwise deploy does
+not run it and says perf was not run.
 
-Full audit — all layers. If any P0 perf finding exists, deploy is blocked.
+Full audit — all layers. The result goes to `vibe/perf/baseline.json` (Step 7) and
+deploy reads it: if `findings.p0 > 0`, deploy is blocked.
 Go to **Step 0**.
 
 ---
@@ -391,9 +397,29 @@ For each fix:
 - Change public API interfaces without logging in DECISIONS.md
 - Apply Category B fix without explicit approval
 
+**After the fixes: reopen a passed review gate.** A passed review covers the code as it
+was reviewed, and these fixes changed it. If you wrote any fix, reopen the gate the
+change falls under: the final gate if the final review already passed, else the current
+phase (Entry B: the phase whose review flagged the findings).
+```bash
+VS="$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py"
+python3 "$VS" gate show     # final.review passed? then the gate is final
+python3 "$VS" gate reopen <N|final> \
+  --reason "vibe-perf fixes changed source: [files]" --by vibe-perf
+```
+(`gate reopen` leaves a gate that is not `passed` as it is.) Then tell the user:
+"Perf fixes changed source after the [phase N | final] review passed. Run
+`review: [phase N | final]` again; the next phase and deploy stay blocked until it
+passes." If no fix was written, skip this.
+
 ---
 
 ## Step 7 — Update baseline and history
+
+Write this on every run, whatever the entry point: it is the perf result vibe-deploy
+reads. `findings` counts what is still open at the end of this run (a finding fixed and
+verified in Step 6 is not counted), and deploy STOPs while `findings.p0 > 0`. Set
+`trigger` to `pre-deploy` for Entry C.
 
 ```bash
 # Save this run as new baseline
@@ -436,15 +462,19 @@ json.dump(history, open(path, 'w'), indent=2)
    Report: vibe/perf/report-[date].md
 ```
 
-**vibe/reviews/backlog.md** — add unfixed P1/P2 findings as perf backlog items.
+**vibe/reviews/backlog.md** — add every open P0 and every unfixed P1/P2 finding as
+perf backlog items (P0s under an `## Outstanding P0 Issues` heading, same line format).
 Resolve any previously logged perf items that were fixed in this run.
 
 **vibe/DECISIONS.md** — log any Category B fix that changed an API shape
 or DB schema as a `tech-choice` entry with before/after detail.
 
-**Pre-deploy gate result (Entry C):**
+**Pre-deploy gate result (Entry C):** the result deploy reads is `findings.p0` in
+`vibe/perf/baseline.json` (Step 7). Print one of:
 ```
-✅ PERF GATE PASSED — [N]/100 overall · 0 P0 findings · deploy unblocked
+✅ PERF GATE PASSED — [N]/100 overall · 0 P0 findings · no source changed · perf no longer blocks deploy
+✅ PERF GATE PASSED — [N]/100 overall · 0 P0 findings · fixes reopened the [final | phase N] review gate:
+   run `review: [final | phase N]`; deploy is unblocked only when it passes again
 🔴 PERF GATE BLOCKED — [N] P0 findings must be resolved before deploy
 ```
 
@@ -470,6 +500,10 @@ FINDINGS
 
 FIXES WRITTEN:  [N] (Category A)
 FIXES PENDING:  [N] (Category B — flagged in backlog)
+
+[If fixes were written and a review gate was reopened:]
+NEXT: run `review: [phase N | final]`. Perf fixes changed source after that gate
+      passed, so it is open again; the next phase and deploy wait until it passes.
 
 NEXT PERF RUN WILL COMPARE AGAINST THIS BASELINE.
 Full report: vibe/perf/report-[date].md

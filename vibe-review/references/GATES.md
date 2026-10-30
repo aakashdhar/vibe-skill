@@ -25,7 +25,9 @@ Final phase      →  review: final  →  0 P0 + 0 P1  →  deploy: unlocked
 - The **last task of a phase** triggers `review:` automatically in autonomous mode,
   and prompts for it in manual mode ("Phase N tasks complete — running the phase
   review gate now").
-- `vibe-deploy` Step 0.5 already enforces the final gate (STOP on open P0/P1).
+- `vibe-deploy` Step 0.5 already enforces the final gate (STOP on open P0/P1, with no
+  "deploy anyway" override). It also STOPs when the latest vibe-perf result in
+  `vibe/perf/baseline.json` has `findings.p0 > 0`.
 
 ## Layer 2 — A checkable state file: `vibe/.gates.json`
 
@@ -36,10 +38,12 @@ makes a gate *checkable* rather than remembered.
 {
   "phases": {
     "1": { "review": "passed", "p0": 0, "p1": 0, "date": "2026-09-10", "report": "vibe/reviews/phase-1-review.md" },
-    "2": { "review": "open",   "p0": 1, "p1": 2, "date": "2026-09-12", "report": "vibe/reviews/phase-2-review.md" }
+    "2": { "review": "open",   "p0": 1, "p1": 2, "date": "2026-09-12", "report": "vibe/reviews/phase-2-review.md" },
+    "3": { "review": "open",   "p0": 0, "p1": 0, "date": "2026-09-14", "report": "vibe/reviews/phase-3-review.md",
+           "reopened": { "by": "vibe-perf", "reason": "perf fixes changed source after the gate passed", "date": "2026-09-15" } }
   },
   "final":   { "review": "passed", "p0": 0, "p1": 0, "date": "...", "report": "vibe/reviews/phase-final-review.md" },
-  "spec":    { "status": "approved", "date": "...", "by": "human", "report": "vibe/spec-reviews/..." },
+  "spec":    { "status": "approved", "date": "...", "by": "human", "report": "vibe/goldfish/spec" },
   "design":  { "status": "pending",  "date": "...", "by": "human", "report": "vibe/design/critique.md" }
 }
 ```
@@ -49,9 +53,29 @@ makes a gate *checkable* rather than remembered.
 also flips the `## Spec gate` / `## Design gate` line in TASKS.md — see vibe-mode
 `references/HEADLESS.md` §3 for who approves (`APPROVALS=human|auto`).
 
+**The design gate bar is 0 MUST-FIX.** `gate set design --status approved` refuses while
+`vibe/design/critique.md` has `## MUST-FIX (N)` with N > 0. The flow is `design: critique`,
+then up to 2 `design: fix must` passes while MUST-FIX > 0, then `gate set design`. Still
+MUST-FIX > 0 after 2 passes: STOP needs_human (`reason: design_must_fix`). Only a person can
+approve with items open, with `--by human --accept-open "<why>"` (recorded as
+`accepted_open` on the entry). An agent never can.
+
 `review` status values: `open` (any P0 **or** P1 outstanding) | `passed` (0 P0 **and** 0 P1).
 A phase with no entry has not been reviewed yet. The bar is the same at every gate —
 phase and final. `p0`/`p1` are the counts from the most recent review of that phase.
+
+**Reopening a passed gate.** A passed review covers the code as it was reviewed. Any
+skill that changes source code after a review gate passed (vibe-perf fixes, vibe-deploy
+patching source, and so on) must reopen the gate the change falls under: the final gate
+if the final review already passed, else the current phase.
+```bash
+python3 "$HOME/.claude/skills/vibe-mode/scripts/vibe_state.py" gate reopen <N|final> \
+  --reason "<what changed>" --by <skill>
+```
+This sets `review` back to `open` and adds a `reopened` field (`by`, `reason`, `date`).
+The p0/p1 counts stay as the last review left them. An open gate blocks the next phase,
+deploy and the pre-push hook as usual, and only a fresh `review:` can pass it again (its
+new entry replaces the reopened one).
 
 **Advancement rule (enforced by the generated CLAUDE.md constitution, every session):**
 > Before starting the FIRST task of Phase N+1, read `vibe/.gates.json`. If
@@ -108,6 +132,10 @@ At the end of a review, vibe-review updates `vibe/.gates.json`:
   otherwise `open`.
 - Record `p0`, `p1`, `date`, `report` path — overwriting that phase's previous entry, so
   the counts always reflect the latest review.
+- When the gate passed, reset that gate's fix-cycle counter with
+  `vibe_state.py counters reset --phase <N|final>`, so a later reopen starts with a fresh
+  budget of 2 fix cycles. While the gate is open the spent cycles carry over (only a
+  person resets them otherwise).
 Merge into the existing file (never clobber other phases' entries, or the `spec` /
 `design` sign-offs).
 
