@@ -1,6 +1,6 @@
 # CLAUDE_MD.md Template
 
-Used by vibe-new-app Step 6 to generate the project-root `CLAUDE.md` for a
+Used by vibe-new-app Step 10F to generate the project-root `CLAUDE.md` for a
 greenfield project. Fill every `[placeholder]` from SPEC.md / PLAN.md /
 ARCHITECTURE.md. Unlike the retrofit CLAUDE.md (vibe-init), the greenfield
 CLAUDE.md **has phase gates** — the build runs Phase 1 → gate → Phase 2 → …
@@ -66,7 +66,7 @@ PHASES=[stop|continue — resolved value]
 5. The active FEATURE_TASKS.md / BUG_TASKS.md (if any)
 
 ## Code style and conventions
-[Naming, structure, and style rules from ARCHITECTURE.md or PLAN.md.]
+[Naming, structure, and style rules from vibe/ARCHITECTURE.md.]
 
 ## Architecture rules
 [The Always / Ask First / Never boundaries from ARCHITECTURE.md.]
@@ -88,16 +88,21 @@ PHASES=[stop|continue — resolved value]
 2. Run tests: `[test command]` — must pass before commit
 3. Run lint: `[lint command] --silent` — must pass before commit
 4. Commit code changes — stage the files THIS task touched, not `git add -A`
-   (blanket-staging risks committing .env, build artifacts, or stray files):
+   (blanket-staging risks committing .env, build artifacts, or stray files;
+   ensure .gitignore covers .env*, node_modules, build output before the first commit):
    git add [the specific paths this task created/modified]
    git commit -m "feat([scope]): [TASK-ID] — [one line plain English description]"
-   (Ensure .gitignore covers .env*, node_modules, build output before the first commit.)
-5. Commit doc updates separately:
-   git add vibe/TASKS.md vibe/DECISIONS.md vibe/CODEBASE.md
+5. If this task made a MEANINGFUL implementation decision (hard to reverse · picked
+   among real alternatives: a library/pattern/data-model/API shape · would surprise a
+   future reader · deviates from ARCHITECTURE.md), append one entry to
+   vibe/IMPLEMENTATION_LOG.md per the schema in that file's header (newest last; set
+   Touches: to the files/functions changed). Routine work needs no entry: don't add noise.
+6. Commit doc updates separately:
+   git add vibe/TASKS.md vibe/DECISIONS.md vibe/IMPLEMENTATION_LOG.md vibe/CODEBASE.md
    git commit -m "docs(TASKS): mark [TASK-ID] done — [plain English]"
-6. Update "What just happened" and "What's next" in vibe/TASKS.md
-7. Re-read vibe/TASKS.md silently
-8. State next task in plain English and confirm before starting
+7. Update "What just happened" and "What's next" in vibe/TASKS.md
+8. Re-read vibe/TASKS.md silently
+9. State next task in plain English and confirm before starting
 
 Rules:
 - NEVER skip the commit step — uncommitted work is invisible to vibe-graph and vibe-review
@@ -118,6 +123,7 @@ Confirm the actual request before opening any file.
 - [ ] Code committed (feat) and docs committed (docs) — separately
 - [ ] vibe/TASKS.md "What just happened" / "What's next" updated
 - [ ] vibe/DECISIONS.md updated if anything drifted from the plan
+- [ ] vibe/IMPLEMENTATION_LOG.md appended if a meaningful implementation decision was made
 - [ ] vibe/CODEBASE.md updated if files were added/removed
 
 ---

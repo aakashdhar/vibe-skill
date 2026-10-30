@@ -1,6 +1,6 @@
 # CODEBASE_MD.md Template
 
-Used by vibe-new-app Step 8. For a greenfield project, `vibe/CODEBASE.md`
+Used by vibe-new-app Step 10F. For a greenfield project, `vibe/CODEBASE.md`
 starts as a **placeholder** — the last task in Phase 1 populates it fully from
 the scaffolded project, and every task thereafter keeps it current.
 
@@ -10,7 +10,7 @@ it. Keep it factual — describe what is built, never what is planned.
 
 ---
 
-## Placeholder version (written at Step 8)
+## Placeholder version (written at Step 10F)
 
 ```markdown
 # CODEBASE — [Project Name]

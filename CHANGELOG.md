@@ -8,6 +8,112 @@ The current version is tracked in [`VERSION`](VERSION); each release is cut as a
 annotated git tag (`vX.Y.Z`), which GitHub surfaces as a Release. See
 [`VERSIONING.md`](VERSIONING.md) for the release process.
 
+## [2.8.0] — 2026-10-30
+
+Theme: **review before approval, approval before anything is derived.** v2.7.0 made
+every planning review independent, but most planning skills still asked a person to
+approve a draft before that review ran, and generated files from documents that hadn't
+been reviewed yet, so a review fix could not reach them. Every planning skill now
+follows one rule: write → independent goldfish review → fixes, and only then approval
+and derived files, both from the reviewed text. (vibe-new-app and vibe-add-feature ask
+for approval first and then derive; vibe-init and vibe-agent derive SPEC_INDEX/PLAN/TASKS
+and the diagrams just before approval, so the person sees them.)
+
+**Upgrading.** Reviews from v2.7.0 stay valid: rounds recorded before this release are
+compared with the old hash. A v2.7.0 `spec` review covered TASKS.md and CLAUDE.md, which
+the `spec` preset no longer reviews, so the first `spec-review:` after upgrading starts a
+fresh review cycle for it. PLAN.md feature entries gain a `**Status:**` line;
+`feature:` adds it to older entries when it starts them.
+
+### Changed
+- **vibe-new-app is reordered.** It drafts SPEC.md (with its UI Specification), the PLAN.md
+  feature map and vibe/ARCHITECTURE.md, then runs the spec review (Step 6), then the spec
+  gate on the reviewed plan (Step 10S), and only then writes SPEC_INDEX.md, CLAUDE.md,
+  TASKS.md, CODEBASE.md and its DECISIONS entries (Step 10F), then the graph (10G), the
+  design gate (10C) and the pre-push hook (10D). CLAUDE.md now reads an ARCHITECTURE.md that
+  exists. The labels 10S, 10C and 10D are kept because other skills cite them.
+- **vibe-add-feature reviews in two stages.** FEATURE_SPEC + FEATURE_PLAN are reviewed
+  (Trigger 4, preset `feature`) and approved before any task is written; FEATURE_TASKS is
+  then reviewed on its own for the zero-decision rule (Trigger 4T, preset `feature-tasks`).
+  The CLAUDE.md scope lines, the TASKS.md mirror, the DECISIONS task range and the PLAN.md
+  feature-map line are written only after both. A feature whose review stops writes
+  nothing derived. Graph update and vibe-test run before the phase gate, and a passed
+  phase gate is reopened as well as the final one.
+- **vibe-brainstorm** writes the brief, has it reviewed, then asks for approval of the
+  reviewed brief. Its pre-write check is now gap questions, not a self-graded verdict.
+  Gaps the person accepted with "let's build" are recorded as theirs, and the review's
+  findings on them are answered with that acceptance. Agentic detection and sizing re-run
+  when review fixes change the scope.
+- **vibe-agent** approves AGENT_ARCH.md after its review, generates the diagrams from the
+  reviewed document, and hands off to `architect:` instead of straight to code.
+- **vibe-architect** reads AGENT_ARCH.md, approves after its review, and no longer appends
+  its decisions to the already-reviewed BRIEF.md. Its template has Always / Ask First /
+  Never tiers and a literal "Never commit secrets" rule.
+- **vibe-init** reviews ARCHITECTURE, CODEBASE, SPEC and CLAUDE.md, with the person's
+  verification of the code-derived SPEC inside the review loop, then generates
+  SPEC_INDEX.md, a PLAN.md feature map of the existing features (new PLAN_RETROFIT.md),
+  TASKS.md with its spec gate, and the onboarding entry. Boundary tiers come only from
+  evidence in the code; an empty tier says so instead of inventing rules.
+- **vibe-change-spec** re-runs the review on every reviewed document it changes (Trigger 6),
+  updates documents upstream first, keeps the PLAN.md feature map and in-progress feature
+  documents in step, sets an approved spec gate back to pending, and can resume an
+  unfinished change (`change: resume D-[ID]`).
+- **vibe-design** stops at its Step 3.5 checkpoint at a design gate in manual mode too: the
+  critique and fix loop run before anyone approves, and production UI is built afterwards.
+- **Upstream checks.** architect, agent and new-app check that the brief, agent
+  architecture and architecture they build on have a converged review (`goldfish.py
+  status`), and offer to run it when they don't.
+- **No more "always Plan Mode" in skills that write files.** Each now lists exactly the
+  files it writes (brainstorm, agent, architect, new-app, init, add-feature, change-spec,
+  fix-bug, doctor).
+- **vibe-goldfish presets.** `spec` reviews SPEC, ARCHITECTURE and the PLAN.md feature map
+  (TASKS.md and CLAUDE.md are now derived after the review); `init` adds CODEBASE.md;
+  `feature` is split into `feature` and `feature-tasks`.
+- HEADLESS.md §5 resumes setups that stopped before TASKS.md exists (new-app, init), an
+  unfinished scope change, and setup steps that never ran (graph, pre-push hook).
+
+### Added
+- `goldfish.py resolve ... --as duplicate --of PRIMARY`: when several reviewers raise the
+  same problem, it is answered once (the proof run had 12 escalations for 6 decisions).
+- **Faster reviews.** The reviewer agents run on Sonnet (`model: sonnet`) instead of the
+  session's model: they only read and report, so each round is quicker. On a small
+  project (BRIEF.md sized S), one clean round with no P0/P1 converges instead of two;
+  `goldfish.py init --thorough` keeps two rounds.
+- `goldfish.py archive <target>`: a from-scratch rewrite starts a fresh review instead of
+  inheriting settled findings.
+- `vibe_state.py gate set spec --by human` records `reviewed: false` (with a note) when
+  the goldfish review isn't converged on the current text.
+
+### Fixed
+- **Recording a sign-off made the review look stale.** `gate set` rewrites the TASKS.md
+  gate line and vibe-mode rewrites CLAUDE.md, both hashed by the review. The hash now
+  ignores that bookkeeping, and the feature-map status flips, the CLAUDE.md Active
+  Feature section and CODEBASE.md "Verified during" lines (feature names still count).
+- The vibe-new-app per-task sequence and TASKS template now match their references
+  (including `## Spec gate`); the minimal ARCHITECTURE.md it generates has boundary tiers.
+- vibe-change-spec's backlog jump pointed at the wrong step and skipped DECISIONS.md.
+- vibe-brainstorm's step counts and agentic flag wording agree with what downstream reads.
+- vibe-init no longer claims PLAN.md is unnecessary; vibe-add-feature handles a project
+  without one instead of calling every feature unplanned.
+- goldfish self-test grows to 21 scenarios (small-project convergence, duplicates and their loopholes, per-file
+  bookkeeping with the real PLAN/CLAUDE formats, v2.7.0 ledgers, archive, the
+  `reviewed: false` sign-off).
+- **Proof-run findings.** A headless `new:` on a small brief skipped vibe-new-app and built
+  the code directly; the skill's description now says it runs however small the project
+  is. With the skill invoked, the order held (brief reviewed first, SPEC/PLAN/ARCHITECTURE
+  drafted, no derived file before the review), but the brief review ran 12 rounds:
+  reviewers judged a brief at spec level, and the agent raised its own round cap. Every
+  preset now passes an **altitude** line (what the document is for; a detail the next
+  document decides is at most P2), raising the round cap needs `--human`, and RESOLVE.md
+  says when a P2 fix is worth the round it costs.
+- Review findings fixed before release: hashing is per file and versioned; duplicate
+  chains and churn hidden in a duplicate are refused, and a re-raise carrying a
+  comprehension duplicate is never settled by an old contest; `new:` "start fresh" resets
+  the spec gate; vibe-init projects are always reviewed with the `init` preset and a new
+  feature in their PLAN.md is not "unplanned"; FEATURE_TASKS reviews aren't re-run once a
+  build has started; resume paths for an unfinished vibe-init re-run and for manual
+  scope changes.
+
 ## [2.7.0] — 2026-10-30
 
 Theme: **the author never grades its own work.** Until now every review in vibe ran in
@@ -471,6 +577,7 @@ Initial tagged release. All 26 vibe-\* skills covering the software development 
 (plan → design → build → ship → close), flattened to the repository root with a GitHub
 Pages landing page and `git clone` install instructions.
 
+[2.8.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/aakashdhar/vibe-skill/compare/v2.5.1...v2.5.2

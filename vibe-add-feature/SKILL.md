@@ -5,11 +5,13 @@ description: >
   Triggers on "feature:" prefix, "I want to add a feature", "add X to my project",
   "new feature", "build a feature for".
   Always use when adding functionality to an existing project — even without the exact prefix.
-  Reads PLAN.md feature map before drafting — checks build order, dependencies, shared data.
-  Stops and surfaces clearly if dependencies are not yet met. Marks unplanned features explicitly.
-  Updates PLAN.md feature map after planning so it stays the live source of truth.
+  Reads PLAN.md feature map before drafting (when the project has one): checks build order,
+  dependencies, shared data. Stops and surfaces clearly if dependencies are not yet met.
+  Marks unplanned features explicitly. Updates PLAN.md feature map after the reviews so it
+  stays the live source of truth.
   Creates vibe/features/[date-slug]/ with FEATURE_SPEC.md, FEATURE_PLAN.md, FEATURE_TASKS.md.
-  Checks for existing incomplete feature with same name before creating a duplicate.
+  Spec and plan are reviewed independently and approved before tasks are written; tasks
+  are reviewed before the build. Checks for an incomplete feature with the same name first.
   Reads SPEC.md before drafting to align with existing acceptance criteria.
   Updates TASKS.md (human progress view) and agent files.
 ---
@@ -20,7 +22,19 @@ Spec-driven feature planning for an existing project.
 Creates a dated feature folder and updates the human progress view.
 CODEBASE.md verified or generated first — future sessions never re-read from scratch.
 
-**Always run in Plan Mode (Shift+Tab). Exit before executing tasks.**
+**No application code while planning.** The only files this skill writes before the
+build are: `vibe/CODEBASE.md`; the feature folder (`FEATURE_SPEC.md`, `FEATURE_PLAN.md`,
+`FEATURE_TASKS.md`); the review records vibe-spec-review writes (`vibe/goldfish/`,
+`vibe/spec-reviews/`); `vibe/design/` (the design pass, only when the feature adds UI);
+`vibe/DECISIONS.md`; and, after the reviews, `CLAUDE.md`, `vibe/TASKS.md` and
+`vibe/PLAN.md`; plus `vibe/.gates.json` and `vibe/.run_state.json` through vibe_state.py.
+Code is written only when the tasks run.
+
+**Order.** Draft, independent review, approval, then the files copied from the drafts.
+The person approves FEATURE_SPEC.md and FEATURE_PLAN.md after their review (Step 8),
+never before. Nothing is copied out of the feature documents into CLAUDE.md, TASKS.md,
+DECISIONS.md or PLAN.md until FEATURE_TASKS.md has passed its own review (Step 11); the
+copies are written in Step 12, so a review fix never has to chase a copy.
 
 > **Autonomous / headless mode.** At startup resolve the settings once:
 > ```bash
@@ -67,7 +81,9 @@ vibe/
 ├── TASKS.md                            ← human progress view — updated here
 ├── CODEBASE.md                         ← generated/updated here
 ├── DECISIONS.md                        ← updated (spec/scope)
+├── PLAN.md                             ← feature map updated (when the project has one)
 ├── IMPLEMENTATION_LOG.md               ← appended (implementation decisions)
+├── goldfish/feature-[date-slug]/       ← review record (written by vibe-spec-review)
 └── features/
     └── [YYYY-MM-DD]-[feature-slug]/
         ├── FEATURE_SPEC.md
@@ -87,8 +103,57 @@ Examples: `2026-03-20-reading-sessions` · `2026-03-20-dark-mode` · `2026-03-20
 Scan `vibe/features/` for folders matching the requested feature.
 If an incomplete feature folder exists:
 > "Found an existing [feature] folder: vibe/features/[date-slug]/
-> Resume that feature or start fresh with a new folder?"
+> Resume that feature (recommended) or start fresh with a new folder?"
 Wait for answer before proceeding.
+
+Resuming picks up at the first step not done. Keep the drafts that exist. **Before the
+build has started** (no task in FEATURE_TASKS.md is `[x]`, `[~]` or `[!]`), check the
+reviews with `goldfish.py status feature-[date-slug]` (Step 7) and
+`goldfish.py status feature-[date-slug]-tasks` (Step 11): a review that has not
+converged is run again before anything after it. **Once the build has started**, the
+build itself rewrites FEATURE_TASKS.md (status, criteria, decisions), so don't re-check
+the reviews: go on with the next unfinished task, or with Steps 14-16 when every task is
+`[x]`.
+
+**Check the project's spec review** before this skill changes anything. The spec,
+architecture and feature map this feature builds on should have been reviewed as they
+are now:
+```bash
+python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py status spec --json
+```
+(`spec` is the target of both vibe-new-app's and vibe-init's review.) Read the result:
+- **Exit 0:** continue.
+- **Exit 2, exit 3 (needs a person), or "no goldfish review" (never reviewed):** the
+  review doesn't cover the documents as they are now. Feature bookkeeping (the PLAN.md
+  `**Status:**`/`**Spec:**` lines, the CLAUDE.md Active Feature section, CODEBASE.md
+  "Verified during" lines) never causes this, because the review ignores it. So exit 2
+  means a reviewed document really changed: an unplanned addition to the feature map, an
+  edit to SPEC or ARCHITECTURE, or a review that never finished.
+  - Manual: say so in one line and offer to run `spec-review:` on the project spec now
+    (recommended) or continue without it.
+  - Autonomous: run `vibe-spec-review` on it first (Trigger 5, preset `init` when
+    vibe/CODEBASE.md carries the vibe-init header (`📥 Generated by vibe-init`), otherwise `spec`). If it stops the run, stop here too.
+No `vibe/SPEC.md` at all: there is nothing to check; continue.
+
+**If that review changed an approved spec, the spec gate goes back to pending.** Before
+running it, note `python3 "$VS" gate check spec` (exit 0 = cleared) and
+`shasum vibe/SPEC.md vibe/ARCHITECTURE.md vibe/PLAN.md` (the ones that exist). After it,
+compare the hashes. If the gate was `approved` and any of those files changed (a goldfish
+fix), the approval no longer describes the spec, so before this skill writes anything:
+`python3 "$VS" gate set spec --status pending --report vibe/goldfish/spec`. Then:
+- Manual: show what the review changed, one line per fix (from
+  `vibe/goldfish/spec/resolution.md`), and ask the person to approve the spec as it is
+  now. On yes: `python3 "$VS" gate set spec --status approved --by human --report vibe/goldfish/spec`
+  and a DECISIONS.md entry with `**Approved by**: human`, after the review. Don't draft
+  the feature until it is approved.
+- Autonomous, `approvals: auto`:
+  `python3 "$VS" gate set spec --status approved --by agent-autonomous --report vibe/goldfish/spec`.
+  If the helper refuses, STOP with
+  `python3 "$VS" run-state set --status needs_human --reason "spec gate: [the helper's error]" --next "see vibe/goldfish/spec"`
+  and end the session.
+- Autonomous, `approvals: human`: leave it pending and STOP with
+  `python3 "$VS" run-state set --status needs_human --reason spec_approval --next "approve the changed spec (gate set spec --status approved --by human --report vibe/goldfish/spec), then run vibe-mode: run"`
+  and end the session.
 
 **Read vibe/CODEBASE.md (or generate it):**
 
@@ -121,8 +186,22 @@ Confirm:
 
 Before drafting FEATURE_SPEC.md, read:
 - `vibe/SPEC.md` — existing features, acceptance criteria, out-of-scope items, data model
-- `vibe/SPEC_INDEX.md` — for quick orientation to feature relationships
+- `vibe/SPEC_INDEX.md` (if it exists) — for quick orientation to feature relationships
 - `vibe/PLAN.md` Section 6 (Feature Map) — sequencing, dependencies, shared data
+
+**If `vibe/PLAN.md` carries the vibe-init header** (`📥 Generated by vibe-init`), its
+feature map lists only what existed at onboarding, so a new feature missing from it is
+the normal case. Don't flag it as unplanned and don't send the person to `change:`. Take
+dependencies from its Existing features entries, vibe/SPEC.md and vibe/CODEBASE.md, and
+let Step 12D add the feature under `### Planned features` (not as an UNPLANNED ADDITION).
+
+**If `vibe/PLAN.md` does not exist** (a project onboarded by vibe-init before v2.8.0 has
+no feature map), say: "This project has no feature map (vibe/PLAN.md), so there is no planned build
+order to check." Skip the feature map check below. Take dependencies and shared data
+from vibe/SPEC.md and vibe/CODEBASE.md instead, and surface an unmet dependency the same
+way. Don't call the feature unplanned and don't send the person to `change:`: there was
+never a plan for it to be missing from. Continue to Step 3. (Step 12D skips the PLAN.md
+update.)
 
 **Feature map check — run before drafting:**
 
@@ -164,7 +243,7 @@ checks = {
 > "[Feature N] can run in parallel with this one — no shared writes.
 > If you want to build both simultaneously, say `parallel:` after both feature kits are ready."
 
-**If this feature is NOT in PLAN.md — flag it:**
+**If PLAN.md exists but this feature is NOT in it — flag it:**
 > "This feature wasn't in the original plan. This is fine — run `change:` first
 > to assess impact on the data model and phase sequencing before I draft the spec.
 > Or I can proceed and we treat it as an unplanned addition."
@@ -178,7 +257,7 @@ This ensures every feature spec:
 
 ---
 
-## Step 3 — Generate FEATURE_SPEC.md
+## Step 3 — Draft FEATURE_SPEC.md
 
 Draft FEATURE_SPEC.md covering:
 1. **Feature overview** — What it does and why (2-3 sentences)
@@ -193,8 +272,11 @@ Draft FEATURE_SPEC.md covering:
 9. **Non-functional requirements** — Performance, security, mobile
 10. **Conformance checklist** — What must be true for this feature to be shippable
 
-Present. Ask: "Does this spec look right? Anything to change?"
-Wait for approval. Save as `vibe/features/[date-slug]/FEATURE_SPEC.md`.
+Steps 4 and 5 add its UI part. Save as `vibe/features/[date-slug]/FEATURE_SPEC.md`.
+
+Ask the person anything you need to know while drafting. Don't ask them to approve the
+spec yet, and don't grade it against the rubric yourself: the independent review does
+that (Step 7), and the person approves the reviewed text (Step 8).
 
 ---
 
@@ -208,7 +290,127 @@ Ask:
 
 **(c)** → skip to Step 6.
 **(b)** → add a brief UI note to FEATURE_SPEC.md, skip to Step 6.
-**(a)** → **design-gate check first:** if the project has **no** design system yet
+**(a)** → Step 5. The design pass (design system, contract, critique and the design gate)
+runs later, in Step 9, from the reviewed and approved spec.
+
+---
+
+## Step 5 — UI Design (only for significant UI work)
+
+**Requires: frontend-design skill.** Reference existing design system from
+(in precedence order — `DESIGN.md` wins where they conflict):
+- `DESIGN.md` (project root) if it exists — the brand token contract from
+  `design-md:`. **Authoritative** for colours/type/spacing.
+- `vibe/design/CONTRACT.md` if it exists — the per-project design contract from
+  `design:`. New UI must obey it.
+- `vibe/DESIGN_SYSTEM.md` if it exists (existing tokens — must be consistent).
+- CODEBASE.md sections 2 and 6 (stack, patterns).
+
+If none of these exist yet, draft from the existing screens. Step 9 offers to establish a
+design language from the reviewed spec.
+
+Ask all at once:
+1. New screens or views being added? Existing screens being modified?
+2. Main user interaction?
+3. Layout preference? (modal, drawer, full page, inline)
+4. Device? (mobile, desktop, both)
+5. Anything complex? (multi-step, real-time, drag-drop)
+6. UI references for inspiration?
+7. Existing patterns to match? (from CODEBASE.md section 6 and DESIGN_SYSTEM.md)
+
+Generate wireframe — must feel like it belongs in the existing product.
+Present it and take the person's changes while drafting. This is not the sign-off: that
+is Step 8, after the review. Append the UI Specification to FEATURE_SPEC.md, so the
+review in Step 7 covers its screens' behaviour and states (flows, empty, loading and error
+states, data each screen needs). That review does not judge the look; see Step 9.
+
+---
+
+## Step 6 — Draft FEATURE_PLAN.md
+
+Read FEATURE_SPEC.md, CODEBASE.md, ARCHITECTURE.md, vibe/SPEC.md (integration sections).
+Read integration point files directly before drafting.
+
+Draft FEATURE_PLAN.md:
+1. **Impact map** — Files to modify vs new files (exact paths from CODEBASE.md section 9)
+2. **Files explicitly out of scope** — Must not be touched
+3. **DB migration plan** — Exact schema changes
+4. **Backend changes** — Routes, controllers, services with file paths
+5. **Frontend changes** — Components, pages, hooks with file paths
+6. **Conventions to follow** — Paste relevant patterns from CODEBASE.md section 6
+7. **Task breakdown**: Data layer → Backend → Frontend (skip if no UI) → Tests
+8. **Rollback plan** — How to undo this feature
+9. **Testing strategy** — New tests, existing tests needing updates
+10. **CODEBASE.md sections to update** — Which sections change as tasks complete
+
+Save as `vibe/features/[date-slug]/FEATURE_PLAN.md`. Questions while drafting are fine;
+approval comes after the review (Step 8).
+
+---
+
+## Step 7 — Design review (spec-review Trigger 4)
+
+Announce to the user:
+> "Feature designed. Running an independent review before the tasks are written..."
+
+Invoke `vibe-spec-review` with:
+- Trigger source: `add-feature`, Trigger 4
+- Preset: `feature` (target `feature-[date-slug]`)
+- Feature folder: `vibe/features/[date-slug]/` (FEATURE_SPEC.md, with its UI
+  Specification, and FEATURE_PLAN.md are reviewed together, checked against vibe/SPEC.md)
+- If this skill was entered from `vibe-mode: run`, say so.
+
+**If spec-review stopped the run** (`python3 "$VS" run-state show` says needs_human from
+spec review), **stop here too**: end the session, don't continue, don't report the step as
+done. Nothing derived has been written, and nothing is written now: no CLAUDE.md section,
+no TASKS.md mirror, no DECISIONS.md Feature Start entry, no PLAN.md change. Do not report
+the feature as planned (not even under plan-only), do not show "Feature kit ready", and do
+not build. `vibe-mode: run` resumes once a person has resolved it.
+
+Manual mode: a 🔴 SPEC NOT READY verdict means follow spec-review's Step 3 (more rounds,
+rework, or "continue anyway", which records the person accepting the documents as they
+are in DECISIONS.md and the report). Never fix findings outside vibe-goldfish. Go on only
+once the verdict is ✅, ⚠️ READY WITH ACCEPTED RISKS, or ⚠️ NOT REVIEWED, or the person
+chose "continue anyway". That choice is the person's, in manual mode only; an agent never
+makes it.
+
+---
+
+## Step 8 — Approve the reviewed design
+
+**Manual mode.** Show what the review changed, one line per fix (from
+`vibe/goldfish/feature-[date-slug]/resolution.md`), and any accepted risks. Then ask:
+> "Review: [verdict]. It changed: [one line per fix, or 'nothing'].
+>  Approve FEATURE_SPEC.md and FEATURE_PLAN.md as they are now? Anything to change?"
+
+Wait for approval. If the person asks for changes, make them. An edit re-opens the review
+by itself (the documents' hash changes), so run Step 7 again and ask again. Never go on
+while `goldfish.py status feature-[date-slug]` is not 0, unless the verdict was ⚠️ NOT
+REVIEWED (the person chose to continue without a review) or the person chose "continue
+anyway" in Step 7 (recorded in DECISIONS.md). In both cases the approval below names it.
+
+Record the approval in `vibe/DECISIONS.md` (append-only, continue the `D-NNN` numbering):
+```
+### D-[ID]: Feature design approved: [Feature Name]
+- **Documents**: vibe/features/[date-slug]/FEATURE_SPEC.md · FEATURE_PLAN.md
+- **Review**: [verdict] · vibe/goldfish/feature-[date-slug]/resolution.md
+- **Approved by**: human, [date], after the review
+```
+
+**Autonomous mode.** The converged review is the acceptance (HEADLESS §2.2). Log it as an
+`autonomous-approval` entry in DECISIONS.md (HEADLESS §2.4) and continue.
+
+---
+
+## Step 9 — Design pass (only for significant UI work, path (a))
+
+Paths (b) and (c): skip to Step 10.
+
+The design pass works from the reviewed and approved FEATURE_SPEC.md (its UI
+Specification). It does not edit FEATURE_SPEC.md or FEATURE_PLAN.md. If it shows the UI
+Specification must change, edit it, then run Steps 7 and 8 again before going on.
+
+**Design-gate check:** if the project has **no** design system yet
 (`DESIGN.md` / `vibe/DESIGN_SYSTEM.md` / `vibe/design/CONTRACT.md` all absent),
 this feature would invent a look from scratch — the "skipped design" failure.
 Offer to establish it before building:
@@ -239,61 +441,125 @@ design gate flow (`VS` as in the startup header):
      and end the session.
 
 If declined: log the skip in DECISIONS.md and record `python3 "$VS" gate set design --status skipped`.
-Then continue to Step 5.
+Then continue to Step 10.
 
 If a design system already exists: run `python3 "$VS" gate check design`. Exit 0 → go
-straight to Step 5. Otherwise the gate was never recorded: run steps 2 to 5 above
-(critique first, never approve without one), then go to Step 5.
+straight to Step 10. Otherwise the gate was never recorded: run steps 2 to 5 above
+(critique first, never approve without one), then go to Step 10.
+
+**What this does not cover.** `design: critique` judges the project's design system and
+`vibe/design/preview.html`, not one feature's wireframe. So when the project already has
+an approved design system, this feature's new screens get no visual critique here: the
+Step 7 review covers their behaviour and states, and the build's UI tasks must follow
+`vibe/design/CONTRACT.md` (and `DESIGN.md`). Say so in one line when it applies:
+"Design gate already approved; this feature's screens follow the existing contract and
+get no separate visual critique."
 
 ---
 
-## Step 5 — UI Design (only for significant UI work)
+## Step 10 — Draft FEATURE_TASKS.md
 
-**Requires: frontend-design skill.** Reference existing design system from
-(in precedence order — `DESIGN.md` wins where they conflict):
-- `DESIGN.md` (project root) if it exists — the brand token contract from
-  `design-md:`. **Authoritative** for colours/type/spacing.
-- `vibe/design/CONTRACT.md` if it exists — the per-project design contract from
-  `design:`. New UI must obey it.
-- `vibe/DESIGN_SYSTEM.md` if it exists (existing tokens — must be consistent).
-- CODEBASE.md sections 2 and 6 (stack, patterns).
+Read the reviewed FEATURE_SPEC.md and FEATURE_PLAN.md, CODEBASE.md, ARCHITECTURE.md (and
+`vibe/design/CONTRACT.md` if Step 9 ran).
 
-Ask all at once:
-1. New screens or views being added? Existing screens being modified?
-2. Main user interaction?
-3. Layout preference? (modal, drawer, full page, inline)
-4. Device? (mobile, desktop, both)
-5. Anything complex? (multi-step, real-time, drag-drop)
-6. UI references for inspiration?
-7. Existing patterns to match? (from CODEBASE.md section 6 and DESIGN_SYSTEM.md)
+Add effort estimate at the top:
+```
+> **Estimated effort:** [N tasks — S: X (<2hrs), M: Y (2-4hrs), L: Z (4+hrs) — approx. [N] hours total]
+```
 
-Generate wireframe — must feel like it belongs in the existing product.
-Present. Iterate until approved. Append UI Specification to FEATURE_SPEC.md.
+**Task IDs.** Pick a task-ID prefix for this feature: a short uppercase tag (3-5
+letters) derived from the feature slug, e.g. `csv-export` → `CSVX`, `reading-sessions`
+→ `RDSN`. Check `vibe/TASKS.md` (and any other `vibe/features/*/FEATURE_TASKS.md`): no
+other feature may use it, and it must not clash with the reserved schemes `P<N>`, `RFX`
+or `BUG`. If it is taken, change a letter. Number the tasks `<PREFIX>-001`,
+`<PREFIX>-002`, and so on. Dependencies use the same full IDs. Unique IDs let
+vibe-parallel pool several features' task files without one task overwriting another.
+
+Every task uses this structure:
+
+```
+---
+### [PREFIX]-[NNN] · [Task title]
+- **Status**: `[ ]`
+- **Size**: [S / M / L]
+- **Spec ref**: FEATURE_SPEC.md#[section]
+- **Dependencies**: [full task IDs, e.g. CSVX-001, or "None"]
+- **Touches**: [exact file paths from CODEBASE.md section 9]
+
+**What to do**: [Specific instructions — precise enough for fresh context to execute]
+
+**Acceptance criteria**:
+- [ ] [Checkable condition from FEATURE_SPEC.md]
+
+**Self-verify**: Re-read FEATURE_SPEC.md#[section]. Tick every criterion.
+**Test requirement**: [What test must exist and what it verifies]
+**⚠️ Boundaries**: [Relevant Ask first / Never rules for this specific task]
+**CODEBASE.md update?**: [Yes — describe / No — logic only]
+**Architecture compliance**: [Which ARCHITECTURE.md patterns apply to this task]
+
+**Decisions**:
+> Filled in by agent after completing.
+- None yet.
+---
+```
+
+Phases: Data layer → Backend → Frontend (skip if no UI) → Tests
+
+End with Feature Conformance Checklist:
+```
+---
+#### Conformance: [Feature Name]
+> Tick after every task. All items ✅ before feature is shippable.
+- [ ] [Acceptance criterion verbatim from FEATURE_SPEC.md]
+- [ ] All new tests pass
+- [ ] All existing tests still pass
+- [ ] Linter clean
+- [ ] No regressions in related features
+- [ ] CODEBASE.md updated for structural changes this feature introduced
+- [ ] ARCHITECTURE.md updated if new patterns were established
+- [ ] DESIGN_SYSTEM.md updated if design: added new tokens for this feature
+---
+```
+
+Save as `vibe/features/[date-slug]/FEATURE_TASKS.md`. No approval is asked here: Step 11
+reviews it.
 
 ---
 
-## Step 6 — Generate FEATURE_PLAN.md
+## Step 11 — Task review (spec-review Trigger 4T)
 
-Read FEATURE_SPEC.md, CODEBASE.md, ARCHITECTURE.md, vibe/SPEC.md (integration sections).
-Read integration point files directly before drafting.
+Announce to the user:
+> "Tasks written. Running an independent readiness review before the build..."
 
-Draft FEATURE_PLAN.md:
-1. **Impact map** — Files to modify vs new files (exact paths from CODEBASE.md section 9)
-2. **Files explicitly out of scope** — Must not be touched
-3. **DB migration plan** — Exact schema changes
-4. **Backend changes** — Routes, controllers, services with file paths
-5. **Frontend changes** — Components, pages, hooks with file paths
-6. **Conventions to follow** — Paste relevant patterns from CODEBASE.md section 6
-7. **Task breakdown**: Data layer → Backend → Frontend (skip if no UI) → Tests
-8. **Rollback plan** — How to undo this feature
-9. **Testing strategy** — New tests, existing tests needing updates
-10. **CODEBASE.md sections to update** — Which sections change as tasks complete
+Invoke `vibe-spec-review` with:
+- Trigger source: `add-feature`, Trigger 4T
+- Preset: `feature-tasks` (target `feature-[date-slug]-tasks`)
+- Feature folder: `vibe/features/[date-slug]/` (FEATURE_TASKS.md, checked against the
+  reviewed FEATURE_SPEC.md and FEATURE_PLAN.md)
+- If this skill was entered from `vibe-mode: run`, say so.
 
-Present. Wait for approval. Save as `vibe/features/[date-slug]/FEATURE_PLAN.md`.
+**If spec-review stopped the run**, stop here too, exactly as in Step 7: nothing derived
+is written, the feature is not reported as planned (not even under plan-only), and
+nothing is built.
+
+Manual mode: a 🔴 verdict means follow spec-review's Step 3, as in Step 7.
+
+If a fix here needs FEATURE_SPEC.md or FEATURE_PLAN.md to change, that edit re-opens the
+design review: run Steps 7 and 8 again, then this step.
+
+Go on to Step 12 only when both `goldfish.py status feature-[date-slug]` and
+`goldfish.py status feature-[date-slug]-tasks` exit 0, or, in manual mode, the person
+chose to continue without a review (⚠️ NOT REVIEWED) or chose "continue anyway" on that
+review (recorded in DECISIONS.md).
 
 ---
 
-## Step 7 — Update CLAUDE.md (project root)
+## Step 12 — Write the derived files
+
+Only now, from the reviewed text. A feature whose review stopped the run never reaches
+this step, so it writes none of these.
+
+### 12A. Update CLAUDE.md (project root)
 
 Read existing CLAUDE.md. Append feature section — do NOT overwrite:
 
@@ -365,76 +631,7 @@ CLAUDE.md must stay under ~150 lines excluding archived sections.
 
 Save updated `CLAUDE.md`.
 
----
-
-## Step 8 — Generate FEATURE_TASKS.md
-
-Read FEATURE_SPEC.md, FEATURE_PLAN.md, CODEBASE.md, ARCHITECTURE.md.
-
-Add effort estimate at the top:
-```
-> **Estimated effort:** [N tasks — S: X (<2hrs), M: Y (2-4hrs), L: Z (4+hrs) — approx. [N] hours total]
-```
-
-**Task IDs.** Pick a task-ID prefix for this feature: a short uppercase tag (3-5
-letters) derived from the feature slug, e.g. `csv-export` → `CSVX`, `reading-sessions`
-→ `RDSN`. Check `vibe/TASKS.md` (and any other `vibe/features/*/FEATURE_TASKS.md`): no
-other feature may use it, and it must not clash with the reserved schemes `P<N>`, `RFX`
-or `BUG`. If it is taken, change a letter. Number the tasks `<PREFIX>-001`,
-`<PREFIX>-002`, and so on. Dependencies use the same full IDs. Unique IDs let
-vibe-parallel pool several features' task files without one task overwriting another.
-
-Every task uses this structure:
-
-```
----
-### [PREFIX]-[NNN] · [Task title]
-- **Status**: `[ ]`
-- **Size**: [S / M / L]
-- **Spec ref**: FEATURE_SPEC.md#[section]
-- **Dependencies**: [full task IDs, e.g. CSVX-001, or "None"]
-- **Touches**: [exact file paths from CODEBASE.md section 9]
-
-**What to do**: [Specific instructions — precise enough for fresh context to execute]
-
-**Acceptance criteria**:
-- [ ] [Checkable condition from FEATURE_SPEC.md]
-
-**Self-verify**: Re-read FEATURE_SPEC.md#[section]. Tick every criterion.
-**Test requirement**: [What test must exist and what it verifies]
-**⚠️ Boundaries**: [Relevant Ask first / Never rules for this specific task]
-**CODEBASE.md update?**: [Yes — describe / No — logic only]
-**Architecture compliance**: [Which ARCHITECTURE.md patterns apply to this task]
-
-**Decisions**:
-> Filled in by agent after completing.
-- None yet.
----
-```
-
-Phases: Data layer → Backend → Frontend (skip if no UI) → Tests
-
-End with Feature Conformance Checklist:
-```
----
-#### Conformance: [Feature Name]
-> Tick after every task. All items ✅ before feature is shippable.
-- [ ] [Acceptance criterion verbatim from FEATURE_SPEC.md]
-- [ ] All new tests pass
-- [ ] All existing tests still pass
-- [ ] Linter clean
-- [ ] No regressions in related features
-- [ ] CODEBASE.md updated for structural changes this feature introduced
-- [ ] ARCHITECTURE.md updated if new patterns were established
-- [ ] DESIGN_SYSTEM.md updated if design: added new tokens for this feature
----
-```
-
-Save as `vibe/features/[date-slug]/FEATURE_TASKS.md`.
-
----
-
-## Step 9 — Update vibe/TASKS.md
+### 12B. Update vibe/TASKS.md
 
 Read current TASKS.md. Two changes:
 
@@ -477,9 +674,7 @@ These are estimates. User can run `cost:` for precise numbers from `/cost` outpu
 After each task: mark [x], update count, update What just happened + What's next.
 Feature complete: collapse to `✅ [Feature Name] — [summary] (N/N ✅)`
 
----
-
-## Step 10 — Update vibe/DECISIONS.md
+### 12C. Update vibe/DECISIONS.md
 
 ```
 ---
@@ -491,16 +686,27 @@ Feature complete: collapse to `✅ [Feature Name] — [summary] (N/N ✅)`
 ---
 ```
 
-## Step 10B — Update PLAN.md feature map
+### 12D. Update PLAN.md feature map
+
+If `vibe/PLAN.md` does not exist (Step 2 found no feature map), skip this. Don't create
+the file.
 
 Mark this feature as planned in PLAN.md Section 6:
 
-Find the feature entry and update its status line:
+Find the feature entry and rewrite its two bookkeeping lines (the independent review
+ignores exactly these, so starting a feature never makes the spec review look stale):
 ```
-⬜ [Feature name] → 🔄 [Feature name] — spec in vibe/features/[date-slug]/
+**Status:** ⬜ not started   →   **Status:** 🔄 in progress
+**Spec:** `vibe/features/[date-slug]/` ← created when `feature: [name]` runs   →   **Spec:** `vibe/features/[date-slug]/`
 ```
+An older PLAN.md without a `**Status:**` line: add one under the feature's heading.
+Change nothing else in the entry here. A dependency, order or scope change is a change
+to a reviewed document and goes through `change:`.
 
-If the feature was NOT in PLAN.md — add it with a note:
+If the feature was NOT in PLAN.md, add it (under `### Planned features` in a vibe-init
+PLAN.md, with no UNPLANNED ADDITION label). This adds real content to a reviewed
+document, so the next spec check sees it and the review runs again. Otherwise add it
+with a note:
 ```
 #### [Feature name] — [one sentence] ← UNPLANNED ADDITION
 > Added: [date] · See DECISIONS.md D-[ID] for context
@@ -511,27 +717,9 @@ If the feature was NOT in PLAN.md — add it with a note:
 This keeps PLAN.md as the live source of truth for what's been planned
 vs what's been built, across all phases.
 
-## Step 11 — Spec review gate
+---
 
-Announce to the user:
-> "Feature planned. Running an independent review before the feature build..."
-
-Invoke `vibe-spec-review` with:
-- Trigger source: `add-feature`
-- Preset: `feature`
-- Feature folder: `vibe/features/[date-slug]/` (FEATURE_SPEC.md, FEATURE_PLAN.md and
-  FEATURE_TASKS.md are reviewed together, checked against vibe/SPEC.md)
-
-**If spec-review stopped the run** (`python3 "$VS" run-state show` says needs_human from
-spec review), **stop here too**: end the session, don't continue, don't report the step as
-done. Do not report the feature as planned (not even under plan-only), do not show "Feature
-kit ready", and do not build. `vibe-mode: run` resumes once a person has resolved it.
-
-Manual mode: a 🔴 SPEC NOT READY verdict means follow spec-review's Step 3 (more rounds,
-rework, or the person accepts the risks). Never fix findings outside vibe-goldfish. Go on
-only once the verdict is ✅, ⚠️ READY WITH ACCEPTED RISKS, or ⚠️ NOT REVIEWED.
-
-After spec-review completes without stopping:
+## Step 13 — Feature kit ready and hand-off
 
 Tell the user:
 
@@ -540,14 +728,21 @@ Tell the user:
 >
 > **Created:** vibe/features/[date-slug]/
 >   FEATURE_SPEC.md · FEATURE_PLAN.md · FEATURE_TASKS.md
-> **Updated:** vibe/TASKS.md · CLAUDE.md · vibe/CODEBASE.md · vibe/DECISIONS.md
+> **Updated:** vibe/TASKS.md · CLAUDE.md · vibe/CODEBASE.md · vibe/DECISIONS.md · vibe/PLAN.md (if it exists)
 > **Estimated:** [N tasks — approx. [N] hours]
-> **Spec review:** [✅ SPEC READY / ⚠️ SPEC READY WITH ACCEPTED RISKS ([N]) / ⚠️ SPEC NOT REVIEWED (no subagent tool, you chose to continue)]
+> **Design review (Trigger 4):** [✅ SPEC READY / ⚠️ SPEC READY WITH ACCEPTED RISKS ([N]) / ⚠️ SPEC NOT REVIEWED (no subagent tool, you chose to continue) / ⚠️ NOT CONVERGED, accepted as it is by you (DECISIONS.md D-[ID])] · approved by [human / agent-autonomous]
+> **Task review (Trigger 4T):** [same verdict line]
+> **Review fixes:** [one line per fix from both reviews, or "none"]
 
 **Plan-only (`feature: [name] plan-only`).** The autonomous phase loop plans a batch of
 independent features first and then builds them together through vibe-parallel (Entry
-point E). When called with `plan-only`, stop here: report the feature as planned and
-return to the caller. Do not build, and skip Step 14 — the caller runs the phase gate.
+point E). When called with `plan-only`, stop here, after the Step 11 review and the
+Step 12 derived files: report the feature as planned and return to the caller. Do not
+build, and skip Steps 14 to 16. Those steps are still owed: once the batch is built, the
+caller must run, for every feature in it and before the phase gate, the graph update
+(Step 14), the blast-radius tests on the touched files (Step 15) and the gate-reopen check
+of Step 16. Say so when you return: "Planned [feature] (plan-only). After the batch build,
+Steps 14, 15 and the Step 16 reopen check are still owed for it."
 
 **Execution mode:** reuse the `vibe_mode` resolved at startup (see the header). If you
 need it again, run the same command; never grep CLAUDE.md:
@@ -559,7 +754,11 @@ python3 "$VS" mode        # add --run when entered from vibe-mode: run
 If `vibe_mode` is `autonomous` → read the vibe-mode skill's `references/AUTONOMOUS_EXECUTION_BLOCK.md`
 (resolve the vibe-mode install dir — commonly `~/.claude/skills/vibe-mode/`, or
 `~/.claude/plugins/marketplaces/*/skills/vibe-mode/` under a plugin install)
-and follow the autonomous execution protocol. Begin immediately.
+and follow the autonomous execution protocol. Begin immediately. Run its phase execution
+loop (its steps 1 to 3) for this feature's tasks. When every task is `[x]`, run Steps 14,
+15 and 16 here **before** the block's step 4 ("Unit complete"), which runs the phase
+review gate when this was the last unfinished feature of its phase. That way the review
+covers the graph update and the new tests.
 
 If `vibe_mode` is `manual` → tell the user:
 > Tell your coding agent:
@@ -568,10 +767,11 @@ If `vibe_mode` is `manual` → tell the user:
 > vibe/SPEC_INDEX.md, vibe/TASKS.md, then FEATURE_TASKS.md.
 > Confirm the first task before writing any code.
 > ```
-> Say **"next"** after each task.
+> Say **"next"** after each task. When the last task is done, the graph update and
+> blast-radius tests (Steps 14 and 15) run before the phase review (Step 16).
 ---
 
-## Step 12 — Update dependency graph
+## Step 14 — Update dependency graph
 
 After the feature is built and tasks are complete, invoke `vibe-graph: update`.
 
@@ -585,10 +785,10 @@ CONCEPT_GRAPH.json, and graph.html for the affected subgraph only.
 
 ---
 
-## Step 13 — Blast-radius test coverage
+## Step 15 — Blast-radius test coverage
 
 Invoke `vibe-test` (the `test:` skill) on the files this feature touched. The
-inline `npm test` in Step 7 only *runs* the existing suite — this step
+inline `npm test` in Step 12A only *runs* the existing suite. This step
 *generates or extends* coverage across the feature's blast radius (the changed
 files plus their dependents / contract consumers), which is what vibe-test
 advertises as its auto-handoff from vibe-add-feature.
@@ -602,21 +802,30 @@ vibe-test reads the `Touches` sections of this feature's `FEATURE_TASKS.md`
 
 ---
 
-## Step 14 — Phase gate check
+## Step 16 — Phase gate check
 
-**Built after the final review passed? Reopen it.** A passed review covers the code as it
-was reviewed, and this feature changed it. After the feature's tasks are committed:
+Runs after Steps 14 and 15, so any review that follows covers the new tests too.
+
+**Built after a review passed? Reopen it.** A passed review covers the code as it was
+reviewed, and this feature changed it. After the feature's tasks and tests are committed:
 ```bash
-python3 "$VS" gate show     # final.review passed?
+python3 "$VS" gate show     # final.review and phases["N"].review passed?
 ```
-If `final.review` is `passed`, run
-`python3 "$VS" gate reopen final --reason "vibe-add-feature built [feature]: [files]" --by vibe-add-feature`
-and tell the user: "This feature changed source after the final review passed. review:
-must run again (`review: final`); deploy stays blocked until it passes." Otherwise skip
-this paragraph.
+N is the phase this feature belongs to in TASKS.md.
+- If `final.review` is `passed`, run
+  `python3 "$VS" gate reopen final --reason "vibe-add-feature built [feature]: [files]" --by vibe-add-feature`.
+- Otherwise, if `phases["N"].review` is `passed`, run
+  `python3 "$VS" gate reopen N --reason "vibe-add-feature built [feature]: [files]" --by vibe-add-feature`.
+  (The same rule as vibe-fix-bug: the latest passed gate is the one that no longer covers
+  the code.)
 
-If this feature was the **last task of a phase**, the phase review gate runs now —
-run `review: phase N` (autonomous: automatically; manual: announce and run). Do not
+For the gate you reopened, tell the user: "This feature changed source after the
+[phase N | final] review passed. review: must run again (`review: [phase N | final]`);
+the next phase and deploy stay blocked until it passes." If neither had passed, skip this
+paragraph.
+
+If this feature was the **last unfinished feature of its phase**, the phase review gate runs now: manual, announce and run `review: phase N`; autonomous,
+go back to the execution block's step 4, which runs it. Do not
 drift into the next phase's features first. The gate is enforced by the CLAUDE.md
 advancement rule + `vibe/.gates.json` (see `vibe-review/references/GATES.md`): the
 next phase cannot start until `phases["N"].review` is `passed`. If the feature is

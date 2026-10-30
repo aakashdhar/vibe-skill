@@ -18,7 +18,11 @@ description: >
 Spec-driven bug diagnosis and surgical fixing.
 Diagnosis before fix. Regression test before fix code. Smallest possible change.
 
-**Use Plan Mode (Shift+Tab) for Steps 1–5. Exit before Step 6.**
+**Steps 1-5 write no application code. The only files they write are:** the trivial
+path's entries in `vibe/TASKS.md` and `vibe/DECISIONS.md`, and, on the significant path,
+`vibe/bugs/[date-slug]/BUG_SPEC.md` and `BUG_PLAN.md` (vibe-doctor, on the environment
+path, applies its own safe remediations). The fix itself is written only by the BUG
+tasks, regression test first.
 
 > **Autonomous / headless mode.** At startup resolve the settings once:
 > ```bash

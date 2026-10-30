@@ -96,6 +96,8 @@ Skills trigger automatically from natural language. No slash commands needed.
 ```
 PLAN
   brainstorm: → spec-review (auto, goldfish) → architect: → new: / vibe-init
+  (every planning step: write → independent review → fixes, and only then your
+   approval and the files derived from it, both from the reviewed text)
   (idea from elsewhere / dropped or empty file → still start at brainstorm:;
    its Step 0 ingests + normalizes it to a canonical BRIEF.md)
 
@@ -132,7 +134,7 @@ CLOSE
 brainstorm: I want to build a SaaS tool for freelancers to track client invoices
 ```
 
-Claude asks 13 structured questions across product, users, revenue, and tech. Produces `BRIEF.md`.
+Claude walks through 8 structured steps (12 for a client project) across problem, users, features and tech, has the brief independently reviewed, then asks you to approve it. Produces `BRIEF.md`.
 
 ```
 architect:
@@ -163,7 +165,7 @@ vibe/features/2026-04-17-csv-export/
 └── FEATURE_TASKS.md   ← task breakdown with size (S/M/L) and order
 ```
 
-Shows the plan. You say `go` and it builds.
+The spec and plan are independently reviewed and you approve the reviewed design; the tasks are then reviewed on their own; then it builds.
 
 ---
 
@@ -625,6 +627,9 @@ Every session is tracked. Every task has a cost. The ledger shows where money we
 
 **The gate is real.**
 vibe-review is not optional. Phase gates are enforced. P0 and P1 issues block progress. This is what makes the output shippable rather than just generated.
+
+**Review before approval and before anything is derived.**
+For planning documents (brief, agent architecture, architecture, spec, feature design and tasks) you are never asked to approve a draft no independent reviewer has seen, and no file is generated from one before it is reviewed, so a review fix never has to chase a copy. Bug plans and the design contract are not goldfish-reviewed yet.
 
 **The author never grades its own work.**
 The agent that wrote a document remembers every reason behind it, so it reads what it meant rather than what it wrote. Planning documents are reviewed by goldfish: fresh subagents that see only the files, never the conversation or CLAUDE.md. The author answers each finding (fix, contest with evidence, escalate, or decline a P2), and a person decides anything the files can't settle. The idea comes from the elephant-goldfish model; vibe's implementation is its own.

@@ -165,7 +165,9 @@ def cap_can_be_raised(p):
         p.gf("applied", "spec", f"rubric-{i + 1}-1")
         p.write("vibe/SPEC.md", f"spec v{i + 2}\n")
     expect(p.gf("round", "spec")[0] != 0, "the round cap holds")
-    p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric", "--max-rounds", "7")
+    expect(p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric", "--max-rounds", "7")[0] != 0,
+           "an agent can't raise the round cap")
+    p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric", "--max-rounds", "7", "--human")
     p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric")
     expect(p.gf("round", "spec")[0] == 0, "a raised cap survives a plain re-init")
 
@@ -175,6 +177,174 @@ def unfinished_round_blocks(p):
     p.gf("round", "spec")
     p.gf("ingest", "spec", "--reviewer", "rubric", "--file", p.findings("e.json", []))
     expect(p.gf("round", "spec")[0] != 0, "a round with a pending reviewer must be finished first")
+
+
+def duplicates(p):
+    start(p)
+    p.round_with("spec", {"rubric": [{"severity": "P0", "location": "a", "issue": "sync contradicts storage"}],
+                          "comprehension": [{"severity": "P1", "location": "a", "issue": "sync unclear"}]})
+    expect(p.gf("resolve", "spec", "rubric-1-1", "--as", "duplicate", "--of", "comprehension-1-1")[0] != 0,
+           "a less severe finding can't be the primary")
+    expect(p.gf("resolve", "spec", "comprehension-1-1", "--as", "duplicate", "--of", "rubric-1-1")[0] == 0,
+           "a duplicate folds into the primary")
+    expect(p.gf("resolve", "spec", "rubric-1-1", "--as", "contest", "--evidence", "f:1")[0] != 0,
+           "a primary with a comprehension duplicate can't be contested")
+    p.gf("resolve", "spec", "rubric-1-1", "--as", "fix")
+    p.gf("applied", "spec", "rubric-1-1")
+    st = json.loads(p.gf("status", "spec", "--json")[1])
+    expect(st["clean"] == [False], "the round stays not clean while its primary was fixed")
+
+
+def tool_lines_are_not_content(p):
+    p.write("vibe/TASKS.md", "# Tasks\n## Spec gate\n⬜ spec: — pending\n")
+    p.gf("init", "spec", "--doc", "vibe/TASKS.md", "--reviewers", "rubric")
+    p.gf("isolation", "spec", "full")
+    p.round_with("spec", {"rubric": []})
+    p.round_with("spec", {"rubric": []})
+    p.write("vibe/TASKS.md", "# Tasks\n## Spec gate\n✅ spec: — approved 2026-10-30\n")
+    expect(p.gf("status", "spec")[0] == 0, "flipping a TASKS.md gate line keeps the review converged")
+    p.write("vibe/TASKS.md", "# Tasks changed\n## Spec gate\n✅ spec: — approved 2026-10-30\n")
+    expect(p.gf("status", "spec")[0] == 2, "a content edit still re-opens it")
+
+
+PLAN_BEFORE = """### Phase 2 — Core features
+
+#### CSV export — users download their entries
+**Status:** ⬜ not started
+**Build order:** 1
+**Depends on:** Phase 1 complete
+**Spec:** `vibe/features/[date-slug]/` ← created when `feature: CSV export` runs
+
+---
+
+#### Sharing — users share a list
+**Status:** ⬜ not started
+**Depends on:** CSV export
+"""
+
+
+def feature_bookkeeping_is_not_content(p):
+    p.write("vibe/PLAN.md", PLAN_BEFORE)
+    p.write("CLAUDE.md", "# App\n## Execution mode\nVIBE_MODE=manual   # x\n")
+    p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--doc", "vibe/PLAN.md", "--doc", "CLAUDE.md", "--reviewers", "rubric")
+    p.gf("isolation", "spec", "full")
+    p.round_with("spec", {"rubric": []})
+    p.round_with("spec", {"rubric": []})
+    started = (PLAN_BEFORE.replace("**Status:** ⬜ not started\n**Build order:** 1", "**Status:** 🔄 in progress\n**Build order:** 1", 1)
+               .replace("`vibe/features/[date-slug]/` ← created when `feature: CSV export` runs", "`vibe/features/2026-10-30-csv-export/`"))
+    p.write("vibe/PLAN.md", started)
+    p.write("CLAUDE.md", "# App\n## Execution mode\nVIBE_MODE=autonomous   # x\n\n---\n\n### Active Feature: CSV export\n- Files in scope: src/csv.ts\n")
+    expect(p.gf("status", "spec")[0] == 0, "starting a feature (real PLAN/CLAUDE formats) keeps the spec review converged")
+    p.write("vibe/PLAN.md", started.replace("**Depends on:** CSV export", "**Depends on:** nothing"))
+    expect(p.gf("status", "spec")[0] == 2, "changing a dependency in the map re-opens the review")
+
+
+def bookkeeping_rules_are_per_file(p):
+    p.write("vibe/SPEC.md", "spec\n**Status:** ⬜ draft\n")
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": []})
+    p.round_with("spec", {"rubric": []})
+    p.write("vibe/SPEC.md", "spec\n**Status:** ✅ final\n")
+    expect(p.gf("status", "spec")[0] == 2, "a Status line in SPEC.md is content (only PLAN.md's is bookkeeping)")
+
+
+def ledgers_from_v270_still_match(p):
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": []})
+    p.round_with("spec", {"rubric": []})
+    led_path = p.root / "vibe/goldfish/spec/ledger.json"
+    led = json.loads(led_path.read_text())
+    import hashlib
+    h = hashlib.sha256(b"vibe/SPEC.md\0" + (p.root / "vibe/SPEC.md").read_bytes() + b"\0").hexdigest()[:16]
+    for r in led["rounds"]:
+        r.pop("hash_v", None)
+        r["doc_hash"] = h            # what v2.7.0 stored
+    led_path.write_text(json.dumps(led))
+    expect(p.gf("status", "spec")[0] == 0, "a review converged under v2.7.0 is still converged after the upgrade")
+
+
+def duplicate_loopholes(p):
+    start(p, "rubric,comprehension,zoom-out")
+    p.round_with("spec", {"rubric": [{"severity": "P1", "location": "a", "issue": "x"}],
+                          "comprehension": [{"severity": "P1", "location": "a", "issue": "x unclear"}],
+                          "zoom-out": [{"severity": "P1", "location": "a", "issue": "x again"}]})
+    p.gf("resolve", "spec", "zoom-out-1-1", "--as", "duplicate", "--of", "comprehension-1-1")
+    expect(p.gf("resolve", "spec", "comprehension-1-1", "--as", "duplicate", "--of", "rubric-1-1")[0] != 0,
+           "a primary with duplicates can't be folded into another primary (no chains)")
+    p.gf("resolve", "spec", "comprehension-1-1", "--as", "fix")
+    p.gf("resolve", "spec", "rubric-1-1", "--as", "contest", "--evidence", "SPEC.md:3")
+    p.gf("applied", "spec", "comprehension-1-1")
+    p.write("vibe/SPEC.md", "spec v2\n")
+    p.round_with("spec", {"rubric": [{"severity": "P1", "location": "b", "issue": "y"}],
+                          "comprehension": [{"severity": "P1", "location": "b", "issue": "y unclear"}],
+                          "zoom-out": []})
+    p.gf("resolve", "spec", "comprehension-2-1", "--as", "duplicate", "--of", "rubric-2-1")
+    p.gf("link", "spec", "rubric-2-1", "--reraise-of", "rubric-1-1")
+    led = json.loads((p.root / "vibe/goldfish/spec/ledger.json").read_text())
+    expect(led["findings"]["rubric-2-1"]["state"] == "open",
+           "an old contest never settles a re-raise that carries a comprehension duplicate")
+
+
+def churn_travels_with_its_primary(p):
+    start(p, "rubric,zoom-out")
+    p.round_with("spec", {"rubric": [{"severity": "P1", "location": "a", "issue": "x"}], "zoom-out": []})
+    p.gf("resolve", "spec", "rubric-1-1", "--as", "fix")
+    p.gf("applied", "spec", "rubric-1-1")
+    p.write("vibe/SPEC.md", "spec v2\n")
+    p.round_with("spec", {"rubric": [{"severity": "P1", "location": "a", "issue": "fix broke it"}],
+                          "zoom-out": [{"severity": "P1", "location": "a", "issue": "fix broke it too"}]})
+    p.gf("link", "spec", "rubric-2-1", "--churn-of", "rubric-1-1")
+    expect(p.gf("resolve", "spec", "rubric-2-1", "--as", "duplicate", "--of", "zoom-out-2-1")[0] != 0,
+           "folding a churn finding is an answer, so it needs a person")
+    p.gf("resolve", "spec", "rubric-2-1", "--as", "duplicate", "--of", "zoom-out-2-1", "--human")
+    expect(p.gf("resolve", "spec", "zoom-out-2-1", "--as", "fix")[0] != 0,
+           "the churn travels to the primary: a person answers that too")
+
+
+def human_approval_of_unreviewed_text_is_marked(p):
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": []})
+    p.round_with("spec", {"rubric": []})
+    p.write("vibe/SPEC.md", "spec v2\n")
+    p.run(VS, "gate", "set", "spec", "--status", "approved", "--by", "human", "--report", "vibe/goldfish/spec")
+    gates = json.loads((p.root / "vibe/.gates.json").read_text())
+    expect(gates["spec"].get("reviewed") is False, "a person's approval of edited text is recorded as reviewed: false")
+
+
+def small_project_converges_in_one_quiet_round(p):
+    p.write("BRIEF.md", "# BRIEF\n> Created: 2026-10-30 via brainstorm: | Path: Personal | Complexity: S | Readiness: 100%\n")
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": [{"severity": "P2", "location": "a", "issue": "nit"}]})
+    p.gf("resolve", "spec", "rubric-1-1", "--as", "decline", "--note", "note only")
+    expect(p.gf("status", "spec")[0] == 0, "S project: one clean round with no P0/P1 converges")
+    p.write("vibe/SPEC.md", "spec v2\n")
+    p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric")
+    st = json.loads(p.gf("status", "spec", "--json")[1])
+    expect(st["rounds_in_cycle"] == 0, "an edit after a one-round convergence starts a new cycle")
+    p.round_with("spec", {"rubric": [{"severity": "P1", "location": "b", "issue": "gap"}]})
+    p.gf("resolve", "spec", "rubric-2-1", "--as", "fix")
+    p.gf("applied", "spec", "rubric-2-1")
+    p.write("vibe/SPEC.md", "spec v3\n")
+    p.round_with("spec", {"rubric": []})
+    expect(p.gf("status", "spec")[0] == 0, "S project: a quiet round after a fixed round converges")
+
+
+def bigger_or_thorough_needs_two_rounds(p):
+    p.write("BRIEF.md", "# BRIEF\n## Complexity estimate\n**Size:** M\n")
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": []})
+    expect(p.gf("status", "spec")[0] == 2, "M project: one clean round is not enough")
+    p.write("BRIEF.md", "# BRIEF\n**Size:** S\n")
+    p.gf("init", "spec", "--doc", "vibe/SPEC.md", "--reviewers", "rubric", "--thorough")
+    expect(p.gf("status", "spec")[0] == 2, "--thorough keeps two rounds on a small project")
+
+
+def archive_resets_history(p):
+    start(p, "rubric")
+    p.round_with("spec", {"rubric": []})
+    p.gf("archive", "spec")
+    expect(not (p.root / "vibe/goldfish/spec").exists(), "archive moves the review aside")
+    expect(any((p.root / "vibe/goldfish/archive").iterdir()), "the old review is kept under archive/")
 
 
 def design_gate(p):
@@ -188,7 +358,11 @@ def design_gate(p):
 
 for fn in (converges_on_two_clean_rounds, isolation_must_be_recorded, incomplete_reviewer_is_not_clean,
            edits_reopen_a_converged_review, p2_edit_needs_another_round, rules_on_answers,
-           relinking_and_churn, cap_can_be_raised, unfinished_round_blocks, design_gate):
+           relinking_and_churn, cap_can_be_raised, unfinished_round_blocks, duplicates, tool_lines_are_not_content, feature_bookkeeping_is_not_content,
+           bookkeeping_rules_are_per_file, ledgers_from_v270_still_match, duplicate_loopholes,
+           churn_travels_with_its_primary, human_approval_of_unreviewed_text_is_marked,
+           small_project_converges_in_one_quiet_round, bigger_or_thorough_needs_two_rounds,
+           archive_resets_history, design_gate):
     before = len(failures)
     scenario(fn)
     print(f"{'ok  ' if len(failures) == before else 'FAIL'} {fn.__name__}")

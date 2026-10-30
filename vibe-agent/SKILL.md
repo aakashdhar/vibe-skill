@@ -23,7 +23,17 @@ No other skills required. No BRIEF.md needed. Works anywhere.
 Produces AGENT_ARCH.md — a complete implementation blueprint —
 and two topology diagrams: interactive (inline) and static (exportable).
 
-**Always run in Plan Mode. No code written during this session.**
+**No application code. The only files this skill writes are:** `AGENT_ARCH.md` and
+`agent-architecture.svg` at the project root, what vibe-spec-review writes when it runs
+(its records under `vibe/goldfish/` and `vibe/spec-reviews/`, accepted fixes to the
+documents it reviews (AGENT_ARCH.md, and BRIEF.md when Step 0 reviews it),
+`vibe/DECISIONS.md`), the approval entry in `vibe/DECISIONS.md`, and
+`vibe/.run_state.json` on a stop.
+
+**The order:** gather facts and settle choices (Steps 1–11) → write AGENT_ARCH.md (Step 12)
+→ independent review (Step 13) → diagrams from the reviewed text (Step 14) → the
+person approves the reviewed design (Step 15) → architect:. Nothing is approved before
+the review, and nothing derived is built from an unreviewed draft.
 
 > **Autonomous / headless mode.** At startup resolve the settings with
 > `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (`mode --run` when the
@@ -65,9 +75,20 @@ ls BRIEF.md AGENT_ARCH.md 2>/dev/null
 
 **If AGENT_ARCH.md already exists:**
 > "An AGENT_ARCH.md already exists. Do you want to update it or redesign from scratch?"
-Wait for answer.
+Wait for answer. On "redesign from scratch", the old review is archived in Step 12, right
+before the new document is written.
 
-**If BRIEF.md exists:** Read it fully. Extract problem, users, constraints, integrations.
+**If BRIEF.md exists:** check its review first:
+```bash
+python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py status brief
+```
+Exit 0 means the brief's review converged on its current text. Anything else (2, 3, or a
+"no goldfish review" error) means it was never reviewed, or changed since. Manual: say so
+in one line and offer to run `spec-review:` on BRIEF.md now *(recommended)* or continue.
+Autonomous: run vibe-spec-review on BRIEF.md (preset `brief`) first, and stop with it if
+it stops.
+
+Then read it fully. Extract problem, users, constraints, integrations.
 Skip any questions already answered. Surface gaps only.
 
 **If neither exists:** Run Steps 1–2 fully.
@@ -99,6 +120,10 @@ Ask all at once. Do not ask one by one.
 >    (Just annoying · costs money · irreversible · embarrassing · dangerous)
 
 Synthesise answers. Confirm before proceeding.
+
+The confirmations in Steps 1–5 gather facts and settle working choices (framework,
+pattern, roster). They are not the sign-off: the person approves the whole design once,
+on the reviewed AGENT_ARCH.md, in Step 15.
 
 ---
 
@@ -160,7 +185,7 @@ Present as:
 - Need provider portability (Claude + others) → LangGraph / Custom, not the
   Anthropic-native options
 
-Wait for confirmation before proceeding.
+Wait for the person's choice before proceeding (a working choice, not the sign-off).
 
 ---
 
@@ -189,7 +214,7 @@ Select one primary pattern. Present recommendation with reasoning:
 - Never recommend Orchestrator + Sub-agents when Single Agent + Tools suffices.
   Complexity must be earned.
 
-Wait for confirmation.
+Wait for the person's choice (a working choice, not the sign-off).
 
 ---
 
@@ -211,7 +236,7 @@ For each agent in the system:
 
 Present roster. Ask: "Does each agent have a single clear responsibility? Any overlap or gap?"
 
-Wait for confirmation.
+Wait for the answer (a working choice, not the sign-off).
 
 ---
 
@@ -454,7 +479,7 @@ Phase 4 — Production hardening
 
 ---
 
-## Step 11 — Synthesise and confirm
+## Step 11 — Synthesise and check
 
 > **Agentic architecture summary — [System Name]:**
 >
@@ -467,26 +492,57 @@ Phase 4 — Production hardening
 > **HITL checkpoints:** [N] — [where in the flow]
 > **Implementation phases:** 4 · Est. [N] days
 >
-> Does this look right? Anything to adjust before I write AGENT_ARCH.md and generate the diagrams?
+> Did I get anything wrong from your answers? Anything to adjust before I write
+> AGENT_ARCH.md? (This is a check of the facts, not the sign-off: you approve the design
+> after the independent review.)
 
-Wait for confirmation.
+Wait for the answer. Note every adjustment: Step 12 writes them in.
 
 ---
 
 ## Step 12 — Write AGENT_ARCH.md
 
+**Redesign from scratch only** (the person chose it in Step 0): set the old review aside
+first, so findings settled on the old design can't settle findings on the new one:
+```bash
+python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py archive agent-arch
+```
+
 Read `references/AGENT_ARCH_TEMPLATE.md` for the full format.
 
-Fill every section from confirmed decisions in Steps 1–10.
+Fill every section from the decisions in Steps 1–10 and every adjustment the person made
+in Step 11. Where an adjustment changes a Step 1–10 decision, the adjustment wins.
 Save as `AGENT_ARCH.md` at project root.
 
 Every section must be grounded in decisions made — no placeholders.
 
+Write nothing else yet. The diagrams are built from the reviewed document (Step 14).
+
 ---
 
-## Step 13 — Generate topology diagrams
+## Step 13 — Hand off to spec-review
 
-Generate **both** diagrams immediately after writing AGENT_ARCH.md.
+Announce:
+> "AGENT_ARCH.md written. Running an independent review of the agent design..."
+
+Invoke `vibe-spec-review` with:
+- Trigger source: `agent` (Trigger 2, preset `agent-arch`)
+- Scope: AGENT_ARCH.md (BRIEF.md, if it exists, is read as a related file)
+
+**If spec-review stopped the run** (`python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state show`
+says needs_human from spec review), **stop here too**: end the session, don't continue,
+don't report the step as done. In manual mode, a 🔴 verdict means follow spec-review
+Step 3 (more rounds, rework, or the person accepts). Never fix findings outside vibe-goldfish.
+
+After spec-review completes without stopping, continue to Step 14.
+
+---
+
+## Step 14 — Generate topology diagrams
+
+Generate **both** diagrams now, from AGENT_ARCH.md as the review left it (fixes
+included). They are derived from the reviewed text, never from the draft. If AGENT_ARCH.md
+changes again (an edit at Step 15, then a new review), generate both again.
 
 ### Diagram 1 — Interactive inline diagram
 
@@ -528,28 +584,44 @@ just state the path. Do not reference any `present_files` tool — it does not e
 
 ---
 
-## Step 14 — Hand off to spec-review
+## Step 15 — Approve the reviewed design and tell the user
 
-Before telling the user anything, announce:
-> "AGENT_ARCH.md written. Running spec-review to validate agent design..."
+**Check the review is current:**
+```bash
+python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py status agent-arch
+```
+Exit 0 means the review converged on AGENT_ARCH.md as it is now. Anything else: manual,
+tell the person plainly and offer to run `spec-review:` on AGENT_ARCH.md now; autonomous,
+go back to Step 13. Never hand off a document whose status is not 0. The only exceptions are the person's own choices in spec-review: continuing without a
+review (⚠️ SPEC NOT REVIEWED) or continuing anyway on a 🔴 (status stays 3). Then ask for
+approval as below, name that choice in the DECISIONS entry and on the card, and hand off.
 
-Invoke `vibe-spec-review` with:
-- Trigger source: `agent`
-- Scope: AGENT_ARCH.md + BRIEF.md (if exists)
+**Manual mode: the person approves the reviewed text.** Show what the review changed, one
+line per fix (from `vibe/goldfish/agent-arch/resolution.md`), then ask:
+> "This is AGENT_ARCH.md after the independent review. Do you approve it as it is now?"
 
-**If spec-review stopped the run** (`python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state show`
-says needs_human from spec review), **stop here too**: end the session, don't continue,
-don't report the step as done. In manual mode, a 🔴 verdict means follow spec-review
-Step 3 (more rounds, rework, or the person accepts). Never fix findings outside vibe-goldfish.
+- **Approved:** append to `vibe/DECISIONS.md` (append-only: create it with its canonical
+  header only if it doesn't exist, continue the `D-NNN` numbering):
+  ```
+  ### D-[ID]: AGENT_ARCH.md approved
+  - **Type**: approval
+  - **Skill / step**: vibe-agent · Step 15 (after the independent review)
+  - **Approved**: AGENT_ARCH.md as reviewed · record: vibe/goldfish/agent-arch/resolution.md
+  - **Approved by**: human
+  ```
+- **The person wants changes:** make them in AGENT_ARCH.md. The edit re-opens the review
+  by itself, so go back to Step 13 (review), then Step 14 (diagrams again), then ask again
+  here. Never hand off an edited document without that review.
 
-After spec-review completes without stopping:
+**Autonomous mode:** the converged review is the acceptance (HEADLESS §2.2). Don't ask,
+and don't add a self-approval.
 
-## Step 15 — Tell the user
+Then print:
 
 ```
 ✅ Agentic architecture complete — [System Name]
 
-AGENT_ARCH.md written — [N] sections
+AGENT_ARCH.md written and independently reviewed — [N] sections
 Framework:    [framework] — [one line why]
 Pattern:      [pattern]
 Agents:       [N] ([names])
@@ -557,16 +629,20 @@ Verifiers:    [N] ([shared/dedicated])
 Tools:        [N] ([write tools: N])
 HITL gates:   [N]
 Impl phases:  4 phases · est. [N] days
+Review:       [✅ / ⚠️ verdict] · [N] fixes · vibe/goldfish/agent-arch/resolution.md
+Approved by:  [human / review converged (autonomous)]
 
-DIAGRAMS
+DIAGRAMS (from the reviewed document)
   Interactive: rendered above (clickable)
   Static SVG:  agent-architecture.svg (download below)
 
 NEXT STEPS
-  1. Review AGENT_ARCH.md — confirm all decisions look right
-  2. Start with Phase 1: project structure + dependencies
-  3. Build agents in the implementation order above
-  4. Wire the orchestrator last — after all agents are tested individually
+  1. architect: reads AGENT_ARCH.md and carries the framework, agents, state, tools,
+     HITL checkpoints and folder structure into ARCHITECTURE.md (reviewed in turn)
+  2. new: turns the implementation order into SPEC.md, PLAN.md and tasks, reviewed and
+     signed off at the spec gate
+  3. The build starts after the spec gate, not before. Wire the orchestrator last,
+     after all agents are tested individually.
 
 The AGENT_ARCH.md is self-contained. Share it with your team.
 It has everything needed to implement this system from scratch.

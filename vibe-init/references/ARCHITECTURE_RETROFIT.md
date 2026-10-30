@@ -169,6 +169,29 @@ before running vibe-review — findings will include this as P1."]
 
 ---
 
+## Boundaries
+
+[Filled only from the Stage 4 boundary evidence. Each rule cites the file that shows it.
+A tier with no evidence keeps the single "None found" line. Never add a generic rule to
+make a tier look complete.]
+
+### Always
+- [Rule the code requires of every change, e.g. "Run `npm run lint` before committing"] [Observed in: .husky/pre-commit]
+- [Rule, e.g. "Every change passes the CI test job"] [Observed in: .github/workflows/ci.yml]
+[or, when nothing was found:]
+- None found in the code: confirm with the team.
+
+### Ask First
+- [Rule a person or file requires approval for, e.g. "Changes under `src/billing/` need @payments-team review"] [Observed in: CODEOWNERS]
+[or, when nothing was found:]
+- None found in the code: confirm with the team.
+
+### Never
+- Never commit secrets (.env files, keys, credentials). [vibe rule: every project] [Observed in: .gitignore, if it lists .env]
+- [Rule the code forbids, e.g. "Never leave `console.log` in `src/`: the lint rule `no-console` is set to error"] [Observed in: .eslintrc.json]
+
+---
+
 ## Dependencies
 
 **Package manager:** [npm / yarn / pnpm / pip / poetry]

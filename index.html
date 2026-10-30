@@ -1225,7 +1225,7 @@
         <div class="terminal-line" id="term-out1" style="display:none"><span class="out">Cloning into
             '~/vibe-skill'...</span></div>
         <div class="terminal-line" id="term-out2" style="display:none"><span class="success">✓ synced 27 vibe-* skills
-            → ~/.claude/skills (v2.7.0 @ b18633c)</span></div>
+            → ~/.claude/skills (v2.8.0)</span></div>
         <div class="terminal-line" id="term-out3" style="display:none"><span class="success">✓ installed 6 goldfish
             reviewer agents → ~/.claude/agents</span></div>
         <div class="terminal-line" id="term-out4" style="display:none"><span class="out">  restart Claude Code to
@@ -1306,7 +1306,7 @@
     <div class="skills-count" id="skills-count">Showing 27 skills — click any card for details</div>
     <div class="skills-grid" id="skills-grid">
       <div class="skill-card" data-cat="plan" data-name="vibe-brainstorm" data-trigger="brainstorm:"
-        data-desc="Comprehensive brainstorming workflow for turning any idea into a clear, validated, buildable brief. Two paths: personal project (8 steps) and client/business project (13 steps). Produces BRIEF.md."
+        data-desc="Comprehensive brainstorming workflow for turning any idea into a clear, validated, buildable brief. Two paths: personal project (8 steps) and client/business project (12 steps). Produces BRIEF.md."
         data-examples="brainstorm: I want to build a task manager|brainstorm: client project for a booking platform|help me think through my app idea"
         onclick="openDrawer(this)">
         <div class="sk-cat">Plan</div>
@@ -1333,7 +1333,7 @@
         <div class="sk-desc">Design complete multi-agent AI systems from scratch.</div>
       </div>
       <div class="skill-card" data-cat="plan" data-name="vibe-spec-review" data-trigger="spec-review:"
-        data-desc="Spec quality gate: an independent review of planning documents before any code is written, run through vibe-goldfish so the author never grades its own spec. P0 and P1 findings block. Triggered automatically by vibe-brainstorm, vibe-architect, vibe-agent, vibe-new-app, vibe-init and vibe-add-feature."
+        data-desc="Spec quality gate: an independent review of planning documents before any code is written, run through vibe-goldfish so the author never grades its own spec. P0 and P1 findings block. Triggered automatically by vibe-brainstorm, vibe-architect, vibe-agent, vibe-new-app, vibe-init and vibe-add-feature, and re-run by vibe-change-spec on every reviewed document a scope change touches."
         data-examples="spec-review: check the brief|spec-review: is the spec ready to build|review the spec"
         onclick="openDrawer(this)">
         <div class="sk-cat">Plan</div>
@@ -1694,7 +1694,7 @@
       { triggers: ['feature:', 'feature', 'add feature', 'new feature'], skill: 'vibe-add-feature', cat: 'Build', desc: 'Spec-driven feature workflow. Produces FEATURE_SPEC.md, FEATURE_PLAN.md, and FEATURE_TASKS.md before any code is written.', phase: 'Build phase' },
       { triggers: ['bug:', 'bug', 'fix bug', 'broken', 'issue', 'debug'], skill: 'vibe-fix-bug', cat: 'Build', desc: 'Three-way severity triage. Diagnosis always before the fix. Regression test always before fix code.', phase: 'Build phase' },
       { triggers: ['deploy:', 'deploy', 'railway', 'vercel', 'render', 'fly', 'heroku', 'netlify', 'github-pages'], skill: 'vibe-deploy', cat: 'Ship', desc: 'Prepares for deployment to 7 platforms. Stack detected automatically. DEPLOY.md checklist generated.', phase: 'Ship phase' },
-      { triggers: ['brainstorm:', 'brainstorm', 'idea', 'i want to build', 'validate', 'thinking about building', 'let\'s plan'], skill: 'vibe-brainstorm', cat: 'Plan', desc: 'Turns any rough idea into a validated, buildable BRIEF.md. Two paths: personal (8 steps) or client project (13 steps).', phase: 'Plan phase' },
+      { triggers: ['brainstorm:', 'brainstorm', 'idea', 'i want to build', 'validate', 'thinking about building', 'let\'s plan'], skill: 'vibe-brainstorm', cat: 'Plan', desc: 'Turns any rough idea into a validated, buildable BRIEF.md. Two paths: personal (8 steps) or client project (12 steps).', phase: 'Plan phase' },
       { triggers: ['design:', 'design', 'make it look', 'ui', 'redesign', 'style', 'polish', 'looks generic'], skill: 'vibe-design', cat: 'Design', desc: 'Editorial-quality frontend UI. Reads DESIGN.md for brand tokens. Anti-generic rules enforced.', phase: 'Design phase' },
       { triggers: ['handoff:', 'handoff', 'client delivery', 'sign-off', 'hand over'], skill: 'vibe-handoff', cat: 'Close', desc: '5 handoff modes: client, milestone, dev, internal, maintenance. Produces MD docs + self-contained HTML portal.', phase: 'Close phase' },
       { triggers: ['review:', 'review', 'code review', 'audit', 'quality check'], skill: 'vibe-review', cat: 'Build', desc: 'Mandatory phase gate. Every finding backed by file path and line number. No vague feedback.', phase: 'Build phase' },
@@ -1711,7 +1711,7 @@
       { triggers: ['changelog:', 'changelog'], skill: 'vibe-changelog', cat: 'Close', desc: 'Two changelogs from git tags — developer-facing and plain-English client version.', phase: 'Close phase' },
       { triggers: ['change:', 'change', 'modify spec', 'add to scope'], skill: 'vibe-change-spec', cat: 'Build', desc: 'Impact assessed before touching any file. Updates all affected docs in the correct order.', phase: 'Build phase' },
       { triggers: ['parallel:', 'parallel', 'subagent', 'simultaneous'], skill: 'vibe-parallel', cat: 'Ship', desc: 'Dependency wave builder. Spawns tasks as parallel subagents with conflict detection.', phase: 'Ship phase' },
-      { triggers: ['spec-review:', 'spec-review', 'review spec', 'check brief'], skill: 'vibe-spec-review', cat: 'Plan', desc: 'Independent spec quality gate. P0 and P1 findings block the build. Triggered automatically after brainstorm.', phase: 'Plan phase' },
+      { triggers: ['spec-review:', 'spec-review', 'review spec', 'check brief'], skill: 'vibe-spec-review', cat: 'Plan', desc: 'Independent spec quality gate. P0 and P1 findings block the build. Runs after every planning skill and every scope change.', phase: 'Plan phase' },
       { triggers: ['goldfish:', 'goldfish review', 'fresh-eyes review', 'independent review'], skill: 'vibe-goldfish', cat: 'Plan', desc: 'Zero-context reviewer subagents check a document cold; the author answers every finding.', phase: 'Plan phase' },
       { triggers: ['design-md:', 'design-md', 'extract design', 'design system'], skill: 'vibe-design-md', cat: 'Design', desc: 'Captures complete design system from any URL. 55+ pre-built catalogs.', phase: 'Design phase' },
       { triggers: ['vibe-mode:', 'vibe-mode', 'autonomous', 'manual mode'], skill: 'vibe-mode', cat: 'Visibility', desc: 'Sets manual or autonomous execution mode. run continues a build from the files; resume continues after a stop.', phase: 'Visibility' },

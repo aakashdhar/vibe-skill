@@ -10,17 +10,19 @@ finding IDs, finding states, the resolution rules, and the stopping rule.
 Zero dependencies (stdlib only). Run from the project root. State lives in
 vibe/goldfish/<target>/ledger.json; raw reviewer output in vibe/goldfish/<target>/round-N/.
 
-  goldfish.py init <target> --doc PATH [--doc PATH ...] --reviewers a,b,c [--max-rounds 5]
+  goldfish.py init <target> --doc PATH [--doc PATH ...] --reviewers a,b,c [--max-rounds N [--human]]
   goldfish.py round <target>                       # open the next round, print its number
   goldfish.py ingest <target> --reviewer R --file F.json
   goldfish.py ingest <target> --reviewer R --not-run --reason "..."
   goldfish.py link <target> ID --reraise-of OLD | --churn-of OLD
   goldfish.py resolve <target> ID --as fix|contest|escalate|decline [--note N] [--evidence E] [--human]
+  goldfish.py resolve <target> ID --as duplicate --of PRIMARY   # same problem, same round: answer it once
   goldfish.py applied <target> ID [ID ...]         # proposed fixes are now in the document
   goldfish.py decide <target> ID --as fix|accept-risk|reject --by human|agent-autonomous [--note N]
   goldfish.py status <target> [--json]             # exit 0 converged · 2 in progress · 3 needs a person
   goldfish.py isolation <target> full|partial [--note N]   # record how isolated the reviewers were
   goldfish.py report <target>                      # write vibe/goldfish/<target>/resolution.md
+  goldfish.py archive <target>                     # a from-scratch redesign: set the old review aside
 
 Severity uses the vibe scale: P0 (blocks), P1 (blocks), P2 (note, never blocks).
 
@@ -29,7 +31,10 @@ The stopping rule:
     unsettled. A P0/P1 that was fixed makes the round not clean (the document changed,
     so a fresh reviewer has to look again).
   * CONVERGED = the last two rounds are clean, were run by the current reviewers, and
-    reviewed exactly the text the documents have now. Each round records a hash of the
+    reviewed exactly the text the documents have now. On a small project (BRIEF.md sized
+    S) one round is enough when it is clean AND raised no P0/P1 at all: the second pass
+    mostly re-finds what the first missed, which a small project can afford to skip.
+    `init --thorough` keeps two rounds anyway. Each round records a hash of the
     documents when it opens, so ANY later edit (a P2 fix, the elephant-only check, a
     person's change) means another round, and a review that converged earlier re-opens
     on its own when the documents change. Earlier findings are kept for re-raise links.
@@ -51,24 +56,104 @@ BLOCKING = {"P0", "P1"}
 OPEN, FIX_PROPOSED, FIXED, ESCALATED, SETTLED = "open", "fix-proposed", "fixed", "escalated", "settled"
 UNRESOLVED = {OPEN, ESCALATED}            # nothing decided yet: a new round may not start
 UNSETTLED = {OPEN, FIX_PROPOSED, FIXED, ESCALATED}
-CATEGORIES = {"fix", "contest", "escalate", "decline"}
+CATEGORIES = {"fix", "contest", "escalate", "decline", "duplicate"}
 NO_CONTEST_ROLES = {"comprehension"}      # a reader who did not understand is never wrong
 RANK = {"P0": 0, "P1": 1, "P2": 2}         # lower = more severe
 DEFAULT_MAX_ROUNDS = 5
 GF = "python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py"
 
 
-def _doc_hash(docs):
-    """One hash over every reviewed document, as it is on disk right now."""
+# Bookkeeping that vibe's own tools rewrite after a review is not reviewed content.
+# Recording a sign-off, starting a feature or ticking a task must never make the review
+# that justified it look stale. Each rule applies only to the file that carries it:
+#   CLAUDE.md        the Execution mode settings, and the "### Active Feature / Bug Fix"
+#                    sections vibe-add-feature / vibe-fix-bug append
+#   TASKS.md         the spec/design gate lines
+#   PLAN.md          a feature entry's **Status:** and **Spec:** lines, the status marker
+#                    on its heading, and the older "⬜ X → 🔄 X — spec in ..." status lines
+#                    (feature names, dependencies and everything else still count)
+#   CODEBASE.md      "> 📝 ... Verified during ..." changelog lines
+#   FEATURE_TASKS.md task status lines and checkbox state ([x], [~], [!])
+# Blank lines and bare "---" rules are formatting, never content, in every file.
+_SETTINGS = re.compile(r"^\s*(?:VIBE_MODE|APPROVALS|PHASES)\s*=")
+_ACTIVE = re.compile(r"^###\s+Active (?:Feature|Bug Fix)\b", re.I)
+_GATE = re.compile(r"^\s*(?:⬜|✅|➖|🔴)\s*(?:spec|design):", re.I)
+_PLAN_BOOK = re.compile(r"^\s*\*\*(?:Status|Spec):\*\*")
+_PLAN_OLD = re.compile(r"^\s*(?:⬜|🔄|✅)\s+.*(?:→|—\s*spec in vibe/features/)")
+_PLAN_HEAD = re.compile(r"^(#{2,5}\s+)(?:⬜|🔄|✅)\s+")
+_VERIFIED = re.compile(r"^\s*>\s*📝 .*Verified during")
+_TASK_STATUS = re.compile(r"^\s*[-*]\s*\*\*Status\*\*:")
+_CHECKBOX = re.compile(r"\[(?:x|X|~|!)\]")
+_RULE = re.compile(r"^\s*(?:-{3,}|\*{3,})?\s*$")
+HASH_V = 2
+
+
+def _normalize(name, text):
+    out, skipping = [], False
+    for line in text.splitlines(keepends=True):
+        bare = line.rstrip("\r\n")
+        if _RULE.match(bare):
+            continue
+        if name == "CLAUDE.md":
+            if _ACTIVE.match(bare):
+                skipping = True
+                continue
+            if skipping and bare.startswith("#"):
+                skipping = False
+            if skipping or _SETTINGS.match(bare):
+                continue
+        elif name == "TASKS.md" and _GATE.match(bare):
+            continue
+        elif name == "PLAN.md":
+            if _PLAN_BOOK.match(bare) or _PLAN_OLD.match(bare):
+                continue
+            line = _PLAN_HEAD.sub(r"\1", line)
+        elif name == "CODEBASE.md" and _VERIFIED.match(bare):
+            continue
+        elif name == "FEATURE_TASKS.md":
+            if _TASK_STATUS.match(bare):
+                continue
+            line = _CHECKBOX.sub("[ ]", line)
+        out.append(line)
+    return "".join(out)
+
+
+def _doc_hash(docs, version=HASH_V):
+    """One hash over every reviewed document, as it is on disk right now.
+    version 1 is the raw-bytes hash of vibe v2.7.0, kept so older reviews still match."""
     h = hashlib.sha256()
     for d in docs:
         h.update(d.encode() + b"\0")
         try:
-            h.update(Path(d).read_bytes())
+            raw = Path(d).read_bytes()
+            h.update(raw if version == 1 else _normalize(Path(d).name, raw.decode("utf-8", "replace")).encode())
         except OSError:
             h.update(b"<missing>")
         h.update(b"\0")
     return h.hexdigest()[:16]
+
+
+_SIZE = (re.compile(r"Complexity:\s*\[?\s*(XL|S|M|L)\b"),
+         re.compile(r"^\*\*Size:\*\*\s*\[?\s*(XL|S|M|L)\b", re.M),
+         re.compile(r"^##\s*Complexity[^\n]*\n+\s*(XL|S|M|L)\b", re.M))
+
+
+def _project_size():
+    """The project's size from BRIEF.md (S/M/L/XL), or None when there is no brief."""
+    try:
+        text = Path("BRIEF.md").read_text(errors="replace")
+    except OSError:
+        return None
+    for rx in _SIZE:
+        m = rx.search(text)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _round_matches(r, docs):
+    """Did this round review the documents as they are now?"""
+    return r.get("doc_hash") == _doc_hash(docs, r.get("hash_v", 1))
 
 
 def _now():
@@ -124,24 +209,38 @@ def cmd_init(a):
         data = json.loads(p.read_text())
         data["docs"], data["reviewers"] = a.doc, reviewers
         if a.max_rounds is not None:
+            if a.max_rounds > data["max_rounds"] and not a.human:
+                sys.exit(f"ERROR: raising the round cap ({data['max_rounds']} → {a.max_rounds}) is a person's decision. "
+                         "Rerun with --human once they have said so, or stop for a person")
             data["max_rounds"] = a.max_rounds
+        data["quick"] = (not a.thorough) and _project_size() == "S"
         _maybe_new_cycle(a.target, data)
         _save(a.target, data)
         print(f"goldfish '{a.target}' already exists: kept {len(data['rounds'])} round(s), updated docs/reviewers")
         return
+    if a.max_rounds and a.max_rounds > DEFAULT_MAX_ROUNDS and not a.human:
+        sys.exit(f"ERROR: a round cap above {DEFAULT_MAX_ROUNDS} is a person's decision: rerun with --human once they have said so")
     _save(a.target, {"target": a.target, "docs": a.doc, "reviewers": reviewers,
                      "max_rounds": a.max_rounds or DEFAULT_MAX_ROUNDS, "created": _now(),
+                     "quick": (not a.thorough) and _project_size() == "S",
                      "cycle_start": 0, "rounds": [], "findings": {}})
-    print(f"goldfish '{a.target}' created · reviewers: {', '.join(reviewers)}")
+    print(f"goldfish '{a.target}' created · reviewers: {', '.join(reviewers)}"
+          + (" · small project: one clean round with no P0/P1 converges" if (not a.thorough) and _project_size() == "S" else ""))
 
 
 def _converged_on_record(data):
     """Did the last two rounds of the current cycle converge on the same text?"""
     rounds = data["rounds"][data.get("cycle_start", 0):]
+    if rounds and data.get("quick"):
+        last = rounds[-1]
+        quiet = not any(f["round"] == last["n"] and f["severity"] in BLOCKING for f in data["findings"].values())
+        if _round_clean(data, last) and quiet:
+            return True
     if len(rounds) < 2:
         return False
     a, b = rounds[-2], rounds[-1]
-    return (_round_clean(data, a) and _round_clean(data, b) and a.get("doc_hash") == b.get("doc_hash")
+    same_text = (a.get("doc_hash") == b.get("doc_hash") and a.get("hash_v", 1) == b.get("hash_v", 1))
+    return (_round_clean(data, a) and _round_clean(data, b) and same_text
             and a.get("reviewer_set") == b.get("reviewer_set"))
 
 
@@ -176,7 +275,7 @@ def cmd_round(a):
         sys.exit(f"ERROR: round cap ({data['max_rounds']}) reached: a person decides how to proceed "
                  f"(more rounds: goldfish.py init {a.target} ... --max-rounds <n>)")
     n = len(data["rounds"]) + 1
-    data["rounds"].append({"n": n, "opened": _now(), "doc_hash": _doc_hash(data["docs"]),
+    data["rounds"].append({"n": n, "opened": _now(), "doc_hash": _doc_hash(data["docs"]), "hash_v": HASH_V,
                            "reviewer_set": sorted(data["reviewers"]),
                            "reviewers": {r: "pending" for r in data["reviewers"]}})
     _save(a.target, data)
@@ -258,6 +357,8 @@ def _set(f, state, **extra):
 def cmd_link(a):
     data = _load(a.target)
     f, old = _finding(data, a.id), _finding(data, a.reraise_of or a.churn_of)
+    while old.get("duplicate_of"):
+        old = _finding(data, old["duplicate_of"])     # a duplicate's fate is its primary's
     if old["round"] >= f["round"]:
         sys.exit("ERROR: can only link a finding to one from an EARLIER round")
     if f["state"] != OPEN:
@@ -266,8 +367,10 @@ def cmd_link(a):
         sys.exit(f"ERROR: churn means a fix caused this; {old['id']} is {old['state']}, not fixed")
     if a.reraise_of:
         f["reraise_of"] = old["id"]
-        covers = (RANK[f["severity"]] >= RANK[old["severity"]]
-                  and (old.get("resolution") or {}).get("category") != "decline")
+        roles = {f["reviewer"]} | {data["findings"][d]["reviewer"] for d in f.get("duplicates", [])}
+        how = (old.get("resolution") or {}).get("category")
+        covers = (RANK[f["severity"]] >= RANK[old["severity"]] and how != "decline"
+                  and not (roles & NO_CONTEST_ROLES and how in ("contest", "settled-earlier")))
         if old["state"] == SETTLED and not covers:
             print(f"{f['id']}: linked to settled {old['id']}, but that answer can't cover it "
                   f"({f['severity']} vs {old['severity']}{', declined' if (old.get('resolution') or {}).get('category') == 'decline' else ''}): stays open")
@@ -297,10 +400,33 @@ def cmd_resolve(a):
     if f.get("churn_of") and not a.human:
         sys.exit(f"ERROR: {a.id} is churn (caused by the fix for {f['churn_of']}): a person decides how to resolve it; "
                  "rerun with --human once they have answered")
+    if a.category == "duplicate":
+        prim = _finding(data, a.of or "")
+        if prim["id"] == f["id"] or prim["round"] != f["round"]:
+            sys.exit("ERROR: --of must name another finding from the same round")
+        if prim["state"] != OPEN or prim.get("duplicate_of"):
+            sys.exit(f"ERROR: {prim['id']} is not an open primary finding: mark duplicates before answering the primary")
+        if f.get("duplicates"):
+            sys.exit(f"ERROR: {f['id']} is already the primary for {', '.join(f['duplicates'])}: fold those into "
+                     f"{prim['id']} first, or make {f['id']} the primary")
+        if f.get("churn_of") and not prim.get("churn_of"):
+            prim["churn_of"] = f["churn_of"]      # the churn travels with the primary: a person answers it
+        if RANK[prim["severity"]] > RANK[f["severity"]]:
+            sys.exit(f"ERROR: the primary must be at least as severe: {prim['id']} is {prim['severity']}, {f['id']} is "
+                     f"{f['severity']}. Make {f['id']} the primary instead")
+        f["duplicate_of"] = prim["id"]
+        prim.setdefault("duplicates", []).append(f["id"])
+        f["resolution"] = {"category": "duplicate", "note": f"same problem as {prim['id']}",
+                           "by": "human" if a.human else "elephant", "at": _now()}
+        _set(f, SETTLED, note=f"duplicate of {prim['id']}")
+        _save(a.target, data)
+        print(f"{f['id']} → settled (duplicate of {prim['id']}; its answer covers both)")
+        return
+    dup_roles = {data["findings"][d]["reviewer"] for d in f.get("duplicates", [])}
     if a.category == "decline" and f["severity"] != "P2":
         sys.exit(f"ERROR: only a P2 can be declined; {a.id} is {f['severity']}: fix, contest or escalate it")
     if a.category == "contest":
-        if f["reviewer"] in NO_CONTEST_ROLES:
+        if f["reviewer"] in NO_CONTEST_ROLES or dup_roles & NO_CONTEST_ROLES:
             sys.exit(f"ERROR: a comprehension gap cannot be contested. The reader did not understand, so the document must say more. Fix it.")
         if not (a.evidence or "").strip():
             sys.exit("ERROR: --evidence is required to contest. Cite a file:line the reviewer could read that proves the finding wrong. "
@@ -357,15 +483,14 @@ def _status(data):
     rounds = data["rounds"]
     clean = [_round_clean(data, r) for r in rounds]
     start = data.get("cycle_start", 0)
-    now_hash = _doc_hash(data["docs"])
     now_set = sorted(data["reviewers"])
     streak = 0
     for r, c in zip(reversed(rounds[start:]), reversed(clean[start:])):
         # a clean round only counts if it reviewed today's text with today's reviewers
-        if not c or r.get("doc_hash") != now_hash or r.get("reviewer_set", sorted(r["reviewers"])) != now_set:
+        if not c or not _round_matches(r, data["docs"]) or r.get("reviewer_set", sorted(r["reviewers"])) != now_set:
             break
         streak += 1
-    docs_changed = bool(rounds) and rounds[-1].get("doc_hash") != now_hash
+    docs_changed = bool(rounds) and not _round_matches(rounds[-1], data["docs"])
     fs = list(data["findings"].values())
     by_state = {}
     for f in fs:
@@ -376,7 +501,9 @@ def _status(data):
     open_blocking = [f["id"] for f in fs if f["severity"] in BLOCKING and f["state"] in {OPEN, FIX_PROPOSED, ESCALATED}]
     not_run = [f"round {r['n']}: {k}" for r in rounds for k, v in r["reviewers"].items() if v == "not-run"]
     in_progress = bool(rounds) and any(v == "pending" for v in rounds[-1]["reviewers"].values())
-    if streak >= 2:
+    last = rounds[-1] if rounds else None
+    quiet = bool(last) and not any(f["round"] == last["n"] and f["severity"] in BLOCKING for f in fs)
+    if streak >= 2 or (data.get("quick") and streak >= 1 and quiet):
         verdict = "converged"
     elif escalated:
         verdict = "needs_human"            # an escalation waits for a decision
@@ -469,6 +596,8 @@ def cmd_report(a):
                 ans += f": {res['evidence']}"
             elif res.get("note"):
                 ans += f": {res['note']}"
+            if f.get("duplicate_of"):
+                ans = f"duplicate of {f['duplicate_of']}"
             if f.get("decision"):
                 ans += f" → {f['decision']['as']} by {f['decision']['by']}"
             cell = lambda s: s.replace("|", "\\|").replace("\n", " ")
@@ -477,6 +606,19 @@ def cmd_report(a):
     out = _dir(a.target) / "resolution.md"
     out.write_text("\n".join(L) + "\n")
     print(f"wrote {out}")
+
+
+def cmd_archive(a):
+    """A document rewritten from scratch must not inherit the old review's settled findings."""
+    d = _dir(a.target)
+    if not (d / "ledger.json").exists():
+        print(f"no goldfish review '{a.target}': nothing to archive")
+        return
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    dest = ROOT / "archive" / f"{a.target}-{stamp}"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    d.rename(dest)
+    print(f"archived {d} → {dest} (the next review of '{a.target}' starts with no history)")
 
 
 # ---------------------------------------------------------------- cli
@@ -489,6 +631,8 @@ def main():
     s.add_argument("--doc", action="append", required=True)
     s.add_argument("--reviewers", required=True)
     s.add_argument("--max-rounds", type=int, default=None, help=f"round cap (default {DEFAULT_MAX_ROUNDS}; kept on re-init unless given)")
+    s.add_argument("--human", action="store_true", help="a person decided this (required to raise the round cap)")
+    s.add_argument("--thorough", action="store_true", help="always require two clean rounds, even on a small project")
     s.set_defaults(fn=cmd_init)
 
     s = sub.add_parser("round"); s.add_argument("target"); s.set_defaults(fn=cmd_round)
@@ -509,6 +653,7 @@ def main():
     s.add_argument("--as", dest="category", required=True, choices=sorted(CATEGORIES))
     s.add_argument("--note"); s.add_argument("--evidence")
     s.add_argument("--human", action="store_true", help="the answer came from a person (required for churn)")
+    s.add_argument("--of", help="with --as duplicate: the primary finding")
     s.set_defaults(fn=cmd_resolve)
 
     s = sub.add_parser("applied"); s.add_argument("target"); s.add_argument("ids", nargs="+")
@@ -528,6 +673,8 @@ def main():
     s.set_defaults(fn=cmd_isolation)
 
     s = sub.add_parser("report"); s.add_argument("target"); s.set_defaults(fn=cmd_report)
+
+    s = sub.add_parser("archive"); s.add_argument("target"); s.set_defaults(fn=cmd_archive)
 
     a = ap.parse_args()
     a.fn(a)

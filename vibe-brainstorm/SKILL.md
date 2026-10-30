@@ -2,11 +2,11 @@
 name: vibe-brainstorm
 description: >
   Comprehensive brainstorming workflow for turning any app idea into a clear,
-  validated, buildable brief. Two paths: personal project (8 steps) and
-  client/business project (13 steps). Fast path for fully-formed ideas.
+  validated, buildable brief. Two paths: personal project (8 steps, 2P-9P) and
+  client/business project (12 steps, 2C-13C). Fast path for fully-formed ideas.
   Detects agentic/AI projects and routes to agent: before architect:.
-  Pre-write quality check ensures BRIEF.md has specific users, measurable
-  success criteria, explicit non-goals, and a clear v1 boundary before writing.
+  Gap questions before writing; the person approves BRIEF.md only after its
+  independent spec-review.
   Complexity sizing (S/M/L/XL) signals build effort to downstream skills.
   BRIEF.md is structurally consistent — architect:, new-app:, change-spec:,
   and review: all read known field names. Does not create code or project
@@ -32,7 +32,11 @@ Personal projects: 15-20 minutes.
 Client/business projects: 25-35 minutes.
 Every minute here prevents hours of rework later.
 
-**Always run in Plan Mode (Shift+Tab). No code. No project files.**
+**No application code.** The only files this skill writes are `BRIEF.md` (project root)
+and, through spec-review and vibe-goldfish, `vibe/goldfish/brief/`, `vibe/spec-reviews/`
+and `vibe/DECISIONS.md` (plus `vibe/.run_state.json` when an autonomous run stops). The
+interview itself is read-only, so it can run in Plan Mode; leave Plan Mode before
+writing BRIEF.md.
 
 > **Autonomous / headless mode.** At startup resolve the settings with
 > `python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py mode` (`mode --run` when the
@@ -56,10 +60,10 @@ Every question skipped here becomes a scope change mid-build.
 ## What's new in v2
 
 - **BRIEF_MD.md template** — structurally consistent output that all downstream skills parse reliably
-- **Pre-write quality check** — catches weak user descriptions, unmeasurable criteria, missing non-goals before writing
+- **Pre-write gap questions** — asks about weak user descriptions, unmeasurable criteria, missing non-goals before writing (the brief itself is judged only by the independent review)
 - **Non-goals as a first-class step** — not optional, always included
 - **Agentic detection** — detects AI/agent projects and routes appropriately
-- **Fast path floor** — minimum P0 verification even on fast path
+- **Fast path floor** — the P0 gap questions still run on the fast path
 - **Complexity estimate** — S/M/L/XL sizing in every brief
 
 ---
@@ -97,8 +101,9 @@ deep-tech idea pulls feasibility up; a marketplace pulls viability up.
 "let's build", "start building", "just proceed", "enough questions", or similar —
 **stop immediately.** Do not argue or squeeze in "just one more". Show the
 **readiness card** (see `## Readiness gate`), get a single "Yes, continue", write the
-brief with the open items recorded as assumptions-to-validate, and hand off
-downstream. Their call overrides your desire for a tighter brief. Every time.
+brief with the open items recorded as assumptions the person accepted, run spec-review,
+get their approval of the reviewed brief, and hand off downstream. Their call
+overrides your desire for a tighter brief. Every time.
 
 **5. When documents are provided, critique — don't just accept.** Read them, find
 disparities, gaps, and things that could be stronger, and surface those concisely.
@@ -150,9 +155,22 @@ or a claim the research (next section) contradicts. Surface these as a short lis
 "here's what's strong, here's what's soft" — and fold the genuine gaps into the
 bounded question round. Do **not** nag; point each thing out once.
 
+**This skill writes only BRIEF.md.** The "Maps to" column says which later skill owns
+each other document; brainstorm doesn't write ARCHITECTURE.md, vibe/SPEC.md or
+DESIGN.md. Leave those files where they are for their owner (architect:, new-app:, and
+`design-md:` at the design gate, which comes after the spec is reviewed), which writes
+and reviews its own document from the reviewed brief. Anything in them that shapes the
+brief (user, platform, feel, stack, constraints) goes into BRIEF.md, and a contradiction
+you found between docs either gets settled in the question round or goes into the
+brief's Open questions, so the independent review of the brief sees it. List every
+supplied document that isn't the brief on the brief's **Supplied documents** line
+(file name and the skill that owns it), so the owner finds it even when the file
+doesn't carry the name it looks for, and repeat it on the handoff card.
+
 Whatever the entry, continue through the *same* pipeline: research → (bounded)
-questions → quality check → BRIEF.md → spec-review → downstream handoff (architect →
-scaffold → design → build). This is what brings externally-produced work to parity.
+questions → gap questions → BRIEF.md → spec-review (independent goldfish review) →
+the person approves the reviewed brief → downstream handoff (architect → scaffold →
+design → build). This is what brings externally-produced work to parity.
 
 ---
 
@@ -231,24 +249,25 @@ For messages with a complete, clear picture.
 
 Wait for confirmation.
 
-**Step F2 — Run P0 quality checks (internal):**
-Read `references/BRIEF_QUALITY_CHECK.md` — Fast path quality floor section.
+**Step F2 — Ask about the P0 gaps:**
+Read `references/BRIEF_QUALITY_CHECK.md` — Fast path section.
 
-Run ONLY the P0 checks:
-- P0-1: User specific enough?
-- P0-2: Core value single outcome?
-- P0-3: Success criteria measurable?
-- P0-4: Non-goals stated?
-- P0-5: Feature boundary clear?
+Look only at the five P0 essentials in what the user confirmed:
+- P0-1: Is the user specific?
+- P0-2: Is the core value a single outcome?
+- P0-3: Is there a measurable success signal?
+- P0-4: Are non-goals stated?
+- P0-5: Is the v1 feature boundary clear?
 
-If all pass — proceed immediately to non-goals and agentic check.
+If none has a gap, go straight to non-goals and the agentic check.
 
-If 1-2 fail — ask only about those:
+If 1-2 have a gap, ask only about those:
 > "Two quick things before I write this:
-> [Question for failing P0-1 if relevant]
-> [Question for failing P0-3 if relevant]"
+> [Gap question for P0-1 if relevant]
+> [Gap question for P0-3 if relevant]"
 
-Wait for answers. Then proceed.
+Wait for answers. Then proceed. This is fact-gathering, not a grade: you don't score the
+brief, and nothing about it is logged as passing or failing.
 
 **Step F3 — Non-goals (always, even on fast path):**
 > "One more: what is v1 explicitly NOT? Even the most complete briefs
@@ -261,7 +280,7 @@ Wait for answer.
 Read `references/BRIEF_QUALITY_CHECK.md` — Agentic detection section.
 Run the signal check. Announce if detected.
 
-→ Skip to **Pre-write quality check** and **Generating BRIEF.md**
+→ Skip to **Pre-write gap questions** and **Generating BRIEF.md**
 
 ---
 
@@ -438,13 +457,15 @@ Read `references/BRIEF_MD.md` — Complexity sizing guide.
 Assign S / M / L / XL based on feature count, backend, integrations, AI.
 State the complexity driver — the one thing that makes this harder than it looks.
 
-→ Run **Agentic Detection** then proceed to **Pre-write quality check**
+→ Run **Agentic Detection** then proceed to **Pre-write gap questions**
 
 ---
 
 # CLIENT PATH
-*All steps mandatory. No exceptions.*
+*Every step's topic gets covered: from research, the docs, or the question budget.*
 *The questions that feel unnecessary on a small job are the ones that save you.*
+*The readiness gate still applies: if the user says "let's build", stop, and every topic
+not yet covered goes into the brief as an open assumption they accepted.*
 
 ---
 
@@ -648,17 +669,19 @@ Note which risks acknowledged vs dismissed.
 Read `references/BRIEF_MD.md` — Complexity sizing guide.
 Assign S / M / L / XL. Add delivery risk rating for client projects.
 
-→ Run **Agentic Detection** then proceed to **Pre-write quality check**
+→ Run **Agentic Detection** then proceed to **Pre-write gap questions**
 
 ---
 
 # AGENTIC DETECTION
 
-Run after features are locked — before the pre-write check.
+Run after features are locked, before the pre-write gap questions. Run it again if the
+review's fixes change the AI features (see `# SPEC-REVIEW`).
 
-Read `references/BRIEF_QUALITY_CHECK.md` — Agentic detection section.
+Read `references/BRIEF_QUALITY_CHECK.md` — Agentic detection section. It defines the
+STRONG and WEAK signals; this is the rule:
 
-If 2+ signals detected:
+If 2+ STRONG signals:
 > "This project involves AI agent logic — I can see [signal A] and [signal B]
 > in what you've described.
 >
@@ -667,16 +690,23 @@ If 2+ signals detected:
 > and how the whole system is wired together. Getting this wrong mid-build
 > is expensive to undo.
 >
-> I'll flag this in the brief. After `architect:` reads the brief,
-> it will remind you."
+> I'll flag this in the brief, and its Next step will say to run `agent:`
+> before `architect:`."
 
-Set `agentic_flag: true` in the brief.
+In the brief's `## Agentic flag` section write `**Contains AI agent logic:** Yes`, the
+agent type, and the agent: Next step (BRIEF_MD.md template). Set the
+`Agentic / AI` row of the complexity table to Yes.
 
-If 1 signal detected — ask:
+If 1 STRONG signal — ask:
 > "Will [feature] involve an AI model making decisions or taking actions
 > autonomously, or is it a simpler API call?"
+Confirmed → treat it as detected (above). Otherwise → No.
 
-If 0 signals — no flag.
+If only WEAK signals — ask one clarifying question (BRIEF_QUALITY_CHECK.md). Flag only
+if the answer shows an LLM making the decision.
+
+If no signals — write `**Contains AI agent logic:** No` and the `architect: confirm`
+Next step. The section is always present.
 
 ---
 
@@ -700,7 +730,7 @@ IDEA READINESS — [project name]
   Solid:
     ✓ [thing that's well-defined]
     ✓ [thing that's well-defined]
-  Still open (would be recorded as assumptions to validate):
+  Still open (would be recorded as open assumptions you accepted):
     • [open item — e.g. pricing model not decided]
     • [open item — e.g. primary user is still two personas]
     • [research risk — e.g. competitor X already owns this wedge]
@@ -713,47 +743,51 @@ Then a single choice — never a wall of follow-ups:
 >  [Yes, continue] / [Keep sharpening]"
 
 - **Yes, continue** → write BRIEF.md now, recording every open item in its
-  **Open assumptions to validate** section (so nothing is lost), and hand off
-  downstream. Do not re-litigate. The user chose; respect it fully.
+  **Open assumptions to validate** section as an item the person accepted at the
+  readiness check, in their words (so nothing is lost). Then run spec-review and ask for
+  their approval of the reviewed brief like any other run (`# SPEC-REVIEW`, then
+  `# APPROVAL OF THE REVIEWED BRIEF`), and hand off downstream. Do not re-litigate: when
+  the review raises one of these items, it is answered with their acceptance, not with
+  new questions. The user chose; respect it fully.
 - **Keep sharpening** → ask the *single* highest-value open question, then offer the
   card again. Still bounded — don't spiral.
 
 A brief written this way is valid. Downstream skills read the open-assumptions section
 and treat those items as things to confirm, not as blockers.
 
+**Autonomous mode has no readiness choice and no "build now".** No one is there to
+accept a gap, so nothing is recorded as accepted by a person. Each gap is filled with
+the most reasonable assumption the brief supports (HEADLESS.md §2.3), written into
+**Open assumptions to validate** as the agent's assumption, and logged in DECISIONS.md.
+
 ---
 
-# PRE-WRITE QUALITY CHECK
+# PRE-WRITE GAP QUESTIONS
 
 > 🧠 **Effort:** synthesising the brief is a high-leverage, one-shot decision —
 > every downstream skill treats BRIEF.md as fixed. Run this with adaptive
 > thinking at high effort (`thinking: {type: "adaptive"}`, `output_config.effort:
 > "high"`); reason through gaps and alternatives before writing, don't pattern-fill.
 
-**Internal step — not shown to user.**
+Read `references/BRIEF_QUALITY_CHECK.md` in full. Look at the confirmed answers for
+gaps against the P0 essentials and the P1 items that apply. Each gap becomes a
+**question to the user**, using the question that file gives for it, folded into the
+bounded question round (within the ≤3-per-round budget). Don't fire a fresh follow-up
+for every gap one at a time.
 
-Read `references/BRIEF_QUALITY_CHECK.md` in full.
-Run all P0 checks against the confirmed conversation answers.
-Run applicable P1 checks.
+This step gathers facts; it doesn't grade the brief. Don't score the draft, don't log a
+pass/fail summary, and don't treat anything as "passed". Whether the written brief holds
+up is decided only by the independent review in `# SPEC-REVIEW` (vibe-spec-review Step 1:
+the author never audits its own document).
 
-If a P0 check fails **and the user has not chosen to proceed**: fold it into the
-bounded question round (within the ≤3-per-round budget) — don't fire a fresh
-follow-up for every failing check one at a time.
+**If the user has chosen "Yes, continue" at the readiness gate:** ask nothing more.
+Each gap still open goes into the brief's **Open assumptions to validate** section as an
+item the person accepted at the readiness check, with their words (BRIEF_MD.md format).
+The user's decision to build outranks a tighter brief; never trap them in questions.
 
-**If the user has chosen "Yes, continue" at the readiness gate:** do NOT block.
-Record each unmet P0 as an entry in the brief's **Open assumptions to validate**
-section and write BRIEF.md. The user's decision to build outranks a perfect P0 pass —
-never trap them in the quality check.
-
-Log the quality summary internally:
-```
-PRE-WRITE QUALITY CHECK
-P0: [N/5] passing
-  [results per check]
-P1: [results per applicable check]
-Agentic: [Detected / Not detected]
-Proceeding to write BRIEF.md.
-```
+**Autonomous mode:** there is no one to ask. Fill each gap as the readiness gate's
+autonomous note says (HEADLESS.md §2.3), and do the same for anything that would have
+gone into Open questions.
 
 ---
 
@@ -771,35 +805,120 @@ This ensures the brief reflects decisions made, not things mentioned in passing.
 Fill the complexity estimate section from the internal sizing done in the risks step.
 Fill the agentic flag section from the detection step.
 Fill the open questions section with anything unresolved — delete it if none.
+Fill the open assumptions section from the readiness gate and the gap questions,
+marking which items the person accepted at the readiness check.
+
+If BRIEF.md already has a goldfish review (`vibe/goldfish/brief/` exists) and this brief
+replaces it from scratch rather than editing it, set the old review aside first:
+`python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py archive brief`.
 
 Save as `BRIEF.md` at the project root.
 
-Present it:
-> "Does this brief capture what you want to build? Anything to adjust?"
-
-For client projects, one additional check:
-> "Is there anything in the constraints or delivery definition that needs confirming
-> with the client before the build starts? Resolve open questions now, not mid-Phase 1."
-
-When approved:
+Don't ask the person to approve it yet. They approve the brief after the independent
+review, on the text the review leaves (`# APPROVAL OF THE REVIEWED BRIEF`).
 
 ---
 
-# SPEC-REVIEW AND HANDOFF
+# SPEC-REVIEW
 
 **Announce:**
-> "BRIEF.md written. Running spec-review to check quality before architect:..."
+> "BRIEF.md written. Running an independent spec review before architect:..."
 
 Invoke `vibe-spec-review`:
-- Trigger source: `brainstorm`
-- Scope: BRIEF.md only
+- Trigger 1 (`brainstorm`), preset `brief`: BRIEF.md only
+- If this skill was entered from `vibe-mode: run`, say so, so the review reads the
+  settings with `mode --run` too.
+
+While the review runs you are the author answering the findings (vibe-goldfish Steps 5
+and 6). Two rules come from this skill:
+
+- **Gaps the person accepted at the readiness check (manual only).** If a finding is
+  about an item the brief lists under Open assumptions to validate as accepted by the
+  person at the readiness check, don't turn it into new questions and don't contest it.
+  Escalate it
+  (`python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py resolve brief <id> --as escalate --note "accepted by the person at the readiness check"`),
+  show it in the review summary as already decided by them, and
+  record their acceptance:
+  ```bash
+  python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py decide brief <id> --as accept-risk --by human --note "accepted at the readiness check: <their words>"
+  ```
+  If they now want it fixed instead, record that answer instead. A finding that goes
+  beyond what they accepted is answered normally. Autonomous runs have no such items:
+  findings on the agent's own assumptions follow vibe-goldfish Step 6 as usual.
+- **Fixes that change scope or AI features.** If a fix adds, removes or changes a v1
+  feature, an integration, the backend, auth or real-time needs, or an AI feature,
+  re-run **Agentic detection** and the complexity sizing (Step 9P / 13C) on the fixed
+  text. Put the updated Agentic flag, Next step, complexity table, size and driver into
+  the same edit, so the next review round reads them. If you notice only after the
+  review converged, update those sections and run spec-review again (the edit re-opens
+  the review).
 
 **If spec-review stopped the run** (`python3 ~/.claude/skills/vibe-mode/scripts/vibe_state.py run-state show`
 says needs_human from spec review), **stop here too**: end the session, don't continue,
 don't report the step as done. In manual mode, a 🔴 verdict means follow spec-review
 Step 3 (more rounds, rework, or the person accepts). Never fix findings outside vibe-goldfish.
 
-After spec-review completes without stopping:
+---
+
+# APPROVAL OF THE REVIEWED BRIEF
+
+**Manual mode.** Show what the review changed, then ask for approval of the brief as it
+is now:
+> "The independent review is done. It changed:
+> - [one line per applied fix: section: what changed]
+> (or: "Nothing. The brief is as I wrote it.")
+> [Accepted risks: id: what, accepted by whom]
+>
+> Does this brief capture what you want to build? Anything to adjust?"
+
+For client projects, one additional check, asked now so it covers anything the review
+raised:
+> "Is there anything in the constraints, the delivery definition or the open questions
+> (including any the review added) that needs confirming with the client before the
+> build starts? Resolve open questions now, not mid-Phase 1."
+
+Each of the template's Open questions is resolved before architect:, or the person marks
+it carried to architect:. Resolve each one with the person now, or mark it carried in
+BRIEF.md (that is an edit, so it follows the next paragraph).
+
+If the person adjusts anything, or an answer changes the brief, edit BRIEF.md. If the
+change touches scope or AI features (a v1 feature, an integration, the backend, auth,
+real-time needs or an AI capability), re-run Agentic detection and the complexity sizing
+in the same edit, as in `# SPEC-REVIEW`. Then run spec-review again (the edit re-opens
+the review) and ask again. The approval is always on the brief as its last review left it.
+
+Record the approval in `vibe/DECISIONS.md` (append-only: add to the end; if it doesn't
+exist, create it with the canonical header from vibe-new-app's DECISIONS template and
+continue `D-NNN` numbering):
+```
+### D-[ID] — Brief approved: [project name]
+- **Date**: [date] · **Type**: brief-approval
+- **What was approved**: BRIEF.md after its goldfish review ([N] fixes) · record: vibe/goldfish/brief/resolution.md
+  (or: BRIEF.md without an independent review, the person chose to continue, see the Spec review not run entry)
+- **Accepted at the readiness check**: [the open assumptions the person accepted, or "none"]
+- **Open questions carried to architect:**: [list, or "none"]
+- **Approved by**: human
+```
+
+**Autonomous mode.** No question: the converged review is the acceptance (HEADLESS.md
+§2.2). Add the §2.4 entry (`Type: autonomous-approval`, BRIEF.md accepted through the
+converged goldfish review, plus each assumption you made).
+
+---
+
+# HANDOFF
+
+Check the review before handing off:
+```bash
+python3 ~/.claude/skills/vibe-goldfish/scripts/goldfish.py status brief; echo $?
+```
+Exit 0 (converged on the current text) → show the card. Anything else means the brief
+changed after its review or the review isn't finished: run spec-review again before
+handing off (manual: tell the person in one line and offer to run it now). In manual
+mode, then go back to `# APPROVAL OF THE REVIEWED BRIEF` and ask again (and append a new
+Brief approved entry), so the approval is always on the text the last review left. The only
+exceptions are the person's own choices in spec-review: continuing without a review
+(⚠️ SPEC NOT REVIEWED) or continuing anyway on a 🔴. The card says which.
 
 ---
 > ✅ **Brief ready.**
@@ -809,9 +928,11 @@ After spec-review completes without stopping:
 > **Features deferred:** [N]
 > **Non-goals:** [N explicitly stated]
 > **Complexity:** [S / M / L / XL] — [complexity driver]
-> **Agentic:** [✅ detected — run agent: first / — not detected]
+> **Agentic:** [✅ detected — run agent: first / — not detected] (from the reviewed brief's Agentic flag)
 > [Client: stakeholders · success metrics · constraints · delivery terms captured]
 > **Spec review:** [✅ SPEC READY / ⚠️ SPEC READY WITH ACCEPTED RISKS ([N]) / ⚠️ SPEC NOT REVIEWED]
+> **Approved:** [by you, after the review / agent-autonomous, through the converged review]
+> [If other docs were supplied:] **Also bring:** [file] → [architect: / new-app: / design-md:] (listed in the brief's Supplied documents)
 >
 > **Next:**
 > ```

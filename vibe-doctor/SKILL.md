@@ -20,7 +20,12 @@ Environment health check and auto-remediation.
 Catches the failure modes that compound across sessions before they waste build time.
 Runs in 20-40 seconds. Auto-fixes what it can. Flags what it cannot.
 
-**Always run in Plan Mode for diagnosis. Auto-exits to execute remediations.**
+**No application code. Diagnosis (Steps 1-2) only reads. The only changes this skill makes
+are:** the safe remediations in Step 3 (`npm install` when node_modules is missing,
+`chmod +x .husky/*` and `git config core.hooksPath .husky`, the Vite HMR config when its
+condition holds), `vibe/.doctor-last-run` (Step 5), and, only on a yes, the lint hook
+merged into `.claude/settings.json` (Step 6). Anything else is shown to the user as an
+exact command, or confirmed first.
 
 ---
 

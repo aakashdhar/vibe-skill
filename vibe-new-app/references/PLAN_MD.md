@@ -108,6 +108,7 @@ Full schema:
 *Build order matters — features are sequenced by dependency.*
 
 #### [Feature 1 name] — [one sentence: what it lets the user do]
+**Status:** ⬜ not started
 **Build order:** 1 (no dependencies — start here)
 **Depends on:** Phase 1 complete
 **Depended on by:** [Feature 2], [Feature 3]
@@ -129,6 +130,7 @@ Full schema:
 ---
 
 #### [Feature 2 name] — [one sentence]
+**Status:** ⬜ not started
 **Build order:** 2
 **Depends on:** Phase 1 + Feature 1 complete
 **Reason for dependency:** [Why Feature 1 must be built first — e.g. "reads [Entity] created by Feature 1"]
@@ -151,6 +153,7 @@ Full schema:
 ---
 
 #### [Feature 3 name] — [one sentence]
+**Status:** ⬜ not started
 **Build order:** 3
 **Depends on:** Phase 1 + Feature 1 complete
 **Reason for dependency:** [Why]
